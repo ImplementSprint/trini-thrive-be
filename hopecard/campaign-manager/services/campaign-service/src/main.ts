@@ -12,7 +12,8 @@ async function bootstrap() {
   // 2. Enable validation for the DTOs
   app.useGlobalPipes(new ValidationPipe());
 
-  await app.listen(3001);
-  console.log(`Backend is running on: http://localhost:3001`);
+  const port = process.env.PORT ?? 3001;
+  await app.listen(port);
+  console.log(`Backend is running on: http://localhost:${port}`);
 }
 bootstrap();

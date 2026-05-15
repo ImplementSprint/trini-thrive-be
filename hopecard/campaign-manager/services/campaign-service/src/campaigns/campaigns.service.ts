@@ -31,6 +31,14 @@ export class CampaignsService implements OnModuleInit {
     }
 
     this.supabase = createClient(supabaseUrl, supabaseKey);
+
+    if (!this.configService.get<string>('NOTIFICATION_SERVICE_URL')) {
+      console.warn(
+        '⚠️  WARNING: NOTIFICATION_SERVICE_URL is not set — falling back to ' +
+          'http://localhost:3003. Campaign creation emails will fail in ' +
+          'non-local environments.',
+      );
+    }
   }
 
   async create(dto: any) {
