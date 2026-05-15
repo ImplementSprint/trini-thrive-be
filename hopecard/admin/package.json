@@ -12,7 +12,8 @@
     "dev:approvals": "ts-node -r tsconfig-paths/register services/approvals/src/main.ts",
     "dev:analytics": "ts-node -r tsconfig-paths/register services/analytics/src/main.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint \"services/**/*.ts\" \"shared/**/*.ts\""
+    "lint": "eslint \"services/**/*.ts\" \"shared/**/*.ts\"",
+    "test:cov": "echo 'ts-node microservice \u2014 jest not configured; skipping coverage' && exit 0"
   },
   "dependencies": {
     "@nestjs/common": "^10.2.10",

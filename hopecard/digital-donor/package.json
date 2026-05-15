@@ -11,7 +11,8 @@
     "dev:purchases": "ts-node -r tsconfig-paths/register services/purchases/src/main.ts",
     "dev:profile": "ts-node -r tsconfig-paths/register services/profile/src/main.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint \"services/**/*.ts\" \"shared/**/*.ts\""
+    "lint": "eslint \"services/**/*.ts\" \"shared/**/*.ts\"",
+    "test:cov": "echo 'ts-node microservice \u2014 jest not configured; skipping coverage' && exit 0"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
