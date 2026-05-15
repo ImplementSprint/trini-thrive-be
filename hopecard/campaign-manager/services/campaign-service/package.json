@@ -59,7 +59,14 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": { "^.+\\.(t|j)s$": "ts-jest" },
-    "collectCoverageFrom": ["**/*.(t|j)s"],
+    "collectCoverageFrom": [
+      "**/*.ts",
+      "!**/*.module.ts",
+      "!**/main.ts",
+      "!**/*.dto.ts",
+      "!**/*.entity.ts",
+      "!**/*.d.ts"
+    ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
   }
