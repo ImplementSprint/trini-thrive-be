@@ -10,27 +10,27 @@ const makeSupabaseMock = (pingResult: boolean): Partial<SupabaseService> => ({
 
 const makeTribeClientMock = (
   exists: boolean,
-): Partial<TribeClient> | null => exists ? ({} as Partial<TribeClient>) : null;
+): Partial<TribeClient> | null => exists ? {} : null;
+
+async function createService(
+  dbPing: boolean,
+  apiPing: boolean,
+): Promise<HealthService> {
+  const module: TestingModule = await Test.createTestingModule({
+    providers: [
+      HealthService,
+      { provide: SupabaseService, useValue: makeSupabaseMock(dbPing) },
+      {
+        provide: TribeClient,
+        useValue: makeTribeClientMock(apiPing),
+      },
+    ],
+  }).compile();
+
+  return module.get<HealthService>(HealthService);
+}
 
 describe('HealthService', () => {
-  async function createService(
-    dbPing: boolean,
-    apiPing: boolean,
-  ): Promise<HealthService> {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        HealthService,
-        { provide: SupabaseService, useValue: makeSupabaseMock(dbPing) },
-        {
-          provide: TribeClient,
-          useValue: makeTribeClientMock(apiPing),
-        },
-      ],
-    }).compile();
-
-    return module.get<HealthService>(HealthService);
-  }
-
   it('should be defined', async () => {
     const service = await createService(true, true);
     expect(service).toBeDefined();
