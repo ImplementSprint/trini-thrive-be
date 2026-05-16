@@ -24,7 +24,10 @@ describe('NotificationsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationsService,
-        { provide: ConfigService, useValue: { get: (k: string) => mockConfig[k] } },
+        {
+          provide: ConfigService,
+          useValue: { get: (k: string) => mockConfig[k] },
+        },
       ],
     }).compile();
     service = module.get<NotificationsService>(NotificationsService);
@@ -32,7 +35,11 @@ describe('NotificationsService', () => {
 
   it('returns success with messageId on successful send', async () => {
     mockSendMail.mockResolvedValue({ messageId: 'msg-123' });
-    const result = await service.sendEmail('to@test.com', 'Hello', '<p>body</p>');
+    const result = await service.sendEmail(
+      'to@test.com',
+      'Hello',
+      '<p>body</p>',
+    );
     expect(result).toEqual({ success: true, messageId: 'msg-123' });
     expect(mockSendMail).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -46,8 +53,15 @@ describe('NotificationsService', () => {
 
   it('returns failure with error message when transport throws', async () => {
     mockSendMail.mockRejectedValue(new Error('SMTP connection refused'));
-    const result = await service.sendEmail('to@test.com', 'Hello', '<p>body</p>');
-    expect(result).toEqual({ success: false, error: 'SMTP connection refused' });
+    const result = await service.sendEmail(
+      'to@test.com',
+      'Hello',
+      '<p>body</p>',
+    );
+    expect(result).toEqual({
+      success: false,
+      error: 'SMTP connection refused',
+    });
   });
 
   it('uses SMTP_FROM env var as from address', async () => {

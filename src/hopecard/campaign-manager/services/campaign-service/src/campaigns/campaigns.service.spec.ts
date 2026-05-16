@@ -21,7 +21,8 @@ function queryChain(data: any, error: any = null) {
     delete: jest.fn().mockReturnThis(),
     insert: jest.fn().mockResolvedValue({ data, error }),
   };
-  c.then = (res: any, rej: any) => Promise.resolve({ data, error }).then(res, rej);
+  c.then = (res: any, rej: any) =>
+    Promise.resolve({ data, error }).then(res, rej);
   return c;
 }
 
@@ -66,34 +67,98 @@ describe('CampaignsService', () => {
   describe('findAll', () => {
     it('returns mapped campaigns from Supabase', async () => {
       const raw = [
-        { id: 'c1', title: 'Camp A', beneficiary: 'Bob', collected_amount: 500, target_amount: 1000, donor_count: 3, end_date: '2025-12-31', status: 'active' },
+        {
+          id: 'c1',
+          title: 'Camp A',
+          beneficiary: 'Bob',
+          collected_amount: 500,
+          target_amount: 1000,
+          donor_count: 3,
+          end_date: '2025-12-31',
+          status: 'active',
+        },
       ];
       mockFrom.mockReturnValueOnce(queryChain(raw));
       const result = await service.findAll();
       expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({ id: 'c1', raised: 500, goal: 1000, donors: 3, status: 'Active' });
+      expect(result[0]).toMatchObject({
+        id: 'c1',
+        raised: 500,
+        goal: 1000,
+        donors: 3,
+        status: 'Active',
+      });
     });
 
     it('maps status "draft" to "Pending"', async () => {
-      mockFrom.mockReturnValueOnce(queryChain([{ id: 'c2', title: 'X', status: 'draft', collected_amount: 0, target_amount: 0, donor_count: 0, end_date: null }]));
+      mockFrom.mockReturnValueOnce(
+        queryChain([
+          {
+            id: 'c2',
+            title: 'X',
+            status: 'draft',
+            collected_amount: 0,
+            target_amount: 0,
+            donor_count: 0,
+            end_date: null,
+          },
+        ]),
+      );
       const [row] = await service.findAll();
       expect(row.status).toBe('Pending');
     });
 
     it('maps status "completed" to "Completed"', async () => {
-      mockFrom.mockReturnValueOnce(queryChain([{ id: 'c3', title: 'X', status: 'completed', collected_amount: 0, target_amount: 0, donor_count: 0, end_date: null }]));
+      mockFrom.mockReturnValueOnce(
+        queryChain([
+          {
+            id: 'c3',
+            title: 'X',
+            status: 'completed',
+            collected_amount: 0,
+            target_amount: 0,
+            donor_count: 0,
+            end_date: null,
+          },
+        ]),
+      );
       const [row] = await service.findAll();
       expect(row.status).toBe('Completed');
     });
 
     it('maps unknown status to "Pending"', async () => {
-      mockFrom.mockReturnValueOnce(queryChain([{ id: 'c4', title: 'X', status: 'archived', collected_amount: 0, target_amount: 0, donor_count: 0, end_date: null }]));
+      mockFrom.mockReturnValueOnce(
+        queryChain([
+          {
+            id: 'c4',
+            title: 'X',
+            status: 'archived',
+            collected_amount: 0,
+            target_amount: 0,
+            donor_count: 0,
+            end_date: null,
+          },
+        ]),
+      );
       const [row] = await service.findAll();
       expect(row.status).toBe('Pending');
     });
 
     it('uses defaults for null optional fields', async () => {
-      mockFrom.mockReturnValueOnce(queryChain([{ id: 'c5', title: 'X', beneficiary: null, collected_amount: null, target_amount: null, donor_count: null, end_date: null, status: 'draft' }]));
+      mockFrom.mockReturnValueOnce(
+        queryChain([
+          {
+            id: 'c5',
+            title: 'X',
+            beneficiary: null,
+            collected_amount: null,
+            target_amount: null,
+            donor_count: null,
+            end_date: null,
+            status: 'draft',
+          },
+        ]),
+      );
       const [row] = await service.findAll();
       expect(row.raised).toBe(0);
       expect(row.goal).toBe(0);
@@ -103,7 +168,9 @@ describe('CampaignsService', () => {
 
     it('throws InternalServerErrorException on Supabase error', async () => {
       mockFrom.mockReturnValueOnce(queryChain(null, { message: 'DB error' }));
-      await expect(service.findAll()).rejects.toBeInstanceOf(InternalServerErrorException);
+      await expect(service.findAll()).rejects.toBeInstanceOf(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -121,28 +188,56 @@ describe('CampaignsService', () => {
 
     it('inserts campaign and returns it with no beneficiaryIds', async () => {
       mockFrom.mockReturnValueOnce(campaignInsertChain({ id: 'new-1' }));
-      const dto = { title: 'New', category: 'Health', description: 'x', target_amount: 500, end_date: '2025-01-01', cover_image_key: null, created_by: 'u1' };
+      const dto = {
+        title: 'New',
+        category: 'Health',
+        description: 'x',
+        target_amount: 500,
+        end_date: '2025-01-01',
+        cover_image_key: null,
+        created_by: 'u1',
+      };
       const result = await service.create(dto);
       expect(result).toEqual({ id: 'new-1' });
     });
 
     it('uses "Untitled Campaign" when title is absent', async () => {
-      const insertMock = jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ single: jest.fn().mockResolvedValue({ data: { id: 'x' }, error: null }) }) });
+      const insertMock = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          single: jest
+            .fn()
+            .mockResolvedValue({ data: { id: 'x' }, error: null }),
+        }),
+      });
       mockFrom.mockReturnValueOnce({ insert: insertMock });
       await service.create({ target_amount: 100 });
-      expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({ title: 'Untitled Campaign' }));
+      expect(insertMock).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Untitled Campaign' }),
+      );
     });
 
     it('lowercases category', async () => {
-      const insertMock = jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ single: jest.fn().mockResolvedValue({ data: { id: 'x' }, error: null }) }) });
+      const insertMock = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          single: jest
+            .fn()
+            .mockResolvedValue({ data: { id: 'x' }, error: null }),
+        }),
+      });
       mockFrom.mockReturnValueOnce({ insert: insertMock });
       await service.create({ category: 'HEALTH' });
-      expect(insertMock).toHaveBeenCalledWith(expect.objectContaining({ category: 'health' }));
+      expect(insertMock).toHaveBeenCalledWith(
+        expect.objectContaining({ category: 'health' }),
+      );
     });
 
     it('throws InternalServerErrorException on insert error', async () => {
-      mockFrom.mockReturnValueOnce(campaignInsertChain(null, { message: 'fail' }));
-      await expect(service.create({})).rejects.toBeInstanceOf(InternalServerErrorException);
+      mockFrom.mockReturnValueOnce(
+        campaignInsertChain(null, { message: 'fail' }),
+      );
+      await expect(service.create({})).rejects.toBeInstanceOf(
+        InternalServerErrorException,
+      );
     });
 
     it('links beneficiaries and triggers emails when beneficiaryIds provided', async () => {
@@ -151,11 +246,18 @@ describe('CampaignsService', () => {
       // 2. campaign_beneficiaries insert
       mockFrom.mockReturnValueOnce(queryChain(null));
       // 3. beneficiary_profiles select
-      mockFrom.mockReturnValueOnce(queryChain([{ email: 'ben@test.com', first_name: 'Ben', last_name: 'A' }]));
+      mockFrom.mockReturnValueOnce(
+        queryChain([
+          { email: 'ben@test.com', first_name: 'Ben', last_name: 'A' },
+        ]),
+      );
 
       mockHttpPost.mockReturnValue(of({ status: 200 }));
 
-      const result = await service.create({ title: 'Camp', beneficiaryIds: ['b1'] });
+      const result = await service.create({
+        title: 'Camp',
+        beneficiaryIds: ['b1'],
+      });
       expect(result).toEqual({ id: 'c1' });
       expect(mockHttpPost).toHaveBeenCalledWith(
         expect.stringContaining('/notifications/send-email'),
@@ -166,7 +268,9 @@ describe('CampaignsService', () => {
     it('skips email for beneficiary with no email address', async () => {
       mockFrom.mockReturnValueOnce(campaignInsertChain({ id: 'c2' }));
       mockFrom.mockReturnValueOnce(queryChain(null));
-      mockFrom.mockReturnValueOnce(queryChain([{ email: null, first_name: 'Ben', last_name: 'A' }]));
+      mockFrom.mockReturnValueOnce(
+        queryChain([{ email: null, first_name: 'Ben', last_name: 'A' }]),
+      );
 
       await service.create({ title: 'Camp', beneficiaryIds: ['b1'] });
       expect(mockHttpPost).not.toHaveBeenCalled();
@@ -175,25 +279,46 @@ describe('CampaignsService', () => {
     it('logs join error but still returns campaign when beneficiary link insert fails', async () => {
       mockFrom.mockReturnValueOnce(campaignInsertChain({ id: 'c3' }));
       // join insert returns an error
-      mockFrom.mockReturnValueOnce({ insert: jest.fn().mockResolvedValue({ error: { message: 'join fail' } }) });
+      mockFrom.mockReturnValueOnce({
+        insert: jest
+          .fn()
+          .mockResolvedValue({ error: { message: 'join fail' } }),
+      });
       mockFrom.mockReturnValueOnce(queryChain([])); // beneficiary profiles — empty
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const errorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
-      const result = await service.create({ title: 'Camp', beneficiaryIds: ['b1'] });
+      const result = await service.create({
+        title: 'Camp',
+        beneficiaryIds: ['b1'],
+      });
       expect(result).toEqual({ id: 'c3' });
-      expect(errorSpy).toHaveBeenCalledWith('Beneficiary link error:', expect.anything());
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Beneficiary link error:',
+        expect.anything(),
+      );
       errorSpy.mockRestore();
     });
 
     it('catches and logs email send failure without throwing', async () => {
       mockFrom.mockReturnValueOnce(campaignInsertChain({ id: 'c4' }));
       mockFrom.mockReturnValueOnce(queryChain(null));
-      mockFrom.mockReturnValueOnce(queryChain([{ email: 'b@test.com', first_name: 'B', last_name: 'A' }]));
+      mockFrom.mockReturnValueOnce(
+        queryChain([{ email: 'b@test.com', first_name: 'B', last_name: 'A' }]),
+      );
       // httpService.post throws (simulates notification service down)
-      mockHttpPost.mockImplementation(() => { throw new Error('notification service down'); });
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      mockHttpPost.mockImplementation(() => {
+        throw new Error('notification service down');
+      });
+      const errorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
-      const result = await service.create({ title: 'Camp', beneficiaryIds: ['b1'] });
+      const result = await service.create({
+        title: 'Camp',
+        beneficiaryIds: ['b1'],
+      });
       expect(result).toEqual({ id: 'c4' });
       expect(errorSpy).toHaveBeenCalled();
       errorSpy.mockRestore();
@@ -207,7 +332,10 @@ describe('CampaignsService', () => {
       const mod = await Test.createTestingModule({
         providers: [
           CampaignsService,
-          { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
+          {
+            provide: ConfigService,
+            useValue: { get: jest.fn().mockReturnValue(undefined) },
+          },
           { provide: HttpService, useValue: mockHttpService },
         ],
       }).compile();
@@ -217,7 +345,10 @@ describe('CampaignsService', () => {
 
     it('logs warning when NOTIFICATION_SERVICE_URL is absent', async () => {
       const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      const partialConfig = { get: (k: string) => ({ SUPABASE_URL: 'https://x.co', SUPABASE_SERVICE_ROLE_KEY: 'k' })[k] };
+      const partialConfig = {
+        get: (k: string) =>
+          ({ SUPABASE_URL: 'https://x.co', SUPABASE_SERVICE_ROLE_KEY: 'k' })[k],
+      };
       const mod = await Test.createTestingModule({
         providers: [
           CampaignsService,
