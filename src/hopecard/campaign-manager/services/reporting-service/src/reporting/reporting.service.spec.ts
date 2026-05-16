@@ -17,13 +17,17 @@ function makeChain(data: any, error: any = null) {
     order: jest.fn().mockReturnThis(),
     single: jest.fn().mockResolvedValue({ data, error }),
   };
-  c.then = (res: any, rej: any) => Promise.resolve({ data, error }).then(res, rej);
+  c.then = (res: any, rej: any) =>
+    Promise.resolve({ data, error }).then(res, rej);
   return c;
 }
 
 const mockConfigService = {
   get: (k: string) =>
-    ({ SUPABASE_URL: 'https://test.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'key' })[k],
+    ({
+      SUPABASE_URL: 'https://test.supabase.co',
+      SUPABASE_SERVICE_ROLE_KEY: 'key',
+    })[k],
 };
 
 describe('ReportingService', () => {
@@ -44,7 +48,9 @@ describe('ReportingService', () => {
 
   describe('getDashboardData — empty state', () => {
     it('returns zero metrics when manager has no campaigns', async () => {
-      mockFrom.mockReturnValueOnce(makeChain({ first_name: 'Alice', last_name: 'Smith' }));
+      mockFrom.mockReturnValueOnce(
+        makeChain({ first_name: 'Alice', last_name: 'Smith' }),
+      );
       mockFrom.mockReturnValueOnce(makeChain([]));
 
       const result = await service.getDashboardData('uid-1');
@@ -67,10 +73,30 @@ describe('ReportingService', () => {
   describe('getDashboardData — with campaigns, no hopecards', () => {
     it('aggregates funds, active and pending counts correctly', async () => {
       const campaigns = [
-        { id: 'c1', title: 'Camp A', status: 'active', collected_amount: 200, target_amount: 1000, end_date: '2025-12-31', cover_image_key: null, created_at: '2024-01-01' },
-        { id: 'c2', title: 'Camp B', status: 'draft', collected_amount: 50, target_amount: 500, end_date: null, cover_image_key: null, created_at: '2024-01-02' },
+        {
+          id: 'c1',
+          title: 'Camp A',
+          status: 'active',
+          collected_amount: 200,
+          target_amount: 1000,
+          end_date: '2025-12-31',
+          cover_image_key: null,
+          created_at: '2024-01-01',
+        },
+        {
+          id: 'c2',
+          title: 'Camp B',
+          status: 'draft',
+          collected_amount: 50,
+          target_amount: 500,
+          end_date: null,
+          cover_image_key: null,
+          created_at: '2024-01-02',
+        },
       ];
-      mockFrom.mockReturnValueOnce(makeChain({ first_name: 'Bob', last_name: 'Doe' }));
+      mockFrom.mockReturnValueOnce(
+        makeChain({ first_name: 'Bob', last_name: 'Doe' }),
+      );
       mockFrom.mockReturnValueOnce(makeChain(campaigns));
       mockFrom.mockReturnValueOnce(makeChain([])); // hopecards — empty
 
@@ -85,15 +111,35 @@ describe('ReportingService', () => {
   describe('getDashboardData — full data flow', () => {
     it('populates liveActivity with donor names', async () => {
       const campaigns = [
-        { id: 'c1', title: 'Camp A', status: 'active', collected_amount: 100, target_amount: 500, end_date: '2025-12-31', cover_image_key: null, created_at: '2024-01-01' },
+        {
+          id: 'c1',
+          title: 'Camp A',
+          status: 'active',
+          collected_amount: 100,
+          target_amount: 500,
+          end_date: '2025-12-31',
+          cover_image_key: null,
+          created_at: '2024-01-01',
+        },
       ];
       const hopecards = [{ id: 'h1', campaign_id: 'c1' }];
       const purchases = [
-        { id: 'p1', buyer_auth_id: 'buyer1', amount_paid: 50, purchased_at: '2024-06-01', hopecard_id: 'h1', status: 'paid' },
+        {
+          id: 'p1',
+          buyer_auth_id: 'buyer1',
+          amount_paid: 50,
+          purchased_at: '2024-06-01',
+          hopecard_id: 'h1',
+          status: 'paid',
+        },
       ];
-      const donors = [{ auth_user_id: 'buyer1', first_name: 'Jane', last_name: 'Doe' }];
+      const donors = [
+        { auth_user_id: 'buyer1', first_name: 'Jane', last_name: 'Doe' },
+      ];
 
-      mockFrom.mockReturnValueOnce(makeChain({ first_name: 'Mgr', last_name: 'X' }));
+      mockFrom.mockReturnValueOnce(
+        makeChain({ first_name: 'Mgr', last_name: 'X' }),
+      );
       mockFrom.mockReturnValueOnce(makeChain(campaigns));
       mockFrom.mockReturnValueOnce(makeChain(hopecards));
       mockFrom.mockReturnValueOnce(makeChain(purchases));
@@ -108,13 +154,37 @@ describe('ReportingService', () => {
     });
 
     it('uses "Anonymous" when donor is not in donor map', async () => {
-      const campaigns = [{ id: 'c1', title: 'X', status: 'active', collected_amount: 0, target_amount: 0, end_date: null, cover_image_key: null, created_at: '2024-01-01' }];
-      mockFrom.mockReturnValueOnce(makeChain({ first_name: 'M', last_name: 'Y' }));
+      const campaigns = [
+        {
+          id: 'c1',
+          title: 'X',
+          status: 'active',
+          collected_amount: 0,
+          target_amount: 0,
+          end_date: null,
+          cover_image_key: null,
+          created_at: '2024-01-01',
+        },
+      ];
+      mockFrom.mockReturnValueOnce(
+        makeChain({ first_name: 'M', last_name: 'Y' }),
+      );
       mockFrom.mockReturnValueOnce(makeChain(campaigns));
-      mockFrom.mockReturnValueOnce(makeChain([{ id: 'h1', campaign_id: 'c1' }]));
-      mockFrom.mockReturnValueOnce(makeChain([
-        { id: 'p1', buyer_auth_id: 'unknown', amount_paid: 10, purchased_at: '2024-01-01', hopecard_id: 'h1', status: 'paid' },
-      ]));
+      mockFrom.mockReturnValueOnce(
+        makeChain([{ id: 'h1', campaign_id: 'c1' }]),
+      );
+      mockFrom.mockReturnValueOnce(
+        makeChain([
+          {
+            id: 'p1',
+            buyer_auth_id: 'unknown',
+            amount_paid: 10,
+            purchased_at: '2024-01-01',
+            hopecard_id: 'h1',
+            status: 'paid',
+          },
+        ]),
+      );
       mockFrom.mockReturnValueOnce(makeChain([])); // donors — none found
 
       const result = await service.getDashboardData('uid-5');
@@ -124,7 +194,9 @@ describe('ReportingService', () => {
 
   describe('getDashboardData — error handling', () => {
     it('throws InternalServerErrorException when supabase throws', async () => {
-      mockFrom.mockImplementationOnce(() => { throw new Error('connection lost'); });
+      mockFrom.mockImplementationOnce(() => {
+        throw new Error('connection lost');
+      });
       await expect(service.getDashboardData('uid-6')).rejects.toBeInstanceOf(
         InternalServerErrorException,
       );
@@ -137,7 +209,10 @@ describe('ReportingService', () => {
       const mod = await Test.createTestingModule({
         providers: [
           ReportingService,
-          { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
+          {
+            provide: ConfigService,
+            useValue: { get: jest.fn().mockReturnValue(undefined) },
+          },
         ],
       }).compile();
       expect(mod.get<ReportingService>(ReportingService)).toBeDefined();

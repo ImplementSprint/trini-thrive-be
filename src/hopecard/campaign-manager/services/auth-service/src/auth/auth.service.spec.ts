@@ -30,7 +30,10 @@ describe('AuthService (CM)', () => {
           provide: ConfigService,
           useValue: {
             get: (k: string) =>
-              ({ SUPABASE_URL: 'https://test.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'key' })[k],
+              ({
+                SUPABASE_URL: 'https://test.supabase.co',
+                SUPABASE_SERVICE_ROLE_KEY: 'key',
+              })[k],
           },
         },
       ],
@@ -42,14 +45,18 @@ describe('AuthService (CM)', () => {
 
   describe('getManagerProfile', () => {
     it('returns profile data on success', async () => {
-      mockFrom.mockReturnValueOnce(selectChain({ data: { first_name: 'Jane' }, error: null }));
+      mockFrom.mockReturnValueOnce(
+        selectChain({ data: { first_name: 'Jane' }, error: null }),
+      );
       const result = await service.getManagerProfile('uid-1');
       expect(result).toEqual({ first_name: 'Jane' });
       expect(mockFrom).toHaveBeenCalledWith('campaign_manager_profiles');
     });
 
     it('throws InternalServerErrorException on DB error', async () => {
-      mockFrom.mockReturnValueOnce(selectChain({ data: null, error: { message: 'DB failure' } }));
+      mockFrom.mockReturnValueOnce(
+        selectChain({ data: null, error: { message: 'DB failure' } }),
+      );
       await expect(service.getManagerProfile('uid-1')).rejects.toBeInstanceOf(
         InternalServerErrorException,
       );
@@ -58,7 +65,11 @@ describe('AuthService (CM)', () => {
 
   describe('getBeneficiaryProfiles', () => {
     it('fetches all profiles without status filter', async () => {
-      const c: any = { select: jest.fn().mockResolvedValue({ data: [{ id: '1' }], error: null }) };
+      const c: any = {
+        select: jest
+          .fn()
+          .mockResolvedValue({ data: [{ id: '1' }], error: null }),
+      };
       mockFrom.mockReturnValueOnce(c);
       const result = await service.getBeneficiaryProfiles();
       expect(result).toEqual([{ id: '1' }]);
@@ -67,7 +78,10 @@ describe('AuthService (CM)', () => {
     it('filters by status when provided', async () => {
       const c: any = {
         select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ data: [{ id: '2', status: 'approved' }], error: null }),
+          eq: jest.fn().mockResolvedValue({
+            data: [{ id: '2', status: 'approved' }],
+            error: null,
+          }),
         }),
       };
       mockFrom.mockReturnValueOnce(c);
@@ -77,7 +91,9 @@ describe('AuthService (CM)', () => {
 
     it('throws InternalServerErrorException on DB error', async () => {
       const c: any = {
-        select: jest.fn().mockResolvedValue({ data: null, error: { message: 'err' } }),
+        select: jest
+          .fn()
+          .mockResolvedValue({ data: null, error: { message: 'err' } }),
       };
       mockFrom.mockReturnValueOnce(c);
       await expect(service.getBeneficiaryProfiles()).rejects.toBeInstanceOf(
@@ -92,7 +108,10 @@ describe('AuthService (CM)', () => {
       const mod = await Test.createTestingModule({
         providers: [
           AuthService,
-          { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
+          {
+            provide: ConfigService,
+            useValue: { get: jest.fn().mockReturnValue(undefined) },
+          },
         ],
       }).compile();
       expect(mod.get<AuthService>(AuthService)).toBeDefined();
