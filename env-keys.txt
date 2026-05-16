@@ -1,0 +1,19 @@
+# Application URL (for magic link redirects)
+NEXT_PUBLIC_APP_URL=
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+# Backend API
+NEXT_PUBLIC_BACKEND_URL=
+
+# OTP SMTP
+SMTP_HOST=
+SMTP_PORT=
+SMTP_SECURE=
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=
+
+# Password reset JWT (separate from session tokens)
+RESET_TOKEN_SECRET=
