@@ -53,7 +53,9 @@
       "Bash(sed -i 's/\\\\\\(error\\\\.message\\\\\\)/\\(error instanceof Error ? error.message : String\\(error\\)\\)/g' src/campaign-service/campaigns.service.ts src/notification-service/notifications.service.ts src/reporting-service/reporting.service.ts)",
       "Bash(sed -i 's/let liveActivity = \\\\[\\\\];/let liveActivity: unknown[] = [];/g' src/reporting-service/reporting.service.ts)",
       "Bash(npx jest *)",
-      "Bash(node -e \"const s = require\\('./coverage/coverage-summary.json'\\); const t = s.total; console.log\\('Lines:', t.lines.pct + '%', '\\(' + t.lines.covered + '/' + t.lines.total + '\\)'\\); console.log\\('Statements:', t.statements.pct + '%'\\); console.log\\('Functions:', t.functions.pct + '%'\\); console.log\\('Branches:', t.branches.pct + '%'\\);\")"
+      "Bash(node -e \"const s = require\\('./coverage/coverage-summary.json'\\); const t = s.total; console.log\\('Lines:', t.lines.pct + '%', '\\(' + t.lines.covered + '/' + t.lines.total + '\\)'\\); console.log\\('Statements:', t.statements.pct + '%'\\); console.log\\('Functions:', t.functions.pct + '%'\\); console.log\\('Branches:', t.branches.pct + '%'\\);\")",
+      "Bash(npm audit *)",
+      "Bash(npm list *)"
     ]
   }
 }

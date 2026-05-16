@@ -34,6 +34,10 @@ on:
         description: "Allowed branches for k6"
         type: string
         default: "test,main"
+      healthcheck_url:
+        description: "Render health check URL for post-deploy verification (e.g. https://<service>.onrender.com/health)"
+        type: string
+        default: ""
       run_deploy:
         description: "Enable central deploy lanes (staging + Render lanes)"
         type: boolean
@@ -84,6 +88,7 @@ jobs:
       # - push (test/uat/main): keep central deploy lanes visible
       # - Render lane execution is centralized in master-pipeline-be.yml
       # - workflow_dispatch keeps manual run_deploy toggle
+      healthcheck_url: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.healthcheck_url || '' }}
       run_deploy: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.run_deploy || 'false') || github.event_name == 'push' }}
       run_promotion: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.run_promotion || 'true') || github.event_name == 'push' }}
       dry_run: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.dry_run || 'false') || false }}
