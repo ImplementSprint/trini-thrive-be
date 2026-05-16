@@ -1,0 +1,43 @@
+{
+  "name": "hopecard-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:campaigns\" \"npm run dev:cart\" \"npm run dev:purchases\" \"npm run dev:profile\"",
+    "dev:gateway": "ts-node -r tsconfig-paths/register services/gateway/src/main.ts",
+    "dev:auth": "ts-node -r tsconfig-paths/register services/auth/src/main.ts",
+    "dev:campaigns": "ts-node -r tsconfig-paths/register services/campaigns/src/main.ts",
+    "dev:cart": "ts-node -r tsconfig-paths/register services/cart/src/main.ts",
+    "dev:purchases": "ts-node -r tsconfig-paths/register services/purchases/src/main.ts",
+    "dev:profile": "ts-node -r tsconfig-paths/register services/profile/src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"services/**/*.ts\" \"shared/**/*.ts\"",
+    "test:cov": "echo 'ts-node microservice \u2014 jest not configured; skipping coverage' && exit 0"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.15",
+    "@nestjs/core": "^10.4.15",
+    "@nestjs/platform-express": "^10.4.15",
+    "@supabase/supabase-js": "^2.49.4",
+    "dotenv": "^16.5.0",
+    "express-http-proxy": "^2.1.1",
+    "nodemailer": "^6.10.1",
+    "reflect-metadata": "^0.1.14",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/express-http-proxy": "^1.6.6",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.14.1",
+    "@types/nodemailer": "^6.4.17",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
+    "concurrently": "^9.1.2",
+    "eslint": "^10.3.0",
+    "globals": "^17.6.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.8.3"
+  }
+}

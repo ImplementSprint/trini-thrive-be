@@ -2,6 +2,9 @@
 /dist
 /node_modules
 /build
+**/node_modules
+**/dist
+**/coverage
 
 # Logs
 logs
