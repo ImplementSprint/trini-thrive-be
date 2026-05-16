@@ -1,0 +1,519 @@
+<style>
+  body {
+    margin: 0;
+  }
+
+  .plan {
+    padding: 1rem 0;
+    font-size: 14px;
+    color: var(--color-text-primary);
+  }
+
+  .section {
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    color: var(--color-text-primary);
+    border-bottom: 1px solid var(--color-border-tertiary);
+    padding-bottom: 6px;
+  }
+
+  .phase {
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--color-border-tertiary);
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--color-background-secondary);
+    border-bottom: 1px solid var(--color-border-tertiary);
+  }
+
+  .phase-num {
+    background: var(--color-background-tertiary);
+    border: 1px solid var(--color-border-secondary);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    flex-shrink: 0;
+    color: var(--color-text-primary);
+  }
+
+  .phase-label {
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .phase-tag {
+    margin-left: auto;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--color-background-tertiary);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+
+  .phase-tag.new {
+    background: #EAF3DE;
+    color: #3B6D11;
+  }
+
+  .phase-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .task {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .task-icon {
+    font-size: 13px;
+    margin-top: 1px;
+    flex-shrink: 0;
+    color: var(--color-text-secondary);
+  }
+
+  .task-text {
+    font-size: 13px;
+    color: var(--color-text-primary);
+    line-height: 1.5;
+  }
+
+  .task-text code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--color-background-tertiary);
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--color-border-tertiary);
+  }
+
+  .note {
+    border-left: 3px solid;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 4px;
+  }
+
+  .note.info {
+    border-color: #378ADD;
+    background: #E6F1FB22;
+  }
+
+  .note.warn {
+    border-color: #EF9F27;
+    background: #FAEEDA22;
+  }
+
+  .note.ok {
+    border-color: #639922;
+    background: #EAF3DE22;
+  }
+
+  .note.danger {
+    border-color: #E24B4A;
+    background: #FCEBEB22;
+  }
+
+  .tree {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--color-background-secondary);
+    border: 1px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    padding: 12px 14px;
+    line-height: 1.8;
+    color: var(--color-text-primary);
+  }
+
+  .tree .hl {
+    color: #378ADD;
+    font-weight: 500;
+  }
+
+  .tree .dim {
+    color: var(--color-text-secondary);
+  }
+
+  .tree .new {
+    color: #639922;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 520px) {
+    .two-col {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .col-title {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--color-text-secondary);
+  }
+
+  .audit-block {
+    background: var(--color-background-secondary);
+    border: 1px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--color-text-primary);
+  }
+
+  .audit-block .cmd {
+    color: #378ADD;
+  }
+
+  .audit-block .comment {
+    color: var(--color-text-secondary);
+  }
+
+  .outcome-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .outcome {
+    border-radius: var(--border-radius-md);
+    padding: 8px 12px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .outcome.pass {
+    background: #EAF3DE22;
+    border: 1px solid #639922;
+  }
+
+  .outcome.fail {
+    background: #FAEEDA22;
+    border: 1px solid #EF9F27;
+  }
+
+  .outcome-title {
+    font-weight: 500;
+    margin-bottom: 2px;
+    font-size: 12px;
+  }
+
+  @media (max-width: 520px) {
+    .outcome-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+<div class="plan">
+
+  <div class="section">
+    <div class="section-title">Target repo structure — confirmed</div>
+    <div class="two-col">
+      <div>
+        <div class="col-title">Backend · <code>trini-thrive-be</code></div>
+        <div class="tree">
+          trini-thrive-be/<br>
+          ├── .github/workflows/<br>
+          ├── <span class="hl">hopecard/</span> <span class="new">← new</span><br>
+          │ ├── admin/<br>
+          │ ├── digital-donor/<br>
+          │ ├── campaign-manager/<br>
+          │ └── beneficiary/<br>
+          ├── <span class="dim">damayan/</span><br>
+          ├── <span class="dim">bayani-hub/</span><br>
+          └── <span class="dim">src/ · Dockerfile · package.json</span>
+        </div>
+      </div>
+      <div>
+        <div class="col-title">Frontend · <code>trini-thrive-fe</code></div>
+        <div class="tree">
+          trini-thrive-fe/<br>
+          ├── .github/workflows/<br>
+          ├── <span class="hl">hope-card/</span><br>
+          │ ├── <span class="new">admin/</span><br>
+          │ ├── <span class="new">digital-donor/</span><br>
+          │ ├── <span class="new">campaign-manager/</span><br>
+          │ └── <span class="new">beneficiary/</span><br>
+          ├── <span class="dim">damayan/</span><br>
+          └── <span class="dim">bayani-hub/</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Implementation phases</div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-num">1</div>
+        <div class="phase-label">Preparation — before Claude Code touches anything</div>
+        <div class="phase-tag">manual</div>
+      </div>
+      <div class="phase-body">
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Clone all four persona repos into one local working folder.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Clone <code>trini-thrive-be</code> and <code>trini-thrive-fe</code> as the targets.
+          </div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Create branch <code>feat/hopecard-integration</code> on each target repo — never work
+            on <code>main</code> directly.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">List all <code>.env</code> keys from each persona backend for merged
+            <code>.env.example</code> generation.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase" style="border-color: #639922;">
+      <div class="phase-header" style="background: #EAF3DE22; border-bottom-color: #63992255;">
+        <div class="phase-num" style="border-color:#639922; color:#3B6D11;">2</div>
+        <div class="phase-label" style="color: var(--color-text-primary);">Pre-extraction audit — run before any file is
+          moved</div>
+        <div class="phase-tag new">new · Claude Code</div>
+      </div>
+      <div class="phase-body">
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">For each persona repo, Claude Code runs a cross-directory import scan on both frontend
+            and backend source trees:</div>
+        </div>
+        <div class="audit-block">
+          <span class="comment"># Scan for imports that escape the persona's own src/</span><br>
+          <span class="cmd">grep -rn</span> <span>"from ['\"]\.\./"</span> &lt;persona&gt;/frontend/src/<br>
+          <span class="cmd">grep -rn</span> <span>"require(['\"]\.\./"</span> &lt;persona&gt;/frontend/src/<br>
+          <span class="cmd">grep -rn</span> <span>"from ['\"]\.\./"</span> &lt;persona&gt;/backend/src/<br><br>
+          <span class="comment"># Also scan for absolute path aliases that point outside src/</span><br>
+          <span class="cmd">grep -rn</span> <span>"@shared\|@common\|@core\|@utils"</span>
+          &lt;persona&gt;/frontend/src/<br>
+          <span class="cmd">grep -rn</span> <span>"@shared\|@common\|@core\|@utils"</span> &lt;persona&gt;/backend/src/
+        </div>
+        <div class="task" style="margin-top:6px">
+          <div class="task-icon">›</div>
+          <div class="task-text">Claude Code produces an audit report listing every offending import with its file path
+            and line number, grouped by persona.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Specifically flag any signup, auth, or account-creation files that import from outside
+            their own persona boundary — these are the highest-risk files given the different signup logic per persona.
+          </div>
+        </div>
+
+        <div class="outcome-grid">
+          <div class="outcome pass">
+            <div class="outcome-title">✓ If audit is clean</div>
+            Proceed directly to Phase 3. No remediation needed — each persona is already self-contained.
+          </div>
+          <div class="outcome fail">
+            <div class="outcome-title">⚠ If offending imports found</div>
+            Claude Code inlines the shared dependency into each persona's own <code>src/</code> before extraction. Each
+            persona gets its own copy — no cross-persona imports in the final state.
+          </div>
+        </div>
+
+        <div class="note warn">
+          <strong>Signup logic in particular:</strong> if two personas share a common auth helper (e.g. a
+          <code>../../shared/auth/validators.ts</code>), Claude Code must copy it into each persona separately and
+          update the import path — not create a shared folder in the target repo. The CI pipeline has no concept of
+          cross-system shared code; each app must build independently.
+        </div>
+        <div class="note info">
+          <strong>Path aliases</strong> (e.g. <code>@/components</code> in <code>tsconfig.json</code>) are fine as long
+          as they resolve within the persona's own folder. Claude Code must verify the <code>paths</code> mapping in
+          each <code>tsconfig.json</code> and <code>next.config.ts</code> to confirm they don't point outside
+          <code>src/</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-num">3</div>
+        <div class="phase-label">Backend extraction — per persona, repeat ×4</div>
+        <div class="phase-tag">Claude Code · trini-thrive-be</div>
+      </div>
+      <div class="phase-body">
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Create <code>hopecard/&lt;persona&gt;/</code> in <code>trini-thrive-be</code>.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Copy <code>src/</code>, <code>tests/</code>, <code>package.json</code>,
+            <code>tsconfig.json</code>, <code>nest-cli.json</code>, <code>eslint.config.mjs</code>,
+            <code>.prettierrc</code>, <code>Dockerfile</code>, <code>render-build.sh</code>,
+            <code>sonar-project.properties</code> from the persona backend. Exclude <code>node_modules</code>,
+            <code>.env</code>, <code>.git</code>.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Update <code>sonar-project.properties</code>: set a unique
+            <code>sonar.projectKey</code> e.g. <code>hopecard-admin-be</code>.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Append persona env vars to root <code>.env.example</code> under a
+            <code># hopecard-&lt;persona&gt;</code> comment block.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Run
+            <code>npm install && npm run lint && npm run typecheck && npm run build && npm run test:cov</code> inside
+            each persona folder. All must pass before moving to the next persona.</div>
+        </div>
+        <div class="note warn">Each persona is its own NestJS app — its own <code>package.json</code> and independent
+          build. Do not merge the four backends. The signup controllers, DTOs, and validation logic for each persona
+          remain untouched inside their own <code>src/</code>.</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-num">4</div>
+        <div class="phase-label">Frontend extraction — per persona, repeat ×4</div>
+        <div class="phase-tag">Claude Code · trini-thrive-fe</div>
+      </div>
+      <div class="phase-body">
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Clear or archive the current single-app contents of <code>hope-card/</code> first (it
+            currently contains a Call_Template_Single setup at root level).</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Create <code>hope-card/admin/</code>, <code>hope-card/digital-donor/</code>,
+            <code>hope-card/campaign-manager/</code>, <code>hope-card/beneficiary/</code>.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Copy into each: <code>src/</code>, <code>public/</code>, <code>package.json</code>,
+            <code>tsconfig.json</code>, <code>next.config.ts</code>, <code>postcss.config.mjs</code>,
+            <code>eslint.config.mjs</code>, <code>jest.config.js</code>, <code>jest.setup.js</code>,
+            <code>Dockerfile</code>. Exclude backend code, <code>node_modules</code>, <code>.env</code>,
+            <code>.git</code>.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Confirm each persona's signup pages and auth flows are fully contained within that
+            persona's <code>src/</code> with no outbound imports (verified by Phase 2 audit).</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Run <code>npm install && npm run lint && npm run test && npm run build</code> inside
+            each persona folder.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-num">5</div>
+        <div class="phase-label">CI/CD variable configuration</div>
+        <div class="phase-tag">Claude Code generates · you apply in GitHub</div>
+      </div>
+      <div class="phase-body">
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Claude Code outputs the exact <code>BACKEND_MULTI_SYSTEMS_JSON</code> value — one entry
+            per persona, each with its own <code>name</code>, <code>dir</code>, and <code>image</code>.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Claude Code outputs the exact <code>FE_MULTI_SYSTEMS_JSON</code> value — one entry per
+            persona with <code>dir</code> pointing to <code>hope-card/&lt;persona&gt;</code>.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">You paste these into GitHub → Settings → Variables. Claude Code cannot push to GitHub.
+          </div>
+        </div>
+        <div class="note info">
+          Example FE entry:
+          <code>{"name":"Hopecard Admin","dir":"hope-card/admin","image":"hopecard-admin","vercel_project_secret":"VERCEL_PROJECT_ID_HOPECARD_ADMIN"}</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-num">6</div>
+        <div class="phase-label">Validation and PR</div>
+        <div class="phase-tag">Claude Code + manual review</div>
+      </div>
+      <div class="phase-body">
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">All four backend personas: lint, typecheck, build, unit tests ≥80% coverage.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">All four frontend personas: lint, test, build.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">No hardcoded secrets or real <code>.env</code> values present anywhere.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Re-run the Phase 2 audit grep commands on the extracted folders in the target repos to
+            confirm zero cross-folder imports survived the move.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Commit: <code>feat(hopecard): extract and integrate all four persona backends</code>
+            and <code>feat(hopecard): extract and integrate all four persona frontends</code>.</div>
+        </div>
+        <div class="task">
+          <div class="task-icon">›</div>
+          <div class="task-text">Open PR: <code>feat/hopecard-integration</code> → <code>test</code>. Do not
+            self-approve. Pipeline auto-promotes to <code>uat</code> → <code>main</code> once gates pass.</div>
+        </div>
+        <div class="note ok">The pipeline treats each persona folder as an independent system — separate lint, build,
+          test, and deploy per persona. A failure in one persona does not block the others from being reported, but will
+          block promotion of the whole PR.</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>trini-thrive-be — Remediation Plan</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --border: #2a3348;
+    --border2: #344060;
+    --text: #e2e8f0;
+    --text2: #8b9ab5;
+    --text3: #5a6a85;
+    --blue: #4a9eff;
+    --blue-dim: #1a3a5c;
+    --green: #4ade80;
+    --green-dim: #14532d;
+    --amber: #fbbf24;
+    --amber-dim: #451a03;
+    --red: #f87171;
+    --red-dim: #450a0a;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem 1rem; }
+  .wrapper { max-width: 860px; margin: 0 auto; }
+
+  .header { margin-bottom: 2.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+  .header-top { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .header h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
+  .badge { font-family: var(--mono); font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--red); color: var(--red); background: #1a0606; }
+  .header-sub { font-size: 0.8rem; color: var(--text2); font-family: var(--mono); }
+
+  .context-box {
+    background: #1c1200;
+    border: 1px solid var(--amber);
+    border-left: 4px solid var(--amber);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 2rem;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .context-box strong { color: var(--amber); }
+  .context-box code { font-family: var(--mono); font-size: 0.75rem; background: #2a1800; border: 1px solid #5a3800; padding: 1px 5px; border-radius: 3px; color: var(--amber); }
+
+  .section { margin-bottom: 2.25rem; }
+  .section-title {
+    font-size: 0.68rem; font-family: var(--mono); font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 0.9rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .step {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0.875rem;
+    background: var(--bg2);
+  }
+  .step.danger { border-color: var(--red); }
+  .step.safe { border-color: var(--green); }
+  .step.info { border-color: var(--blue); }
+
+  .step-header {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.7rem 1rem;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  .step.danger .step-header { background: #1a0606; border-bottom-color: #3a0a0a; }
+  .step.safe .step-header { background: #0a1f0f; border-bottom-color: #1a4a20; }
+  .step.info .step-header { background: #0a1a2e; border-bottom-color: #1a3050; }
+
+  .step-num {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: var(--text2);
+  }
+  .step.danger .step-num { border-color: var(--red); color: var(--red); }
+  .step.safe .step-num { border-color: var(--green); color: var(--green); }
+  .step.info .step-num { border-color: var(--blue); color: var(--blue); }
+
+  .step-label { font-size: 0.85rem; font-weight: 500; flex: 1; }
+  .step-tag {
+    font-family: var(--mono); font-size: 0.65rem;
+    padding: 2px 8px; border-radius: 20px;
+    background: var(--bg); color: var(--text3);
+    border: 1px solid var(--border); white-space: nowrap;
+  }
+  .step-tag.red   { background: #1a0606; color: var(--red);   border-color: var(--red-dim); }
+  .step-tag.green { background: #0a200f; color: var(--green); border-color: var(--green-dim); }
+  .step-tag.blue  { background: #0a1a2e; color: var(--blue);  border-color: var(--blue-dim); }
+  .step-tag.amber { background: #1c1200; color: var(--amber); border-color: var(--amber-dim); }
+
+  .step-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .task { display: flex; gap: 0.6rem; align-items: flex-start; }
+  .task-icon { font-family: var(--mono); font-size: 0.75rem; color: var(--text3); margin-top: 2px; flex-shrink: 0; }
+  .task-text { font-size: 0.82rem; line-height: 1.55; color: var(--text); }
+  .task-text code {
+    font-family: var(--mono); font-size: 0.75rem;
+    background: var(--bg3); border: 1px solid var(--border2);
+    padding: 1px 5px; border-radius: 3px; color: #93c5fd;
+  }
+  .task-text strong { color: var(--amber); }
+
+  .cmd-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.73rem;
+    line-height: 2;
+    color: var(--text2);
+  }
+  .cmd-block .comment { color: var(--text3); }
+  .cmd-block .cmd     { color: #93c5fd; }
+  .cmd-block .path    { color: var(--green); }
+  .cmd-block .arg     { color: var(--amber); }
+
+  .note {
+    border-radius: 6px; padding: 0.65rem 0.9rem;
+    font-size: 0.8rem; line-height: 1.55;
+    border-left: 3px solid; margin-top: 0.25rem;
+  }
+  .note.info   { border-color: var(--blue);  background: #0d2340; }
+  .note.warn   { border-color: var(--amber); background: #1c1200; }
+  .note.ok     { border-color: var(--green); background: #0a1f0f; }
+  .note.danger { border-color: var(--red);   background: #1a0606; }
+  .note code   {
+    font-family: var(--mono); font-size: 0.73rem;
+    background: var(--bg3); border: 1px solid var(--border2);
+    padding: 1px 4px; border-radius: 3px; color: #93c5fd;
+  }
+  .note strong { font-weight: 600; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  .col-label { font-size: 0.72rem; font-family: var(--mono); color: var(--text3); margin-bottom: 0.5rem; }
+  .tree {
+    font-family: var(--mono); font-size: 0.72rem;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem; line-height: 2; color: var(--text2);
+  }
+  .tree .hl       { color: var(--blue); font-weight: 500; }
+  .tree .new      { color: var(--green); }
+  .tree .dim      { color: var(--text3); }
+  .tree .removed  { text-decoration: line-through; color: var(--red); opacity: 0.6; }
+  .tree .moved    { color: var(--amber); }
+
+  .json-block {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem;
+    font-family: var(--mono); font-size: 0.72rem;
+    line-height: 1.9; color: var(--text2); overflow-x: auto;
+  }
+  .json-block .key     { color: #93c5fd; }
+  .json-block .val     { color: #86efac; }
+  .json-block .changed { color: var(--amber); }
+
+  .checklist { display: flex; flex-direction: column; gap: 0.45rem; }
+  .check-item { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.82rem; line-height: 1.5; }
+  .check-box {
+    width: 14px; height: 14px; border: 1px solid var(--border2);
+    border-radius: 3px; flex-shrink: 0; margin-top: 3px;
+    background: var(--bg3);
+  }
+  .check-item code {
+    font-family: var(--mono); font-size: 0.73rem;
+    background: var(--bg3); border: 1px solid var(--border2);
+    padding: 1px 4px; border-radius: 3px; color: #93c5fd;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <h1>trini-thrive-be — Remediation Plan</h1>
+      <span class="badge">fix required</span>
+    </div>
+    <div class="header-sub">Move hopecard/ from repo root → src/hopecard/ · branch feat/hopecard-integration</div>
+  </div>
+
+  <!-- Context -->
+  <div class="context-box">
+    <strong>What happened:</strong> The backend session placed all four Hopecard persona backends in a top-level <code>hopecard/</code> folder at the repo root (e.g. <code>hopecard/admin/</code>). CICD handlers have confirmed the correct location is inside the root <code>src/</code> folder — i.e. <code>src/hopecard/admin/</code>. This plan moves the already-committed files with zero functionality changes and updates the two places that reference the old paths: <code>sonar-project.properties</code> files and <code>BACKEND_MULTI_SYSTEMS_JSON</code>.
+  </div>
+
+  <!-- Before / After -->
+  <div class="section">
+    <div class="section-title">Before → After</div>
+    <div class="two-col">
+      <div>
+        <div class="col-label">Current (wrong)</div>
+        <div class="tree">
+trini-thrive-be/<br>
+├── <span class="removed">hopecard/</span><br>
+│   ├── <span class="removed">admin/</span><br>
+│   ├── <span class="removed">digital-donor/</span><br>
+│   ├── <span class="removed">campaign-manager/</span><br>
+│   └── <span class="removed">beneficiary/</span><br>
+├── src/<br>
+│   ├── main.ts<br>
+│   └── ...<br>
+└── ...
+        </div>
+      </div>
+      <div>
+        <div class="col-label">Target (correct)</div>
+        <div class="tree">
+trini-thrive-be/<br>
+├── src/<br>
+│   ├── main.ts          <span class="dim">← untouched</span><br>
+│   ├── app.module.ts    <span class="dim">← untouched</span><br>
+│   ├── ...<br>
+│   └── <span class="new">hopecard/</span>    <span class="new">← moved here</span><br>
+│       ├── <span class="new">admin/</span><br>
+│       ├── <span class="new">digital-donor/</span><br>
+│       ├── <span class="new">campaign-manager/</span><br>
+│       └── <span class="new">beneficiary/</span><br>
+└── ...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="section">
+    <div class="section-title">Remediation steps — run in order on feat/hopecard-integration</div>
+
+    <!-- Step 1 -->
+    <div class="step danger">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div class="step-label">Confirm branch and working tree are clean</div>
+        <div class="step-tag red">must do first</div>
+      </div>
+      <div class="step-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Confirm you are on <code>feat/hopecard-integration</code> — not <code>main</code>.</div></div>
+        <div class="cmd-block">
+          <span class="comment"># Verify branch</span><br>
+          <span class="cmd">git</span> <span class="arg">branch --show-current</span><br><br>
+          <span class="comment"># Must be clean before moving files (no uncommitted changes)</span><br>
+          <span class="cmd">git</span> <span class="arg">status</span>
+        </div>
+        <div class="note danger"><strong>If there are uncommitted changes:</strong> stash them first with <code>git stash</code>, complete the remediation, then <code>git stash pop</code>. Never run the move with a dirty working tree.</div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step safe">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div class="step-label">Move hopecard/ into src/</div>
+        <div class="step-tag green">Claude Code · one command</div>
+      </div>
+      <div class="step-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Run the move from the repo root. Git tracks the move automatically — no history is lost.</div></div>
+        <div class="cmd-block">
+          <span class="comment"># From repo root of trini-thrive-be</span><br>
+          <span class="cmd">git</span> <span class="arg">mv</span> <span class="path">hopecard/</span> <span class="path">src/hopecard/</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Verify the move succeeded:</div></div>
+        <div class="cmd-block">
+          <span class="cmd">git</span> <span class="arg">status</span><br>
+          <span class="comment"># You should see: renamed: hopecard/... → src/hopecard/... for all files</span><br><br>
+          <span class="cmd">ls</span> <span class="path">src/hopecard/</span><br>
+          <span class="comment"># Should show: admin  beneficiary  campaign-manager  digital-donor</span>
+        </div>
+        <div class="note ok">Using <code>git mv</code> (not a shell <code>mv</code>) preserves the rename in git history and keeps the staging area correct. Claude Code should use <code>git mv</code> specifically.</div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step info">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div class="step-label">Update sonar-project.properties — sonar.sources path</div>
+        <div class="step-tag blue">Claude Code · 7 files</div>
+      </div>
+      <div class="step-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Each persona's <code>sonar-project.properties</code> has a <code>sonar.sources</code> (and possibly <code>sonar.tests</code> / <code>sonar.coverage.exclusions</code>) that may reference relative paths. Since the file itself moved with the folder, relative paths pointing inward are still valid. However, if any property uses an absolute or repo-root-relative path, update it.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Check all seven <code>sonar-project.properties</code> files for any path that now needs updating:</div></div>
+        <div class="cmd-block">
+          <span class="cmd">grep</span> <span class="arg">-rn "sonar.sources\|sonar.tests\|sonar.coverage"</span> <span class="path">src/hopecard/</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">The 7 files to check are:</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text"><code>src/hopecard/admin/sonar-project.properties</code></div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text"><code>src/hopecard/digital-donor/sonar-project.properties</code></div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text"><code>src/hopecard/campaign-manager/sonar-project.properties</code></div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text"><code>src/hopecard/campaign-manager/services/auth-service/sonar-project.properties</code> (if exists)</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text"><code>src/hopecard/campaign-manager/services/campaign-service/sonar-project.properties</code> (if exists)</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text"><code>src/hopecard/campaign-manager/services/notification-service/sonar-project.properties</code> (if exists)</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text"><code>src/hopecard/campaign-manager/services/reporting-service/sonar-project.properties</code> (if exists)</div></div>
+        <div class="note info">The <code>sonar.projectKey</code> values (e.g. <code>hopecard-admin-be</code>) do not need to change — these are logical identifiers, not paths. Only fix any <code>sonar.sources</code>, <code>sonar.tests</code>, or <code>sonar.coverage.exclusions</code> values that used a path relative to the old repo root.</div>
+        <div class="note warn"><strong>Admin and Digital Donor reminder:</strong> these two already have <code>sonar.coverage.exclusions=**/*</code> set — that exclusion remains unchanged. Only the source path matters.</div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step info">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div class="step-label">Verify builds still pass from new location</div>
+        <div class="step-tag blue">Claude Code · run per persona</div>
+      </div>
+      <div class="step-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">All builds were passing before the move. Run a quick smoke-check to confirm nothing broke during the rename. Run from inside each persona folder:</div></div>
+        <div class="cmd-block">
+          <span class="comment"># Campaign Manager — NestJS services (repeat for all 4)</span><br>
+          <span class="cmd">cd</span> <span class="path">src/hopecard/campaign-manager/services/auth-service</span><br>
+          <span class="cmd">npm</span> <span class="arg">run lint && npm run typecheck && npm run build && npm run test:cov</span><br><br>
+          <span class="cmd">cd</span> <span class="path">src/hopecard/beneficiary</span><br>
+          <span class="cmd">npm</span> <span class="arg">run lint && npm run typecheck && npm run build && npm run test:cov</span><br><br>
+          <span class="comment"># Admin and Digital Donor — ts-node (no-op test is expected)</span><br>
+          <span class="cmd">cd</span> <span class="path">src/hopecard/admin</span><br>
+          <span class="cmd">npm</span> <span class="arg">run lint && npm run build</span><br><br>
+          <span class="cmd">cd</span> <span class="path">src/hopecard/digital-donor</span><br>
+          <span class="cmd">npm</span> <span class="arg">run lint && npm run build</span>
+        </div>
+        <div class="note ok">Because the move was purely structural (git mv) and all imports are relative within each persona's own folder, builds should pass without any code changes. If a build fails, check for any <code>tsconfig.json</code> <code>rootDir</code> or <code>outDir</code> values that used an absolute path anchored to the old location.</div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step info">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <div class="step-label">Update BACKEND_MULTI_SYSTEMS_JSON</div>
+        <div class="step-tag amber">manual · GitHub Settings</div>
+      </div>
+      <div class="step-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">The <code>dir</code> values in the GitHub repo variable must be updated to match the new paths. Replace the old value with this:</div></div>
+        <div class="json-block">
+[<br>
+&nbsp;&nbsp;{<span class="key">"name"</span>:<span class="val">"Hopecard Admin"</span>, <span class="key">"dir"</span>:<span class="changed">"src/hopecard/admin"</span>, <span class="key">"image"</span>:<span class="val">"hopecard-admin"</span>},<br>
+&nbsp;&nbsp;{<span class="key">"name"</span>:<span class="val">"Hopecard Digital Donor"</span>, <span class="key">"dir"</span>:<span class="changed">"src/hopecard/digital-donor"</span>, <span class="key">"image"</span>:<span class="val">"hopecard-digital-donor"</span>},<br>
+&nbsp;&nbsp;{<span class="key">"name"</span>:<span class="val">"Hopecard CM Auth"</span>, <span class="key">"dir"</span>:<span class="changed">"src/hopecard/campaign-manager/services/auth-service"</span>, <span class="key">"image"</span>:<span class="val">"hopecard-cm-auth"</span>},<br>
+&nbsp;&nbsp;{<span class="key">"name"</span>:<span class="val">"Hopecard CM Campaign"</span>, <span class="key">"dir"</span>:<span class="changed">"src/hopecard/campaign-manager/services/campaign-service"</span>, <span class="key">"image"</span>:<span class="val">"hopecard-cm-campaign"</span>},<br>
+&nbsp;&nbsp;{<span class="key">"name"</span>:<span class="val">"Hopecard CM Notification"</span>, <span class="key">"dir"</span>:<span class="changed">"src/hopecard/campaign-manager/services/notification-service"</span>, <span class="key">"image"</span>:<span class="val">"hopecard-cm-notification"</span>},<br>
+&nbsp;&nbsp;{<span class="key">"name"</span>:<span class="val">"Hopecard CM Reporting"</span>, <span class="key">"dir"</span>:<span class="changed">"src/hopecard/campaign-manager/services/reporting-service"</span>, <span class="key">"image"</span>:<span class="val">"hopecard-cm-reporting"</span>},<br>
+&nbsp;&nbsp;{<span class="key">"name"</span>:<span class="val">"Hopecard Beneficiary"</span>, <span class="key">"dir"</span>:<span class="changed">"src/hopecard/beneficiary"</span>, <span class="key">"image"</span>:<span class="val">"hopecard-beneficiary"</span>}<br>
+]
+        </div>
+        <div class="task" style="margin-top:0.4rem"><div class="task-icon">›</div><div class="task-text">Go to GitHub → <code>trini-thrive-be</code> → Settings → Variables → Actions → find <code>BACKEND_MULTI_SYSTEMS_JSON</code> → Edit → paste the above → Save.</div></div>
+        <div class="note warn"><strong>If this variable was not yet applied in GitHub</strong> (backend session was complete but you hadn't set it yet), skip to applying the corrected value above directly — do not apply the old v1 value at all.</div>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="step safe">
+      <div class="step-header">
+        <div class="step-num">6</div>
+        <div class="step-label">Commit and push the remediation</div>
+        <div class="step-tag green">Claude Code + manual push</div>
+      </div>
+      <div class="step-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Stage all changes (the renamed files are already staged by <code>git mv</code>, plus any sonar property edits):</div></div>
+        <div class="cmd-block">
+          <span class="cmd">git</span> <span class="arg">add -A</span><br>
+          <span class="cmd">git</span> <span class="arg">status</span><br>
+          <span class="comment"># Confirm only renames + sonar edits — no accidental deletions</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Commit using Conventional Commits:</div></div>
+        <div class="cmd-block">
+          <span class="cmd">git</span> <span class="arg">commit -m "fix(hopecard): move persona backends from hopecard/ to src/hopecard/ per CICD requirement"</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Push to the remote feature branch:</div></div>
+        <div class="cmd-block">
+          <span class="cmd">git</span> <span class="arg">push origin feat/hopecard-integration</span>
+        </div>
+        <div class="note ok">This adds a third commit to the branch: <br>
+          1. <code>feat(hopecard): extract and integrate all four persona backends</code><br>
+          2. <code>fix(hopecard): cross-check fixes — CM hardcoded ports, Beneficiary fallback, eslint configs</code><br>
+          3. <code>fix(hopecard): move persona backends from hopecard/ to src/hopecard/ per CICD requirement</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 7 -->
+    <div class="step safe">
+      <div class="step-header">
+        <div class="step-num">7</div>
+        <div class="step-label">Final verification checklist</div>
+        <div class="step-tag green">before opening PR</div>
+      </div>
+      <div class="step-body">
+        <div class="checklist">
+          <div class="check-item"><div class="check-box"></div><div><code>ls src/hopecard/</code> shows all four persona folders</div></div>
+          <div class="check-item"><div class="check-box"></div><div>No <code>hopecard/</code> folder exists at repo root anymore</div></div>
+          <div class="check-item"><div class="check-box"></div><div>All four NestJS personas pass <code>lint + typecheck + build + test:cov ≥80%</code> from their new location</div></div>
+          <div class="check-item"><div class="check-box"></div><div>Admin and Digital Donor pass <code>lint + build</code> (no-op test exits 0)</div></div>
+          <div class="check-item"><div class="check-box"></div><div>All <code>sonar-project.properties</code> files have correct paths (no stale root-relative references)</div></div>
+          <div class="check-item"><div class="check-box"></div><div><code>BACKEND_MULTI_SYSTEMS_JSON</code> in GitHub Settings updated with <code>src/hopecard/...</code> paths</div></div>
+          <div class="check-item"><div class="check-box"></div><div>Root-level template files untouched: <code>src/main.ts</code>, <code>src/app.module.ts</code>, root <code>package.json</code>, root <code>Dockerfile</code></div></div>
+          <div class="check-item"><div class="check-box"></div><div>No cross-persona imports: re-run Phase 2 audit grep on <code>src/hopecard/</code> — zero results</div></div>
+          <div class="check-item"><div class="check-box"></div><div>Branch <code>feat/hopecard-integration</code> pushed and up-to-date on remote</div></div>
+          <div class="check-item"><div class="check-box"></div><div>PR opened: <code>feat/hopecard-integration → test</code> — second reviewer assigned (no self-approval)</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- What is NOT changing -->
+  <div class="section">
+    <div class="section-title">What is NOT changing</div>
+    <div class="step">
+      <div class="step-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">All source code inside each persona is untouched — no imports, no logic, no configs modified beyond sonar paths.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">All four Fixes from the backend session (CM hardcoded ports, Beneficiary fallback, etc.) remain committed and intact.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Coverage results remain the same — the move does not affect test outcomes.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">The frontend repo <code>trini-thrive-fe</code> is unaffected — <code>FE_MULTI_SYSTEMS_JSON</code> paths are correct as-is.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">The root-level template app at <code>src/main.ts</code>, <code>src/app.module.ts</code>, etc. is never touched by this remediation.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

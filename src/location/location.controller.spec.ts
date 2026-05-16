@@ -43,7 +43,7 @@ describe('LocationController', () => {
     it('should call geotagResolve via service and return address info', async () => {
       const result = await controller.resolve('1.2.3.4', '14.5995', '120.9842');
       
-      expect(result.data.address).toBe('123 Fake St, City, Country');
+      expect((result as any).data.address).toBe('123 Fake St, City, Country');
       expect(tribeClientMock.geotagResolve).toHaveBeenCalledWith({
         ip: '1.2.3.4',
         latitude: 14.5995,
@@ -66,7 +66,7 @@ describe('LocationController', () => {
         fenceId: 'zone-alpha'
       });
       
-      expect(result.data.insideFence).toBe(true);
+      expect((result as any).data.insideFence).toBe(true);
       expect(tribeClientMock.geofenceCheck).toHaveBeenCalledWith({
         latitude: 14.5995,
         longitude: 120.9842,
