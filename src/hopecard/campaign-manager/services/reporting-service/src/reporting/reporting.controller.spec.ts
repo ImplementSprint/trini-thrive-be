@@ -16,7 +16,11 @@ describe('ReportingController', () => {
   });
 
   it('returns dashboard data from service', async () => {
-    const payload = { metrics: { fundsRaised: 500 }, campaigns: [], liveActivity: [] };
+    const payload = {
+      metrics: { fundsRaised: 500 },
+      campaigns: [],
+      liveActivity: [],
+    };
     mockService.getDashboardData.mockResolvedValue(payload);
     const result = await controller.getDashboardData('uid-1');
     expect(result).toEqual(payload);
@@ -25,6 +29,8 @@ describe('ReportingController', () => {
 
   it('propagates service errors', async () => {
     mockService.getDashboardData.mockRejectedValue(new Error('DB fail'));
-    await expect(controller.getDashboardData('uid-1')).rejects.toThrow('DB fail');
+    await expect(controller.getDashboardData('uid-1')).rejects.toThrow(
+      'DB fail',
+    );
   });
 });
