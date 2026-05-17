@@ -55,7 +55,9 @@
       "Bash(npx jest *)",
       "Bash(node -e \"const s = require\\('./coverage/coverage-summary.json'\\); const t = s.total; console.log\\('Lines:', t.lines.pct + '%', '\\(' + t.lines.covered + '/' + t.lines.total + '\\)'\\); console.log\\('Statements:', t.statements.pct + '%'\\); console.log\\('Functions:', t.functions.pct + '%'\\); console.log\\('Branches:', t.branches.pct + '%'\\);\")",
       "Bash(npm audit *)",
-      "Bash(npm list *)"
+      "Bash(npm list *)",
+      "Bash(node -e \"const l = require\\('./package-lock.json'\\); const e = l.packages['node_modules/@apicenter/sdk']; console.log\\(JSON.stringify\\(e, null, 2\\)\\);\")",
+      "Bash(node -e \"const l = require\\('./package-lock.json'\\); const e = l.packages['node_modules/@implementsprint/sdk']; console.log\\(JSON.stringify\\(e, null, 2\\)\\);\")"
     ]
   }
 }
