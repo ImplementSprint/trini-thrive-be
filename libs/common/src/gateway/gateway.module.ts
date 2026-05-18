@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { JwtGuard } from '@app/common/guards/jwt.guard.js';
+import { JwtGuard } from '../guards/jwt.guard';
 
 @Module({
   imports: [

@@ -9,7 +9,8 @@ import {
   HttpStatus,
   Request,
 } from '@nestjs/common';
-import { ActivityService, Activity } from './activity.service';
+import { ActivityService } from './activity.service';
+import type { Activity } from './activity.service';
 import { Protected } from '@app/common/decorators/protected.decorator';
 import { supabase } from '@app/common/supabase-client';
 
@@ -28,10 +29,12 @@ export class ActivityController {
       action: activity.action,
       description: activity.description,
       resource_type: activity.resource_type,
-      resource_id: activity.resource_id,
-      changes: activity.changes,
-      ip_address: req.ip || req.connection.remoteAddress,
-      user_agent: req.get('user-agent'),
+      ...(activity.resource_id ? { resource_id: activity.resource_id } : {}),
+      ...(activity.changes ? { changes: activity.changes } : {}),
+      ...(req.ip || req.connection.remoteAddress
+        ? { ip_address: req.ip || req.connection.remoteAddress }
+        : {}),
+      ...(req.get('user-agent') ? { user_agent: req.get('user-agent') } : {}),
     };
 
     return this.activityService.logActivity(activityPayload);
@@ -52,13 +55,21 @@ export class ActivityController {
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
 
-      return await this.activityService.getActivityLog(pageNum, limitNum, {
-        admin_id: adminId,
-        action: action,
-        resource_type: resourceType,
-        date_from: dateFrom,
-        date_to: dateTo,
-      });
+      const filters: {
+        admin_id?: string;
+        action?: string;
+        resource_type?: string;
+        date_from?: string;
+        date_to?: string;
+      } = {
+        ...(adminId ? { admin_id: adminId } : {}),
+        ...(action ? { action } : {}),
+        ...(resourceType ? { resource_type: resourceType } : {}),
+        ...(dateFrom ? { date_from: dateFrom } : {}),
+        ...(dateTo ? { date_to: dateTo } : {}),
+      };
+
+      return await this.activityService.getActivityLog(pageNum, limitNum, filters);
     } catch (error) {
       console.error('❌ Error in getActivityLog:', error);
       // Return empty list on error instead of throwing 500

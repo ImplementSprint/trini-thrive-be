@@ -38,6 +38,7 @@ export class ProfileService {
     if (rows.length === 0) throw new HttpException('Profile not found', 404);
 
     const row = rows[0];
+    if (!row) throw new HttpException('Profile not found', 404);
     return {
       profile: {
         id: row.id, first_name: row.first_name, last_name: row.last_name,

@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get, Request, HttpException, HttpStatus } from "@nestjs/common";
 import { AuthService } from "./auth.service";
+import { sendOTPEmail } from "@app/common/email";
 import { Protected } from "@app/common/decorators/protected.decorator";
 import { supabase } from "@app/common/supabase-client";
 
@@ -142,7 +143,6 @@ export class AuthController {
 
     // Send OTP via email
     console.log(`[SEND-OTP] 📧 Sending OTP email...`);
-    const { sendOTPEmail } = await import("@app/common/email");
     const emailSent = await sendOTPEmail(body.email, otp);
 
     if (!emailSent) {

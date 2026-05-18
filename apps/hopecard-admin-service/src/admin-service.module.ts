@@ -12,8 +12,10 @@ import {
   validateEnv,
 } from '@app/common';
 import { SupabaseModule } from '@app/supabase';
-import { ApiController } from './api.controller';
-import { ApiService } from './api.service';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { ApprovalsModule } from './approvals/approvals.module';
+import { AuthModule } from './auth/auth.module';
+import { BeneficiariesModule } from './beneficiary-management/beneficiaries.module';
 
 const shouldValidateEnv = process.env.NODE_ENV === 'production';
 
@@ -26,14 +28,16 @@ const shouldValidateEnv = process.env.NODE_ENV === 'production';
       ...(shouldValidateEnv ? { validate: validateEnv } : {}),
     }),
     SupabaseModule,
-    HealthModule,
     ApiCenterSdkModule,
     GatewayModule,
+    HealthModule,
+    AuthModule,
+    BeneficiariesModule,
+    AnalyticsModule,
+    ApprovalsModule,
   ],
-  controllers: [ApiController],
-  providers: [ApiService],
 })
-export class ApiModule implements NestModule {
+export class HopecardAdminServiceModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer.apply(CorrelationIdMiddleware).forRoutes('*');
   }

@@ -63,6 +63,51 @@
       "compilerOptions": {
         "tsConfigPath": "libs/contracts/tsconfig.lib.json"
       }
+    },
+    "hopecard-admin-service": {
+      "type": "application",
+      "root": "apps/hopecard-admin-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/hopecard-admin-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/hopecard-admin-service/tsconfig.app.json"
+      }
+    },
+    "hopecard-beneficiary-service": {
+      "type": "application",
+      "root": "apps/hopecard-beneficiary-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/hopecard-beneficiary-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/hopecard-beneficiary-service/tsconfig.app.json"
+      }
+    },
+    "hopecard-campaign-manager-service": {
+      "type": "application",
+      "root": "apps/hopecard-campaign-manager-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/hopecard-campaign-manager-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/hopecard-campaign-manager-service/tsconfig.app.json"
+      }
+    },
+    "hopecard-notification-service": {
+      "type": "application",
+      "root": "apps/hopecard-notification-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/hopecard-notification-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/hopecard-notification-service/tsconfig.app.json"
+      }
+    },
+    "hopecard-donor-service": {
+      "type": "application",
+      "root": "apps/hopecard-donor-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/hopecard-donor-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/hopecard-donor-service/tsconfig.app.json"
+      }
     }
   }
 }

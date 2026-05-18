@@ -144,8 +144,8 @@ export class BeneficiaryApprovalsController {
       body.adminId,
       {
         amount: body.amount,
-        campaign: body.campaign,
-        notes: body.notes,
+        ...(body.campaign ? { campaign: body.campaign } : {}),
+        ...(body.notes ? { notes: body.notes } : {}),
       },
       adminEmail,
     );

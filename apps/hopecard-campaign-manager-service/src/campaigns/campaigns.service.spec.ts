@@ -104,7 +104,7 @@ describe('CampaignsService', () => {
           },
         ]),
       );
-      const [row] = await service.findAll();
+      const row = (await service.findAll())[0]!;
       expect(row.status).toBe('Pending');
     });
 
@@ -122,7 +122,7 @@ describe('CampaignsService', () => {
           },
         ]),
       );
-      const [row] = await service.findAll();
+      const row = (await service.findAll())[0]!;
       expect(row.status).toBe('Completed');
     });
 
@@ -140,7 +140,7 @@ describe('CampaignsService', () => {
           },
         ]),
       );
-      const [row] = await service.findAll();
+      const row = (await service.findAll())[0]!;
       expect(row.status).toBe('Pending');
     });
 
@@ -159,7 +159,7 @@ describe('CampaignsService', () => {
           },
         ]),
       );
-      const [row] = await service.findAll();
+      const row = (await service.findAll())[0]!;
       expect(row.raised).toBe(0);
       expect(row.goal).toBe(0);
       expect(row.donors).toBe(0);

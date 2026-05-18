@@ -13,13 +13,16 @@ function isUuid(v: string | null | undefined): v is string {
 export class CartService {
   private async upsertActiveCart(authUserId: string): Promise<string> {
     const existing = await supabaseRequest<DbCart[]>(`carts?auth_user_id=eq.${authUserId}&status=eq.active&limit=1`);
-    if (existing.length > 0) return existing[0].id;
+    const activeCart = existing[0];
+    if (activeCart) return activeCart.id;
     const created = await supabaseRequest<DbCart[]>('carts', {
       method: 'POST',
       headers: { Prefer: 'return=representation' },
       body: JSON.stringify({ auth_user_id: authUserId, status: 'active' }),
     });
-    return created[0].id;
+    const newCart = created[0];
+    if (!newCart) throw new HttpException('Failed to create active cart', 500);
+    return newCart.id;
   }
 
   private formatCart(cartId: string, items: DbCartItem[]) {
@@ -72,10 +75,11 @@ export class CartService {
     const existing = await supabaseRequest<{ id: string; quantity: number }[]>(
       `cart_items?cart_id=eq.${cartId}&campaign_id=eq.${campaign_id}&limit=1`
     );
-    if (existing.length > 0) {
-      await supabaseRequest(`cart_items?id=eq.${existing[0].id}`, {
+    const existingItem = existing[0];
+    if (existingItem) {
+      await supabaseRequest(`cart_items?id=eq.${existingItem.id}`, {
         method: 'PATCH', headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ quantity: existing[0].quantity + (quantity ?? 1) }),
+        body: JSON.stringify({ quantity: existingItem.quantity + (quantity ?? 1) }),
       });
     } else {
       await supabaseRequest('cart_items', {
