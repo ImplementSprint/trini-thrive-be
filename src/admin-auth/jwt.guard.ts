@@ -5,6 +5,16 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "hopecard-admin-secret-key-change-in-production"
 );
 
+export interface JwtPayload {
+  sub: string;
+  email: string;
+  name?: string;
+  persona: string;
+  system: string;
+  iat?: number;
+  exp?: number;
+}
+
 @Injectable()
 export class JwtGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {

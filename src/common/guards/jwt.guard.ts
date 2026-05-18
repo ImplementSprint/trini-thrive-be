@@ -2,6 +2,16 @@ import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from
 import { jwtVerify } from 'jose';
 const JWT_SECRET = new TextEncoder().encode(process.env['JWT_SECRET'] ?? '');
 
+export interface JwtPayload {
+  sub: string;
+  email: string;
+  name?: string;
+  persona: string;
+  system: string;
+  iat?: number;
+  exp?: number;
+}
+
 @Injectable()
 export class JwtGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {

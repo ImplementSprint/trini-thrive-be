@@ -236,6 +236,8 @@ export class AuthService {
         sub: adminData.id,
         email: adminData.email,
         name: adminData.name,
+        persona: 'admin',
+        system: 'hopecard',
       })
         .setProtectedHeader({ alg: "HS256" })
         .setExpirationTime("24h")
