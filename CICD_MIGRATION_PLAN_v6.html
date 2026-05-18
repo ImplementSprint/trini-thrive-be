@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TriniThrive CICD Migration Plan v6</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --border: #2a3348;
+    --border2: #344060;
+    --text: #e2e8f0;
+    --text2: #8b9ab5;
+    --text3: #5a6a85;
+    --blue: #4a9eff;
+    --blue-dim: #1a3a5c;
+    --green: #4ade80;
+    --green-dim: #14532d;
+    --amber: #fbbf24;
+    --amber-dim: #451a03;
+    --red: #f87171;
+    --red-dim: #450a0a;
+    --purple: #c084fc;
+    --purple-dim: #3b0764;
+    --cyan: #67e8f9;
+    --cyan-dim: #0a1e22;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem 1rem; }
+  .wrapper { max-width: 980px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .header { margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+  .header-top { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+  .header h1 { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.02em; }
+  .badge { font-family: var(--mono); font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
+  .badge.version { border-color: var(--blue);   color: var(--blue);   background: #0d2340; }
+  .badge.ok      { border-color: var(--green);  color: var(--green);  background: #0a1f0f; }
+  .badge.tribe   { border-color: var(--purple); color: var(--purple); background: #1a0b2e; }
+  .header-sub { font-size: 0.78rem; color: var(--text2); font-family: var(--mono); }
+
+  /* ── Applies-to banner ── */
+  .applies-to {
+    background: var(--bg2); border: 1px solid var(--purple-dim);
+    border-left: 4px solid var(--purple); border-radius: 8px;
+    padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    font-size: 0.82rem; line-height: 1.65;
+  }
+  .applies-to-title { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--purple); margin-bottom: 0.6rem; }
+  .tribe-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .tribe-chip { font-family: var(--mono); font-size: 0.72rem; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--purple-dim); background: #1a0b2e; color: var(--purple); }
+
+  /* ── Key rules banner ── */
+  .key-rules { background: var(--bg2); border: 1px solid #4a3000; border-left: 4px solid var(--amber); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 2rem; }
+  .key-rules-title { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--amber); margin-bottom: 0.75rem; }
+  .key-rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  @media (max-width: 600px) { .key-rules-grid { grid-template-columns: 1fr; } }
+  .rule-item { font-size: 0.8rem; line-height: 1.55; display: flex; gap: 0.5rem; }
+  .rule-item .ri { color: var(--amber); flex-shrink: 0; font-family: var(--mono); }
+  .rule-item code { font-family: var(--mono); font-size: 0.72rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 4px; border-radius: 3px; color: #93c5fd; }
+  .rule-item strong { color: var(--amber); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 2.25rem; }
+  .section-title {
+    font-size: 0.68rem; font-family: var(--mono); font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 0.9rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Trees ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+  .col-label { font-size: 0.72rem; font-family: var(--mono); color: var(--text3); margin-bottom: 0.5rem; }
+  .tree {
+    font-family: var(--mono); font-size: 0.71rem;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem; line-height: 2.1; color: var(--text2);
+  }
+  .tree .hl     { color: var(--blue); font-weight: 500; }
+  .tree .new    { color: var(--green); }
+  .tree .dim    { color: var(--text3); }
+  .tree .dep    { color: var(--amber); }
+  .tree .key    { color: var(--purple); }
+  .tree .shared { color: var(--cyan); }
+  .tree .off    { color: var(--red); opacity: 0.7; }
+
+  /* ── Branch flow diagram ── */
+  .branch-flow {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .branch-row { display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+  .branch-node {
+    font-family: var(--mono); font-size: 0.75rem; font-weight: 500;
+    padding: 6px 14px; border-radius: 6px; border: 1px solid;
+    white-space: nowrap;
+  }
+  .branch-node.local  { border-color: var(--purple); color: var(--purple); background: #1a0b2e; }
+  .branch-node.dev    { border-color: var(--amber);  color: var(--amber);  background: #1c1200; }
+  .branch-node.test   { border-color: var(--blue);   color: var(--blue);   background: #0d2340; }
+  .branch-node.uat    { border-color: var(--cyan);   color: var(--cyan);   background: #051a1e; }
+  .branch-node.main   { border-color: var(--green);  color: var(--green);  background: #0a1f0f; }
+  .branch-arrow { font-family: var(--mono); font-size: 0.8rem; color: var(--text3); padding: 0 6px; }
+  .branch-label { font-size: 0.72rem; color: var(--text3); margin-top: 0.5rem; font-family: var(--mono); }
+  .branch-notes { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
+  .branch-note-item { font-size: 0.79rem; line-height: 1.5; display: flex; gap: 0.5rem; }
+  .branch-note-item .bni { font-family: var(--mono); font-size: 0.72rem; flex-shrink: 0; margin-top: 1px; }
+  .branch-note-item .bni.purple { color: var(--purple); }
+  .branch-note-item .bni.amber  { color: var(--amber); }
+  .branch-note-item .bni.blue   { color: var(--blue); }
+  .branch-note-item .bni.green  { color: var(--green); }
+  .branch-note-item code { font-family: var(--mono); font-size: 0.72rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 4px; border-radius: 3px; color: #93c5fd; }
+
+  /* ── Phase cards ── */
+  .phase { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 0.875rem; background: var(--bg2); }
+  .phase.green  { border-color: #1a4a28; }
+  .phase.blue   { border-color: var(--blue-dim); }
+  .phase.amber  { border-color: #4a3000; }
+  .phase.purple { border-color: var(--purple-dim); }
+  .phase.red    { border-color: var(--red-dim); }
+  .phase.cyan   { border-color: #1a4a50; }
+
+  .phase-header {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.7rem 1rem; background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  .phase.green  .phase-header { background: #0a1f0f;   border-bottom-color: #1a4a2888; }
+  .phase.blue   .phase-header { background: #0a1a2e;   border-bottom-color: #1a305088; }
+  .phase.amber  .phase-header { background: #1c120088; border-bottom-color: #4a300088; }
+  .phase.purple .phase-header { background: #1a0b2e88; border-bottom-color: #3b076488; }
+  .phase.red    .phase-header { background: #1a060688; border-bottom-color: #45090988; }
+  .phase.cyan   .phase-header { background: #051a1e;   border-bottom-color: #0f3a4288; }
+
+  .phase-num {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: var(--text2);
+  }
+  .phase.green  .phase-num { border-color: var(--green);  color: var(--green); }
+  .phase.blue   .phase-num { border-color: var(--blue);   color: var(--blue); }
+  .phase.amber  .phase-num { border-color: var(--amber);  color: var(--amber); }
+  .phase.purple .phase-num { border-color: var(--purple); color: var(--purple); }
+  .phase.red    .phase-num { border-color: var(--red);    color: var(--red); }
+  .phase.cyan   .phase-num { border-color: var(--cyan);   color: var(--cyan); }
+
+  .phase-label { font-size: 0.85rem; font-weight: 500; flex: 1; }
+  .phase-tag {
+    font-family: var(--mono); font-size: 0.65rem;
+    padding: 2px 8px; border-radius: 20px;
+    background: var(--bg); color: var(--text3);
+    border: 1px solid var(--border); white-space: nowrap;
+  }
+  .phase-tag.green  { background: #0a200f; color: var(--green);  border-color: var(--green-dim); }
+  .phase-tag.blue   { background: #0a1a2e; color: var(--blue);   border-color: var(--blue-dim); }
+  .phase-tag.amber  { background: #1c1200; color: var(--amber);  border-color: var(--amber-dim); }
+  .phase-tag.purple { background: #1a0b2e; color: var(--purple); border-color: var(--purple-dim); }
+  .phase-tag.red    { background: #1a0606; color: var(--red);    border-color: var(--red-dim); }
+  .phase-tag.cyan   { background: #051a1e; color: var(--cyan);   border-color: #1a4a50; }
+
+  .phase-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .task { display: flex; gap: 0.6rem; align-items: flex-start; }
+  .task-icon { font-family: var(--mono); font-size: 0.75rem; color: var(--text3); margin-top: 2px; flex-shrink: 0; }
+  .task-text { font-size: 0.82rem; line-height: 1.55; color: var(--text); }
+  .task-text code { font-family: var(--mono); font-size: 0.74rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 5px; border-radius: 3px; color: #93c5fd; }
+  .task-text strong { color: var(--amber); }
+
+  /* ── Notes ── */
+  .note { border-radius: 6px; padding: 0.65rem 0.9rem; font-size: 0.8rem; line-height: 1.6; border-left: 3px solid; }
+  .note.info   { border-color: var(--blue);   background: #0d2340; }
+  .note.warn   { border-color: var(--amber);  background: #1c1200; }
+  .note.ok     { border-color: var(--green);  background: #0a1f0f; }
+  .note.danger { border-color: var(--red);    background: #1a0606; }
+  .note.purple { border-color: var(--purple); background: #1a0b2e; }
+  .note.cyan   { border-color: var(--cyan);   background: #051a1e; }
+  .note code { font-family: var(--mono); font-size: 0.73rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 4px; border-radius: 3px; color: #93c5fd; }
+  .note strong { font-weight: 600; }
+
+  /* ── Cmd / code blocks ── */
+  .cmd-block {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.75rem 1rem;
+    font-family: var(--mono); font-size: 0.72rem;
+    line-height: 2; color: var(--text2);
+  }
+  .cmd-block .comment { color: var(--text3); }
+  .cmd-block .cmd     { color: #93c5fd; }
+  .cmd-block .path    { color: var(--green); }
+  .cmd-block .val     { color: var(--amber); }
+
+  .code-block {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.75rem 1rem;
+    font-family: var(--mono); font-size: 0.72rem;
+    line-height: 1.9; color: var(--text2); overflow-x: auto;
+  }
+  .code-block .key     { color: #93c5fd; }
+  .code-block .val     { color: #86efac; }
+  .code-block .comment { color: var(--text3); }
+  .code-block .warn    { color: var(--amber); }
+  .code-block .shared  { color: var(--cyan); }
+
+  /* ── Outcome grid ── */
+  .outcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  @media (max-width: 500px) { .outcome-grid { grid-template-columns: 1fr; } }
+  .outcome { border-radius: 6px; padding: 0.65rem 0.9rem; font-size: 0.78rem; line-height: 1.55; }
+  .outcome.pass { background: #0a1f0f; border: 1px solid #1a4a28; }
+  .outcome.fail { background: #1c1200; border: 1px solid #4a3000; }
+  .outcome-title { font-weight: 600; margin-bottom: 3px; }
+
+  /* ── Tables ── */
+  .table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
+  th { font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border2); }
+  td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+  td code { font-family: var(--mono); font-size: 0.71rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 4px; border-radius: 3px; color: #93c5fd; }
+  td.use  { color: var(--cyan);  font-family: var(--mono); font-size: 0.73rem; font-weight: 500; }
+  td.copy { color: var(--amber); font-family: var(--mono); font-size: 0.73rem; font-weight: 500; }
+  td.skip { color: var(--text3); font-family: var(--mono); font-size: 0.73rem; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ── Sub-label ── */
+  .sub-label { font-size: 0.72rem; font-family: var(--mono); color: var(--text3); margin-bottom: 0.35rem; margin-top: 0.5rem; }
+
+  /* ── Conflict grid ── */
+  .conflict-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  @media (max-width: 560px) { .conflict-grid { grid-template-columns: 1fr; } }
+  .conflict-card { border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.79rem; line-height: 1.65; }
+  .conflict-card.risk   { background: #1a060622; border: 1px solid var(--red-dim); }
+  .conflict-card.fix    { background: #0a1f0f22; border: 1px solid var(--green-dim); }
+  .conflict-card .clabel { font-family: var(--mono); font-size: 0.68rem; font-weight: 500; margin-bottom: 6px; }
+  .conflict-card.risk .clabel { color: var(--red); }
+  .conflict-card.fix  .clabel { color: var(--green); }
+  .conflict-card code { font-family: var(--mono); font-size: 0.72rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 4px; border-radius: 3px; color: #93c5fd; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <h1>TriniThrive — CICD Migration Plan</h1>
+      <span class="badge version">v6</span>
+      <span class="badge tribe">system-agnostic</span>
+      <span class="badge ok">✓ Validated against compliance history + actual file structure</span>
+    </div>
+    <div class="header-sub">ImplementSprint org · trini-thrive-be + trini-thrive-fe · applies to all systems</div>
+  </div>
+
+  <!-- Applies to -->
+  <div class="applies-to">
+    <div class="applies-to-title">Applies to all systems in the ImplementSprint org</div>
+    This plan is written for any system migrating their personas into the shared CICD repositories. Replace <strong>[system]</strong> and <strong>[persona]</strong> placeholders throughout with your own system and persona names. Each system has a unique set of personas and services — this plan does not prescribe what those are, only how to structure and integrate them. <strong>Your work must never reach outside your own system's designated folders.</strong>
+    <div class="tribe-chips">
+      <span class="tribe-chip">Hopecard → hope-card/</span>
+      <span class="tribe-chip">Damayan → damayan/</span>
+      <span class="tribe-chip">BayaniHub → bayani-hub/</span>
+    </div>
+  </div>
+
+  <!-- Key rules -->
+  <div class="key-rules">
+    <div class="key-rules-title">Key structural rules — confirmed by compliance history and repo file structures</div>
+    <div class="key-rules-grid">
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Backend:</strong> one NestJS monolith for the whole org. All persona modules from all systems go flat into <code>src/</code>. One build, one Docker image, one deploy.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Frontend:</strong> one Next.js app per system. All personas for a system are merged flat into that system's <code>src/</code>. Not one app per persona.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Branch flow:</strong> local branch (from <code>test</code>) → PR to <code>develop</code> (shared sandbox) → PR to <code>test</code> (CICD governance). Never push directly to <code>test</code>, <code>uat</code>, or <code>main</code>.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Strict isolation:</strong> your migration must never create, modify, or delete any file outside your own system's folders. Verify before every commit with <code>git diff develop --name-only</code>.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>No <code>.env</code> committed ever.</strong> Migration never auto-transfers <code>.env</code> files. Devs create their own <code>.env</code> locally from <code>.env.example</code>. Deployed values go to the API tribe only.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Cross-system conflict prevention is mandatory.</strong> Every module, provider, DI token, and controller in the monolith must be uniquely named. Conflicts in the shared <code>src/</code> break all systems, not just yours.</div></div>
+    </div>
+  </div>
+
+  <!-- Branch workflow -->
+  <div class="section">
+    <div class="section-title">Branch workflow</div>
+    <div class="branch-flow">
+      <div class="branch-row">
+        <div class="branch-node local">local/[system]-migration</div>
+        <div class="branch-arrow">──PR──▶</div>
+        <div class="branch-node dev">develop</div>
+        <div class="branch-arrow">──PR──▶</div>
+        <div class="branch-node test">test</div>
+        <div class="branch-arrow">──auto──▶</div>
+        <div class="branch-node uat">uat</div>
+        <div class="branch-arrow">──auto──▶</div>
+        <div class="branch-node main">main</div>
+      </div>
+      <div class="branch-notes">
+        <div class="branch-note-item"><span class="bni purple">◆</span><div><strong>local branch</strong> — created from <code>test</code>. All migration work happens here. Never commit directly to any shared branch.</div></div>
+        <div class="branch-note-item"><span class="bni amber">◆</span><div><strong>develop</strong> — shared sandbox for all three systems. Chaotic by design. PRs here are for integration visibility and conflict discovery between system teams. No CICD governance runs here. PR authors cannot self-approve.</div></div>
+        <div class="branch-note-item"><span class="bni blue">◆</span><div><strong>test</strong> — all 12 CICD pipeline gates run here. This is the governance checkpoint. Only promote from <code>develop</code> to <code>test</code> when your work is clean, tested locally, and passes all pre-push checks.</div></div>
+        <div class="branch-note-item"><span class="bni green">◆</span><div><strong>uat → main</strong> — auto-promoted by the pipeline once all gates pass on <code>test</code>. No manual action required after that.</div></div>
+      </div>
+    </div>
+    <div class="note warn"><strong>Do not skip <code>develop</code>.</strong> The <code>develop</code> branch exists specifically to surface cross-system conflicts before governance runs. Pushing directly from your local branch to <code>test</code> bypasses the shared sandbox and risks failing the pipeline with issues that could have been caught earlier. Resolve all conflicts in <code>develop</code> first.</div>
+  </div>
+
+  <!-- Target structure -->
+  <div class="section">
+    <div class="section-title">Target repository structure — validated against actual file structure</div>
+    <div class="two-col">
+
+      <div>
+        <div class="col-label">Backend · trini-thrive-be (actual structure)</div>
+        <div class="tree">
+trini-thrive-be/<br>
+├── Dockerfile<br>
+├── tribe-manifest.json        <span class="key">← Gate 1</span><br>
+├── sonar-project.properties<br>
+├── nest-cli.json · tsconfig*.json<br>
+├── package.json               <span class="dim">← one root package</span><br>
+├── .env.example               <span class="dim">← key names only · devs copy locally</span><br>
+├── render-build.sh<br>
+├── scripts/ · tests/<br>
+│<br>
+└── <span class="hl">src/</span>                       <span class="dim">← flat · no system subfolders</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── main.ts · app.module.ts<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="shared">api-center/</span>          <span class="shared">← SDK integration · do not touch</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="shared">common/</span>              <span class="shared">← guards, config, filters, middleware</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="shared">health/</span>              <span class="shared">← root health endpoint · do not duplicate</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="shared">supabase/</span>            <span class="shared">← shared DB client · reuse via DI</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">beneficiary-auth/</span>    <span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">beneficiary-health/</span>  <span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">cm-auth/</span>             <span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">campaign-service/</span>    <span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">notification-service/</span><span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">reporting-service/</span>   <span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">admin-auth/</span>          <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">admin-beneficiary/</span>   <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">analytics/</span>           <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">approvals/</span>           <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">donor-auth/</span>          <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">campaigns/</span>           <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">cart/ · purchases/</span>   <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">profile/ · gateway/</span>  <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="dim">[your-system-modules]/</span> <span class="dim">← your modules land here, flat</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-label">Frontend · trini-thrive-fe</div>
+        <div class="tree">
+trini-thrive-fe/<br>
+├── .github/workflows/<br>
+│   └── <span class="key">fe-pipeline-caller.yml</span><br>
+├── tests/performance/         <span class="shared">← shared · do not modify</span><br>
+├── sonar-project.properties   <span class="shared">← shared · do not modify</span><br>
+│<br>
+├── <span class="hl">hope-card/</span>             <span class="dim">← one Next.js app</span><br>
+│   ├── <span class="new">src/</span>               <span class="new">← ALL Hopecard personas merged flat</span><br>
+│   │   └── app/<br>
+│   │       ├── (persona-a)/   <span class="dim">← route group if conflict</span><br>
+│   │       └── (persona-b)/<br>
+│   ├── public/ · tests/<br>
+│   ├── Dockerfile · package.json<br>
+│   └── [config files]<br>
+│<br>
+├── <span class="off">damayan/</span>               <span class="off">← off-limits if not your system</span><br>
+│   ├── src/               <span class="dim">← all Damayan personas here</span><br>
+│   └── ...<br>
+│<br>
+└── <span class="off">bayani-hub/</span>            <span class="off">← off-limits if not your system</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── src/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;└── ...
+        </div>
+
+        <div class="note info" style="margin-top:0.6rem; font-size:0.77rem;">
+          <strong>Legend:</strong><br>
+          <span style="color:var(--cyan)">■</span> Shared infrastructure — import via DI, never modify or duplicate<br>
+          <span style="color:var(--green)">■</span> In-scope modules — fully tested, ≥80% coverage required<br>
+          <span style="color:var(--amber)">■</span> Deprioritised — included but excluded from coverage gate<br>
+          <span style="color:var(--red)">■</span> Off-limits — another system's folder
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Phases -->
+  <div class="section">
+    <div class="section-title">Implementation phases</div>
+
+    <!-- Phase 1 -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-num">1</div>
+        <div class="phase-label">Preparation — before Claude Code touches anything</div>
+        <div class="phase-tag">manual</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Clone all persona source repos for your system into a local working folder. These are <strong>read-only</strong> — Claude Code never modifies source repos.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Clone <code>trini-thrive-be</code> and <code>trini-thrive-fe</code>. Check out the <code>test</code> branch as your starting point, then create your local working branch from it:</div></div>
+        <div class="cmd-block">
+          <span class="cmd">git</span> checkout test<br>
+          <span class="cmd">git</span> pull origin test<br>
+          <span class="cmd">git</span> checkout -b <span class="val">local/[system]-migration</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Before touching any files, map the current terrain of both target repos:</div></div>
+        <div class="cmd-block">
+          <span class="comment"># Backend — see what modules already exist in src/</span><br>
+          <span class="cmd">ls</span> <span class="path">src/</span><br><br>
+          <span class="comment"># Frontend — see what already exists in your system folder</span><br>
+          <span class="cmd">ls</span> <span class="path">[system-folder]/src/app/</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Confirm <code>tribe-manifest.json</code> exists at the <code>trini-thrive-be</code> root. If it needs a new entry for your system, request it from the CICD handlers before starting.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Audit all persona source repos and compile a complete list of every page route, API route, and dynamic segment. This becomes your routing verification checklist for Phase 5.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Set up your local <code>.env</code> manually.</strong> Copy <code>.env.example</code> to <code>.env</code> and fill in your own local values for development. The migration process never auto-copies or commits <code>.env</code> files — this step is always done by the developer by hand.</div></div>
+        <div class="note warn"><strong>Backend is a shared monolith. Frontend is a shared repo.</strong> Other systems' modules and folders are already in both repos. You are adding to what exists. Anything outside your own folders is off-limits — not just for commits, but for reading during Claude Code sessions to avoid accidental modification.</div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase green">
+      <div class="phase-header">
+        <div class="phase-num">2</div>
+        <div class="phase-label">Pre-extraction audit — shared services, naming, and boundaries</div>
+        <div class="phase-tag green">Claude Code</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Backend shared services — assess before adding anything.</strong> Check what is already in <code>src/</code> against what your personas need:</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Existing module</th><th>Action</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr><td><code>src/supabase/</code></td><td class="use">Reuse via DI</td><td>Import <code>SupabaseModule</code> into your module — never duplicate the service</td></tr>
+              <tr><td><code>src/health/</code></td><td class="use">Reuse</td><td>Root health endpoint is shared — never add a competing root health module</td></tr>
+              <tr><td><code>src/common/</code></td><td class="use">Reuse selectively</td><td>Import guards, decorators, filters, middleware as needed. Add to <code>common/</code> only if genuinely cross-system</td></tr>
+              <tr><td><code>src/api-center/</code></td><td class="skip">Do not touch</td><td>SDK integration infrastructure — owned by the CICD setup, not any system</td></tr>
+              <tr><td>Any other system's modules</td><td class="skip">Do not touch</td><td>Off-limits entirely — read for reference only if necessary</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="task" style="margin-top:0.5rem"><div class="task-icon">›</div><div class="task-text"><strong>Cross-system naming conflict check — run before extraction.</strong> Every module folder name you plan to create must be unique across all of <code>src/</code>. Check before creating:</div></div>
+        <div class="cmd-block">
+          <span class="comment"># Verify your proposed folder name doesn't already exist</span><br>
+          <span class="cmd">ls</span> <span class="path">src/</span> | <span class="cmd">grep</span> <span class="val">[your-proposed-name]</span><br><br>
+          <span class="comment"># List all existing module names to check for partial matches too</span><br>
+          <span class="cmd">ls</span> <span class="path">src/</span>
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Scan each persona source repo for boundary violations:</div></div>
+        <div class="cmd-block">
+          <span class="comment"># Imports escaping persona's own src/</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "from ['\"]\.\./"</span> &lt;persona&gt;/src/<br><br>
+          <span class="comment"># Path alias escapes</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "@shared\|@common\|@core\|@utils"</span> &lt;persona&gt;/src/<br><br>
+          <span class="comment"># Hardcoded localhost URLs</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "localhost:[0-9]"</span> &lt;persona&gt;/src/<br><br>
+          <span class="comment"># NestJS DI union type risk</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "@Optional()"</span> &lt;persona&gt;/src/<br><br>
+          <span class="comment"># Frontend — list all routes</span><br>
+          <span class="cmd">find</span> <span class="path">&lt;persona&gt;/src/app</span> <span class="val">-name "page.tsx" -o -name "route.ts"</span>
+        </div>
+
+        <div class="outcome-grid">
+          <div class="outcome pass"><div class="outcome-title">✓ Audit clean</div>Proceed to Phase 3. Naming is confirmed unique, shared services decision made, route list compiled.</div>
+          <div class="outcome fail"><div class="outcome-title">⚠ Issues found</div>Fix before extraction: inline deps, replace localhost URLs, resolve naming collisions, pair <code>@Optional()</code> with <code>@Inject(Token)</code>.</div>
+        </div>
+
+        <div class="note purple"><strong>NestJS DI union type rule:</strong> any constructor parameter typed as <code>SomeClass | null</code> with <code>@Optional()</code> must also have <code>@Inject(SomeClass)</code>. Without it, <code>emitDecoratorMetadata</code> emits <code>Object</code> — NestJS resolves to <code>undefined</code> at test time, causing silent failures where mocked values are never injected. Fix: <code>@Optional() @Inject(MyService) private readonly svc: MyService | null</code>.</div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase blue">
+      <div class="phase-header">
+        <div class="phase-num">3</div>
+        <div class="phase-label">Backend extraction — merge persona modules into src/ with conflict prevention</div>
+        <div class="phase-tag blue">Claude Code · trini-thrive-be</div>
+      </div>
+      <div class="phase-body">
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>No system subfolder.</strong> Your persona module folders go directly into <code>src/</code> — not into <code>src/[system]/</code>. The pipeline's Gate 3 rejects any nested structure.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Copy into each persona module folder: controllers, services, modules, DTOs, entities, guards. Exclude <code>node_modules</code>, <code>.env</code>, <code>.git</code>, <code>dist</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Register your in-scope modules in <code>src/app.module.ts</code>. This is the only shared file your migration touches in the backend — and only to add import entries, never to remove existing ones.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Append your system's env var key names to root <code>.env.example</code> under a clearly labelled comment block. <strong>Key names only — no real values. Never copy or commit your local <code>.env</code> file.</strong></div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Run <code>npm audit fix</code> after installing. Gate 7 fails on any high or critical CVE. Commit the updated <code>package-lock.json</code>.</div></div>
+
+        <!-- Cross-system conflict prevention -->
+        <div class="sub-label" style="margin-top:0.5rem;">Cross-system conflict prevention — mandatory for every module you add</div>
+
+        <div class="conflict-grid">
+          <div class="conflict-card risk">
+            <div class="clabel">✕ Conflict risk — what breaks other systems</div>
+            Two modules from different systems export a class with the same name (e.g. both export <code>AuthService</code>). NestJS resolves providers by token — if tokens collide, one system's service silently overwrites the other's in the DI container. The broken system's tests may still pass if mocks shadow the collision, making this invisible until runtime.
+          </div>
+          <div class="conflict-card fix">
+            <div class="clabel">✓ Prevention — required naming pattern</div>
+            Prefix every exported class, provider token, and controller with your system and persona identifier. Never use bare generic names inside a shared monolith. Example: <code>HopecardBeneficiaryAuthService</code> not <code>AuthService</code>. The module folder name is not enough — the class name inside it must also be unique.
+          </div>
+          <div class="conflict-card risk">
+            <div class="clabel">✕ Conflict risk — duplicate global middleware or guards</div>
+            Registering a guard or middleware globally in <code>app.module.ts</code> (e.g. via <code>APP_GUARD</code> or <code>APP_INTERCEPTOR</code>) applies it to every route in the monolith — including other systems' routes. One system's auth guard silently protecting another system's public endpoints will cause unexpected 401s.
+          </div>
+          <div class="conflict-card fix">
+            <div class="clabel">✓ Prevention — scope guards to your own controllers</div>
+            Never register your guards or interceptors globally via <code>APP_GUARD</code> / <code>APP_INTERCEPTOR</code> in <code>app.module.ts</code>. Apply them at the controller level using <code>@UseGuards()</code> or at the module level inside your own module only. Global registration is reserved for shared infra in <code>src/common/</code>.
+          </div>
+          <div class="conflict-card risk">
+            <div class="clabel">✕ Conflict risk — duplicate route paths</div>
+            Two controllers from different systems registering the same HTTP route (e.g. both have <code>@Get('/campaigns')</code> without a controller-level prefix) will have one silently shadow the other. NestJS registers both but only the last one loaded wins.
+          </div>
+          <div class="conflict-card fix">
+            <div class="clabel">✓ Prevention — controller prefix mandatory</div>
+            Every controller must have a <code>@Controller('prefix')</code> decorator with a unique route prefix that identifies the system and persona. Example: <code>@Controller('hopecard/beneficiary/auth')</code>. Never use a bare <code>@Controller()</code> or a generic prefix that another system might also use.
+          </div>
+          <div class="conflict-card risk">
+            <div class="clabel">✕ Conflict risk — duplicate module imports in app.module.ts</div>
+            Importing the same shared module twice (e.g. <code>SupabaseModule</code> imported directly in <code>app.module.ts</code> by two different systems' migrations) can cause duplicate provider registration warnings and unexpected singleton behaviour.
+          </div>
+          <div class="conflict-card fix">
+            <div class="clabel">✓ Prevention — import shared modules inside your own module only</div>
+            Import <code>SupabaseModule</code>, <code>CommonModule</code>, and other shared modules inside your own module file (e.g. <code>BeneficiaryAuthModule</code>), not directly in <code>app.module.ts</code>. NestJS deduplicates modules when they are imported through the module graph — direct root-level imports bypass this.
+          </div>
+        </div>
+
+        <div class="note danger"><strong>Isolation rule — backend:</strong> the only files your migration may create or modify are your own new module folders inside <code>src/</code> and the import list in <code>src/app.module.ts</code>. No other file in <code>trini-thrive-be</code> is yours to touch. If you discover a bug in a shared module, report it to the CICD handlers — do not fix it unilaterally. Changes to shared infrastructure affect all three systems.</div>
+        <div class="note warn"><strong>No per-persona config files.</strong> Do not create additional <code>package.json</code>, <code>tsconfig.json</code>, <code>Dockerfile</code>, or <code>sonar-project.properties</code> inside your module folders. One of each exists at the repo root. The pipeline does not look for extras and their presence confuses Gate 3.</div>
+        <div class="note info"><strong>Shared module reuse — import, never copy.</strong> If <code>src/supabase/</code> covers your needs, import <code>SupabaseModule</code> inside your own module file via NestJS DI. Do not copy <code>supabase.service.ts</code> into your module folder. Duplicates create divergence, double maintenance surface, and DI token collisions.</div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase blue">
+      <div class="phase-header">
+        <div class="phase-num">4</div>
+        <div class="phase-label">Backend tests and coverage configuration</div>
+        <div class="phase-tag blue">Claude Code · trini-thrive-be</div>
+      </div>
+      <div class="phase-body">
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Write <code>*.spec.ts</code> files for every in-scope (prioritised) module. Target: ≥80% line coverage across covered files — measured from <code>coverage/coverage-summary.json</code> by Gate 6.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Update <code>coveragePathIgnorePatterns</code> in <code>package.json</code> — add your deprioritised module exclusions. <strong>Never remove or reorder exclusions added by other systems.</strong> Only append yours at the end of the array.</div></div>
+
+        <div class="sub-label">coveragePathIgnorePatterns — required baseline + your additions</div>
+        <div class="code-block">
+"coveragePathIgnorePatterns": [<br>
+&nbsp;&nbsp;<span class="comment">// Always present — never remove</span><br>
+&nbsp;&nbsp;<span class="val">"/node_modules/"</span>, <span class="val">"/coverage/"</span>, <span class="val">"/dist/"</span>,<br>
+&nbsp;&nbsp;<span class="val">"src/main.ts"</span>, <span class="val">"\\.module\\.ts$"</span>, <span class="val">"__mocks__"</span>,<br>
+&nbsp;&nbsp;<span class="val">"\\.dto\\.ts$"</span>, <span class="val">"\\.entity\\.ts$"</span>, <span class="val">"\\.interface\\.ts$"</span>,<br>
+&nbsp;&nbsp;<span class="val">"/api-center/"</span>, <span class="val">"/common/decorators/"</span>, <span class="val">"/common/guards/"</span>,<br>
+&nbsp;&nbsp;<span class="comment">// Existing exclusions from other systems — do NOT remove</span><br>
+&nbsp;&nbsp;<span class="val">"... existing entries from other systems ..."</span>,<br>
+&nbsp;&nbsp;<span class="comment">// ↓ Append your deprioritised modules below</span><br>
+&nbsp;&nbsp;<span class="shared">"/[your-deprioritised-module-a]/"</span>,<br>
+&nbsp;&nbsp;<span class="shared">"/[your-deprioritised-module-b]/"</span><br>
+]
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">After updating patterns, run <code>npm run test:cov</code> and inspect the printed summary. Confirm your patterns exclude exactly what you intend — no more, no less.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Coverage reporters must include <code>json-summary</code> and <code>lcov</code>. Test reporter must be <code>jest-junit</code> outputting to <code>test-results/junit.xml</code>. These are pipeline requirements — do not change the reporters config.</div></div>
+
+        <div class="note warn"><strong>Pattern precision matters critically in a shared monolith.</strong> A pattern like <code>/auth/</code> is dangerously broad — it would exclude every module containing "auth" in its path, potentially swallowing tested modules from other systems. Always use the most specific segment: <code>/donor-auth/</code> not <code>/auth/</code>, <code>/cm-auth/</code> not <code>/auth/</code>.</div>
+        <div class="note purple"><strong>SonarCloud blocker rules — Gate 9:</strong><br>
+          · Async helpers must be at module scope, not nested inside <code>describe</code> blocks (rule <code>S7721</code>)<br>
+          · No redundant type assertions — <code>{} as Partial&lt;T&gt;</code> where <code>{}</code> already satisfies <code>Partial&lt;T&gt;</code> (rule <code>S4325</code>)<br>
+          Either will fail Gate 9 and block the PR for all systems — not just yours.
+        </div>
+        <div class="note danger"><strong>Never remove coverage exclusions added by other systems.</strong> Removing another system's exclusion pulls their untested deprioritised modules back into the coverage calculation. This can drop the overall coverage below 80% and fail Gate 6 for the whole repo — blocking every system's PR, not just yours.</div>
+      </div>
+    </div>
+
+    <!-- Phase 5 -->
+    <div class="phase cyan">
+      <div class="phase-header">
+        <div class="phase-num">5</div>
+        <div class="phase-label">Frontend extraction — merge all personas into your system's src/</div>
+        <div class="phase-tag cyan">Claude Code · trini-thrive-fe</div>
+      </div>
+      <div class="phase-body">
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Your system has one Next.js app, not one per persona.</strong> All personas are merged flat into <code>[system-folder]/src/</code>. The existing system folder in the repo already has the correct scaffolding — merge into it, never replace it.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Map routes before moving files.</strong> Use the route list from Phase 2. For each persona, decide its destination path in <code>[system-folder]/src/app/</code> before touching anything.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Route conflict resolution:</strong> if two personas share the same route path, use Next.js route groups. A route group folder wrapped in parentheses is invisible to the router — it namespaces the filesystem without changing the public URL:</div></div>
+        <div class="code-block">
+<span class="comment"># Two personas both have /dashboard — resolve with route groups</span><br>
+[system]/src/app/<br>
+├── (persona-a)/<br>
+│&nbsp;&nbsp; └── dashboard/<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; └── page.tsx    <span class="comment">→ public URL: /dashboard (persona A)</span><br>
+└── (persona-b)/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;└── dashboard/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── page.tsx    <span class="comment">→ public URL: /dashboard (persona B)</span>
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Merge approach — per persona:</strong></div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Copy <code>src/app/</code> contents into <code>[system-folder]/src/app/</code> preserving directory structure. Use route groups for path conflicts.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Copy <code>src/lib/</code>, <code>src/components/</code>, <code>src/hooks/</code>, <code>src/utils/</code> etc. into the system's <code>src/</code>. If a folder name collides with another persona's, prefix it with the persona name (e.g. <code>src/admin-components/</code> vs <code>src/donor-components/</code>).</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Copy <code>public/</code> assets into <code>[system-folder]/public/</code>. Prefix asset subfolder names if collision exists.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Merge <code>package.json</code> dependencies — add packages the persona requires that aren't already present. Never downgrade an existing package version.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Do not copy <code>node_modules</code>, <code>.env</code>, <code>.git</code>, <code>dist</code>, or <code>.next</code> from source repos.</div></div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Replace all hardcoded <code>localhost</code> API URLs with <code>process.env.NEXT_PUBLIC_*</code>. Do not rename existing env var keys already referenced in the code.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Run from inside <code>[system-folder]/</code>: <code>npm install && npm run lint && npm run test && npm run build</code>. All must pass before Phase 6.</div></div>
+
+        <div class="note danger"><strong>Isolation rule — frontend:</strong> you may only create or modify files inside <code>[your-system-folder]/</code>. Never touch another system's folder. Never modify <code>tests/performance/</code>, <code>sonar-project.properties</code>, or <code>.github/workflows/</code> at the repo root. Run <code>git diff develop --name-only</code> before committing and verify every changed file is inside your system folder.</div>
+        <div class="note warn"><strong>Routing verification is mandatory before pushing.</strong> After the build passes, manually walk every route from the Phase 2 checklist and confirm it resolves correctly. A silently broken route must be caught before the PR is opened — not discovered after the pipeline runs or after merge to <code>develop</code>.</div>
+        <div class="note info"><strong>The existing system scaffold is the host app.</strong> The <code>src/app/layout.tsx</code>, <code>jest.config.js</code>, <code>next.config.ts</code>, and other root-level config files in your system folder are already correctly wired. Merge persona code into them — never wholesale replace them with a persona's own config versions.</div>
+      </div>
+    </div>
+
+    <!-- Phase 6 -->
+    <div class="phase amber">
+      <div class="phase-header">
+        <div class="phase-num">6</div>
+        <div class="phase-label">GitHub variables, secrets, and ENV handover</div>
+        <div class="phase-tag amber">manual · GitHub Settings + API tribe</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>No <code>BACKEND_MULTI_SYSTEMS_JSON</code></strong> — the backend is one monolith. Discovery is via <code>tribe-manifest.json</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Apply <code>FE_MULTI_SYSTEMS_JSON</code> in GitHub → Settings → Variables → Actions on <code>trini-thrive-fe</code>. <strong>One entry per system, not per persona.</strong> Append only — never remove or reformat existing entries:</div></div>
+        <div class="code-block">
+<span class="comment">// One entry per system — append only, preserve existing entries</span><br>
+[<br>
+&nbsp;&nbsp;<span class="comment">// ... existing system entries ...</span><br>
+&nbsp;&nbsp;{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"name"</span>: <span class="val">"[System Display Name]"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"dir"</span>: <span class="val">"[system-folder]"</span>,      <span class="comment">// e.g. "hope-card", "damayan", "bayani-hub"</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"image"</span>: <span class="val">"[system-slug]"</span>,      <span class="comment">// e.g. "hope-card", "damayan"</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"vercel_project_secret"</span>: <span class="val">"VERCEL_PROJECT_ID_[SYSTEM_UPPER]"</span><br>
+&nbsp;&nbsp;}<br>
+]
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Environment variables for deployment go to the API tribe.</strong> Compile the full list of every <code>NEXT_PUBLIC_*</code> and backend env var key your personas require — exact key names only, no values. Hand this list to the API tribe. They manage deployed environment variables externally.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>For local development:</strong> developers copy <code>.env.example</code> to <code>.env</code> and fill in their own values. This is a manual step done by each developer — the migration process never creates or transfers <code>.env</code> files.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Set <code>RENDER_HEALTHCHECK_URL_TEST</code> as a GitHub Secret (not a variable) — full URL including path: <code>https://[service].onrender.com/api/v1/health</code>. This cannot be passed as a workflow input.</div></div>
+        <div class="note danger"><strong>Workflow input rule:</strong> never add <code>with:</code> inputs to <code>fe-pipeline-caller.yml</code> or <code>be-pipeline-caller.yml</code> that are not already declared in the central reusable workflow. GitHub validates <code>with:</code> keys at parse time and rejects the entire workflow file before any job runs. Use <code>secrets: inherit</code> — never list secrets explicitly.</div>
+      </div>
+    </div>
+
+    <!-- Phase 7 -->
+    <div class="phase green">
+      <div class="phase-header">
+        <div class="phase-num">7</div>
+        <div class="phase-label">Validation, develop PR, and test PR</div>
+        <div class="phase-tag green">Claude Code + manual review</div>
+      </div>
+      <div class="phase-body">
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Local pre-push checks — must all pass before raising any PR:</strong></div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Backend from repo root: <code>npm run lint && npm run typecheck && npm run build && npm run test:cov</code> — confirm ≥80% coverage, 0 failures.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Frontend from <code>[system-folder]/</code>: <code>npm run lint && npm run test && npm run build</code>.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Backend: <code>npm audit</code> — 0 high or critical CVEs. Run <code>npm audit fix</code> if needed and commit the updated <code>package-lock.json</code>.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Routing: manually walk every route from Phase 2 and confirm all resolve correctly.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Cross-system: confirm zero cross-system imports and zero hardcoded localhost URLs.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">No hardcoded secrets or real <code>.env</code> values anywhere in committed files.</div></div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Isolation check — run before every commit and before every PR:</strong></div></div>
+        <div class="cmd-block">
+          <span class="comment"># Every changed file must be within your own folders</span><br>
+          <span class="cmd">git</span> diff develop --name-only<br><br>
+          <span class="comment"># Allowed backend: your own module folders + app.module.ts + .env.example + package-lock.json</span><br>
+          <span class="comment"># Allowed frontend: [your-system-folder]/ only</span><br>
+          <span class="comment"># Any file outside these is a blocking error — revert before proceeding</span>
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Commit using Conventional Commits: <code>feat([system]): extract and integrate all persona backends</code> and <code>feat([system]): extract and integrate all persona frontends</code>.</div></div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>PR to <code>develop</code> first.</strong> Open a PR from <code>local/[system]-migration</code> → <code>develop</code>. This is the shared sandbox — all three system teams may have conflicting changes here. Resolve any merge conflicts in <code>develop</code> thoroughly before proceeding. Do not self-approve.</div></div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Then PR from <code>develop</code> → <code>test</code></strong> once conflicts are resolved and the <code>develop</code> state is stable. This triggers the 12-gate CICD pipeline. Do not raise this PR until the <code>develop</code> merge is clean and all local pre-push checks have been re-run on the merged state.</div></div>
+
+        <div class="note ok">All 12 pipeline gates must be green before promotion to <code>uat</code> → <code>main</code>. A failure in any gate blocks the entire PR. Fix on your local branch, merge to <code>develop</code> again, then re-raise the <code>develop → test</code> PR. Do not open a new PR — update the existing one.</div>
+        <div class="note warn"><strong>After merging to <code>develop</code>, re-run all local pre-push checks on the merged state before raising the <code>develop → test</code> PR.</strong> Other systems may have merged changes into <code>develop</code> that interact with yours. The merge itself is the moment conflicts can reappear — catch them locally before they reach the pipeline.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Hard rules -->
+  <div class="section">
+    <div class="section-title">Hard rules — always in effect for all systems</div>
+    <div class="phase">
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Branch flow: <code>local/[system]-migration</code> (from <code>test</code>) → PR to <code>develop</code> → PR to <code>test</code> → auto <code>uat</code> → auto <code>main</code>. No direct commits to any shared branch.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">PR authors cannot self-approve at any stage. A second reviewer is always required.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Backend:</strong> one NestJS monolith — all modules flat in <code>src/</code>, no system subfolders, one build and deploy. Every exported class, provider token, controller prefix, and route path must be globally unique across all systems.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Frontend:</strong> one Next.js app per system — all personas flat in that system's <code>src/</code>, one build and deploy per system. Routing must be preserved exactly. Verify every route before pushing.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Your process must never create, modify, or delete any file outside your own system's folders. Verify with <code>git diff develop --name-only</code> before every commit and PR.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>No <code>.env</code> committed ever.</strong> <code>.env.example</code> lists key names only. Developers create <code>.env</code> locally by hand. Deployed values go to the API tribe. Migration never auto-transfers <code>.env</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Never register guards, interceptors, or middleware globally via <code>APP_GUARD</code> / <code>APP_INTERCEPTOR</code> in <code>app.module.ts</code>. Scope everything to your own controllers or module.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Never use bare generic class names inside the shared monolith. Every exported class must be prefixed with a system and persona identifier.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Import shared modules (<code>SupabaseModule</code>, etc.) inside your own module — not directly in <code>app.module.ts</code>. This prevents duplicate provider registration across systems.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">100% test pass rate, ≥80% line coverage (correctly scoped), lint zero errors, TypeScript strict mode.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">No hardcoded secrets. No hardcoded <code>localhost</code> URLs. All runtime values via <code>process.env.*</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Never remove <code>coveragePathIgnorePatterns</code> entries from other systems. Append only.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><code>FE_MULTI_SYSTEMS_JSON</code>: one entry per system, not per persona. Append only — preserve all existing entries exactly.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Conventional Commits: scope is the system name — e.g. <code>feat(damayan):</code>, <code>fix(hope-card):</code>, <code>chore(bayani-hub):</code>.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
