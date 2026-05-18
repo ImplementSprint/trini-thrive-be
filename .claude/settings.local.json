@@ -57,7 +57,9 @@
       "Bash(npm audit *)",
       "Bash(npm list *)",
       "Bash(node -e \"const l = require\\('./package-lock.json'\\); const e = l.packages['node_modules/@apicenter/sdk']; console.log\\(JSON.stringify\\(e, null, 2\\)\\);\")",
-      "Bash(node -e \"const l = require\\('./package-lock.json'\\); const e = l.packages['node_modules/@implementsprint/sdk']; console.log\\(JSON.stringify\\(e, null, 2\\)\\);\")"
+      "Bash(node -e \"const l = require\\('./package-lock.json'\\); const e = l.packages['node_modules/@implementsprint/sdk']; console.log\\(JSON.stringify\\(e, null, 2\\)\\);\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }
