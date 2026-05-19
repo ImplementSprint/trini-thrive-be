@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:brainstorming)",
+      "Read(//c/Users/arjel/Downloads/TriniThrive_Hopecard/**)",
+      "Read(//c/Users/arjel/Downloads/TriniThrive_Hopecard/Backend/**)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Skill(superpowers:writing-plans)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('jest',{}\\), indent=2\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\('dependencies',{}\\).get\\('next','no next'\\)\\)\")",
+      "Skill(superpowers:subagent-driven-development)",
+      "Bash(npx jest *)",
+      "Bash(git commit *)",
+      "Skill(code-review:code-review)",
+      "Bash(Remove-Item \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\\\\apps\\\\hopecard-admin-service\\\\src\\\\auth\\\\jwt.guard.ts\" -Force)",
+      "Bash(Remove-Item \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\\\\apps\\\\hopecard-admin-service\\\\src\\\\auth\\\\protected.decorator.ts\" -Force)",
+      "Bash(Write-Output \"Deleted both files\")",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(node -e \"const decorator = require\\('./libs/common/src/decorators/require-persona.decorator.ts'\\); console.log\\(typeof decorator.RequirePersona\\);\")",
+      "Bash(git stash *)",
+      "Skill(superpowers:receiving-code-review)",
+      "Bash(Select-String -Pattern \"PASS|FAIL|Tests:|Test Suites:\")",
+      "Bash(Select-Object -Last 30)",
+      "Bash(Get-Content \"C:\\\\Users\\\\arjel\\\\.claude\\\\projects\\\\C--Users-arjel-Downloads-TriniThrive-Hopecard-Backend-trini-thrive-be\\\\20f7bd03-f8c3-4754-ac93-90a4ff031036\\\\tool-results\\\\bvseqo9ds.txt\" -Tail 60)",
+      "Bash(Get-Content \"C:\\\\Users\\\\arjel\\\\.claude\\\\projects\\\\C--Users-arjel-Downloads-TriniThrive-Hopecard-Backend-trini-thrive-be\\\\20f7bd03-f8c3-4754-ab93-90a4ff031036\\\\tool-results\\\\bvseqo9ds.txt\" -Tail 60)",
+      "Bash(Select-String -Pattern \"^\\(PASS|FAIL|Tests:|Test Suites:\\)\")",
+      "Bash(Out-String)",
+      "Bash(npm install *)",
+      "Skill(superpowers:using-superpowers)",
+      "Bash(gh pr *)",
+      "Bash(sort -t'|' -k5 -n)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); t=d['total']; print\\('lines:', t['lines']['pct'], '%'\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('compilerOptions',{}\\), indent=2\\)\\)\")",
+      "Bash(node -e \"const p = require\\('./node_modules/jose/package.json'\\); console.log\\('jose type:', p.type, 'main:', p.main, 'exports:', JSON.stringify\\(Object.keys\\(p.exports||{}\\)\\)\\)\")",
+      "Bash(node *)",
+      "Bash(kill %1)"
+    ]
+  }
+}
