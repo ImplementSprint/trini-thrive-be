@@ -7,8 +7,6 @@ import {
 } from '@nestjs/common';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(process.env['JWT_SECRET'] ?? '');
-
 export interface JwtPayload {
   sub: string;
   email: string;
@@ -35,6 +33,7 @@ export class JwtGuard implements CanActivate {
       });
     }
 
+    const JWT_SECRET = new TextEncoder().encode(process.env['JWT_SECRET'] ?? '');
     let payload: JwtPayload;
     try {
       const verified = await jwtVerify(token, JWT_SECRET);
