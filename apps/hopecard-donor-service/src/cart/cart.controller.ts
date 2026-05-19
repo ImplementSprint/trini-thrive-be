@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Patch, Delete, Query, Body } from '@nestjs/common';
 import { CartService } from './cart.service';
+import { RequirePersona } from '@app/common';
 
+@RequirePersona('donor')
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}

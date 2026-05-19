@@ -1,12 +1,12 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
-import { JwtGuard } from '@app/common/guards/jwt.guard';
+import { RequirePersona } from '@app/common';
 
+@RequirePersona('admin')
 @Controller('campaigns')
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 
-  @UseGuards(JwtGuard)
   @Get()
   async getAllCampaigns(
     @Query('page') page: string = '1',

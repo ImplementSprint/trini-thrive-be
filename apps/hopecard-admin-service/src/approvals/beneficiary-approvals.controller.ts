@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Param, Body, Query, Req } from '@nestjs/common';
 import { BeneficiaryApprovalsService } from './beneficiary-approvals.service';
-import { Protected } from '@app/common/decorators/protected.decorator';
+import { RequirePersona } from '@app/common';
 
+@RequirePersona('admin')
 @Controller('approvals/beneficiaries')
 export class BeneficiaryApprovalsController {
   constructor(private readonly approvalsService: BeneficiaryApprovalsService) {}
@@ -11,7 +12,7 @@ export class BeneficiaryApprovalsController {
    * Get all beneficiary approvals with pagination
    */
   @Get()
-  @Protected()
+
   async getAllApprovals(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -33,7 +34,7 @@ export class BeneficiaryApprovalsController {
    * Get all identity document approvals
    */
   @Get('documents')
-  @Protected()
+
   async getDocumentApprovals(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -55,7 +56,7 @@ export class BeneficiaryApprovalsController {
    * Get all bank account approvals
    */
   @Get('bank')
-  @Protected()
+
   async getBankApprovals(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -77,7 +78,7 @@ export class BeneficiaryApprovalsController {
    * Approve a beneficiary application
    */
   @Post(':id/approve')
-  @Protected()
+
   async approveBeneficiary(
     @Param('id') beneficiaryId: string,
     @Body() body: { adminId: string },
@@ -97,7 +98,7 @@ export class BeneficiaryApprovalsController {
    * Reject a beneficiary application
    */
   @Post(':id/reject')
-  @Protected()
+
   async rejectBeneficiary(
     @Param('id') beneficiaryId: string,
     @Body() body: { adminId: string; reason?: string },
@@ -118,7 +119,7 @@ export class BeneficiaryApprovalsController {
    * Get approval history for a beneficiary
    */
   @Get(':id/history')
-  @Protected()
+
   async getApprovalHistory(@Param('id') beneficiaryId: string) {
     const history = await this.approvalsService.getApprovalHistory(beneficiaryId);
     return {
@@ -132,7 +133,7 @@ export class BeneficiaryApprovalsController {
    * Send/process a donation to a beneficiary
    */
   @Post(':id/donate')
-  @Protected()
+
   async sendDonation(
     @Param('id') beneficiaryId: string,
     @Body() body: { adminId: string; amount: number; campaign?: string; notes?: string },
@@ -157,7 +158,7 @@ export class BeneficiaryApprovalsController {
    * Approve beneficiary documents
    */
   @Post(':id/documents/approve')
-  @Protected()
+
   async approveDocument(
     @Param('id') beneficiaryId: string,
     @Body() body: { adminId: string },
@@ -177,7 +178,7 @@ export class BeneficiaryApprovalsController {
    * Reject beneficiary documents
    */
   @Post(':id/documents/reject')
-  @Protected()
+
   async rejectDocument(
     @Param('id') beneficiaryId: string,
     @Body() body: { adminId: string; reason?: string },
@@ -198,7 +199,7 @@ export class BeneficiaryApprovalsController {
    * Approve beneficiary bank details
    */
   @Post(':id/bank/approve')
-  @Protected()
+
   async approveBank(
     @Param('id') beneficiaryId: string,
     @Body() body: { adminId: string },
@@ -218,7 +219,7 @@ export class BeneficiaryApprovalsController {
    * Reject beneficiary bank details
    */
   @Post(':id/bank/reject')
-  @Protected()
+
   async rejectBank(
     @Param('id') beneficiaryId: string,
     @Body() body: { adminId: string; reason?: string },

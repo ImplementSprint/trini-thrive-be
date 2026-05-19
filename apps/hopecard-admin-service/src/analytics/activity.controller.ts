@@ -11,15 +11,16 @@ import {
 } from '@nestjs/common';
 import { ActivityService } from './activity.service';
 import type { Activity } from './activity.service';
-import { Protected } from '@app/common/decorators/protected.decorator';
+import { RequirePersona } from '@app/common';
 import { supabase } from '@app/common/supabase-client';
 
+@RequirePersona('admin')
 @Controller('activity')
 export class ActivityController {
   constructor(private activityService: ActivityService) {}
 
   @Post('log')
-  @Protected()
+
   @HttpCode(HttpStatus.CREATED)
   async logActivity(@Body() activity: Activity, @Request() req: any) {
     const user = req.user;
@@ -41,7 +42,7 @@ export class ActivityController {
   }
 
   @Get()
-  @Protected()
+
   async getActivityLog(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
@@ -83,7 +84,7 @@ export class ActivityController {
   }
 
   @Get('recent')
-  @Protected()
+
   async getRecentActivity(@Query('hours') hours: string = '24') {
     try {
       const hoursNum = Math.min(8760, Math.max(1, parseInt(hours, 10) || 24)); // Max 1 year
@@ -101,7 +102,7 @@ export class ActivityController {
   }
 
   @Get('by-admin/:adminId')
-  @Protected()
+
   async getActivityByAdmin(
     @Param('adminId') adminId: string,
     @Query('page') page: string = '1',
@@ -123,7 +124,7 @@ export class ActivityController {
   }
 
   @Get('by-resource/:resourceType')
-  @Protected()
+
   async getActivityByResourceType(
     @Param('resourceType') resourceType: string,
     @Query('page') page: string = '1',
@@ -149,7 +150,7 @@ export class ActivityController {
   }
 
   @Get('by-action/:action')
-  @Protected()
+
   async getActivityByAction(
     @Param('action') action: string,
     @Query('page') page: string = '1',
@@ -171,7 +172,7 @@ export class ActivityController {
   }
 
   @Post('cleanup')
-  @Protected()
+
   @HttpCode(HttpStatus.OK)
   async deleteOldActivities(@Query('days') days: string = '90') {
     const daysNum = Math.min(3650, Math.max(1, parseInt(days, 10) || 90)); // Max 10 years
