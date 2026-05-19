@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
 import { CampaignManagerApprovalsService } from './campaign-manager-approvals.service';
-import { Protected } from '@app/common/decorators/protected.decorator';
+import { RequirePersona } from '@app/common';
 
+@RequirePersona('admin')
 @Controller('approvals/campaign-managers')
 export class CampaignManagerApprovalsController {
   constructor(private readonly approvalsService: CampaignManagerApprovalsService) {}
@@ -11,7 +12,7 @@ export class CampaignManagerApprovalsController {
    * Get all campaign manager approvals with pagination
    */
   @Get()
-  @Protected()
+
   async getAllApprovals(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -33,7 +34,7 @@ export class CampaignManagerApprovalsController {
    * Approve a campaign manager application
    */
   @Post(':id/approve')
-  @Protected()
+
   async approveCampaignManager(
     @Param('id') campaignManagerId: string,
     @Body() body: { adminId: string },
@@ -50,7 +51,7 @@ export class CampaignManagerApprovalsController {
    * Reject a campaign manager application
    */
   @Post(':id/reject')
-  @Protected()
+
   async rejectCampaignManager(
     @Param('id') campaignManagerId: string,
     @Body() body: { adminId: string; reason?: string },
@@ -68,7 +69,7 @@ export class CampaignManagerApprovalsController {
    * Get approval history for a campaign manager
    */
   @Get(':id/history')
-  @Protected()
+
   async getApprovalHistory(@Param('id') campaignManagerId: string) {
     const history = await this.approvalsService.getApprovalHistory(campaignManagerId);
     return {

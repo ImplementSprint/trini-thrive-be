@@ -1,3 +1,5 @@
+jest.mock('jose', () => ({ jwtVerify: jest.fn(), SignJWT: jest.fn() }));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';

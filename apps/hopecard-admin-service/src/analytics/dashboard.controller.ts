@@ -1,8 +1,9 @@
 import { Controller, Get } from "@nestjs/common";
 import { DashboardService } from "./dashboard.service";
-import { Protected } from "@app/common/decorators/protected.decorator";
+import { RequirePersona } from "@app/common";
 import { DashboardMetrics } from "./interfaces/dashboard-metrics.interface";
 
+@RequirePersona('admin')
 @Controller("dashboard")
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
@@ -13,7 +14,7 @@ export class DashboardController {
    * Requires valid JWT authentication
    */
   @Get("metrics")
-  @Protected()
+
   async getMetrics(): Promise<{ success: boolean; data: DashboardMetrics }> {
     console.log("📊 Dashboard metrics endpoint hit");
     const data = await this.dashboardService.getDashboardMetrics();

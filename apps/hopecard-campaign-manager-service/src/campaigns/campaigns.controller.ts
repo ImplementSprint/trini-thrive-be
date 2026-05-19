@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
+import { RequirePersona } from '@app/common';
 
+@RequirePersona('cm')
 @Controller('api/campaigns')
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}

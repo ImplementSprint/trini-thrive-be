@@ -6,3 +6,4 @@ export * from './gateway/gateway.module';
 export * from './health/health.module';
 export * from './health/health.service';
 export * from './middleware/correlation-id.middleware';
+export * from './decorators/require-persona.decorator';

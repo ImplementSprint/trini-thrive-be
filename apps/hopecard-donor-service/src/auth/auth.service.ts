@@ -1,6 +1,13 @@
 import { Injectable, HttpException } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
+import { SignJWT } from 'jose';
+
+const getJwtSecret = () => {
+  const secret = process.env['JWT_SECRET'];
+  if (!secret) throw new HttpException('JWT_SECRET not configured', 500);
+  return new TextEncoder().encode(secret);
+};
 
 @Injectable()
 export class AuthService {
@@ -43,15 +50,6 @@ export class AuthService {
     }
 
     if (profileError || !profileData) {
-      const { data: legacyProfile, error: legacyError } = await admin
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-
-      if (!legacyError && legacyProfile) {
-        return { success: true, user: data.user, isLegacyUser: true, role: legacyProfile.role };
-      }
       throw new HttpException('Donor profile not found. Please ensure you have completed the signup process or contact support.', 403);
     }
 
@@ -59,7 +57,17 @@ export class AuthService {
       throw new HttpException({ error: 'Your account is not yet approved', reason: 'pending_approval', status: profileData?.status || 'unknown' }, 403);
     }
 
-    return { success: true, user: data.user, session: data.session };
+    const token = await new SignJWT({
+      sub: userId,
+      email: userEmail,
+      persona: 'donor',
+      system: 'hopecard',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('24h')
+      .sign(getJwtSecret());
+
+    return { success: true, token, user: data.user };
   }
 
   async signup(body: {

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 import * as jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 import * as nodemailer from 'nodemailer';
 
 interface ResetTokenPayload {
@@ -186,5 +187,42 @@ export class AuthService {
     }
 
     return { success: true };
+  }
+
+  async login(email: string, password: string): Promise<{ success: boolean; token: string }> {
+    const admin = this.admin;
+
+    const { data, error } = await admin.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const { data: profile, error: profileError } = await admin
+      .from('beneficiary_profiles')
+      .select('id')
+      .eq('auth_user_id', data.user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      throw new InternalServerErrorException('Database error');
+    }
+    if (!profile) {
+      throw new UnauthorizedException('No beneficiary account found for this email');
+    }
+
+    const secret = process.env['JWT_SECRET'];
+    if (!secret) throw new InternalServerErrorException('JWT_SECRET not configured');
+
+    const token = await new SignJWT({
+      sub: data.user.id,
+      email: data.user.email,
+      persona: 'beneficiary',
+      system: 'hopecard',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('24h')
+      .sign(new TextEncoder().encode(secret));
+
+    return { success: true, token };
   }
 }

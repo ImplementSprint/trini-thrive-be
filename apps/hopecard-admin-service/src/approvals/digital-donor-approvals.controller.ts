@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
 import { DigitalDonorApprovalsService } from './digital-donor-approvals.service';
-import { Protected } from '@app/common/decorators/protected.decorator';
+import { RequirePersona } from '@app/common';
 
+@RequirePersona('admin')
 @Controller('approvals/digital-donors')
 export class DigitalDonorApprovalsController {
   constructor(private readonly approvalsService: DigitalDonorApprovalsService) {}
@@ -11,7 +12,7 @@ export class DigitalDonorApprovalsController {
    * Get all digital donor approvals with pagination
    */
   @Get()
-  @Protected()
+
   async getAllApprovals(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -33,7 +34,7 @@ export class DigitalDonorApprovalsController {
    * Approve a digital donor application
    */
   @Post(':id/approve')
-  @Protected()
+
   async approveDonor(
     @Param('id') donorId: string,
     @Body() body: { adminId: string },
@@ -50,7 +51,7 @@ export class DigitalDonorApprovalsController {
    * Reject a digital donor application
    */
   @Post(':id/reject')
-  @Protected()
+
   async rejectDonor(
     @Param('id') donorId: string,
     @Body() body: { adminId: string; reason?: string },
@@ -68,7 +69,7 @@ export class DigitalDonorApprovalsController {
    * Get approval history for a digital donor
    */
   @Get(':id/history')
-  @Protected()
+
   async getApprovalHistory(@Param('id') donorId: string) {
     const history = await this.approvalsService.getApprovalHistory(donorId);
     return {
