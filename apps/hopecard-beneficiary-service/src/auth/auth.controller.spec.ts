@@ -2,9 +2,35 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
+// ── jose mock (ESM-only) ─────────────────────────────────────────────────────
+jest.mock('jose', () => ({
+  SignJWT: jest.fn().mockImplementation(() => ({
+    setProtectedHeader: jest.fn().mockReturnThis(),
+    setExpirationTime: jest.fn().mockReturnThis(),
+    sign: jest.fn().mockResolvedValue('mock.jwt.token'),
+  })),
+}));
+
+// ── Supabase mock ─────────────────────────────────────────────────────────────
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn(),
+    auth: { signInWithPassword: jest.fn(), admin: { updateUserById: jest.fn() } },
+  })),
+}));
+
+// ── nodemailer mock ───────────────────────────────────────────────────────────
+jest.mock('nodemailer', () => ({
+  createTransport: jest.fn(() => ({ sendMail: jest.fn() })),
+}));
+
+// ── jsonwebtoken mock ─────────────────────────────────────────────────────────
+jest.mock('jsonwebtoken', () => ({ sign: jest.fn(), verify: jest.fn() }));
+
 describe('AuthController (Beneficiary)', () => {
   let controller: AuthController;
   const mockService = {
+    login: jest.fn(),
     forgotPassword: jest.fn(),
     verifyResetOtp: jest.fn(),
     resetPassword: jest.fn(),
@@ -17,6 +43,13 @@ describe('AuthController (Beneficiary)', () => {
       providers: [{ provide: AuthService, useValue: mockService }],
     }).compile();
     controller = module.get<AuthController>(AuthController);
+  });
+
+  it('login delegates to service', async () => {
+    mockService.login.mockResolvedValue({ success: true, token: 'tok' });
+    const result = await controller.login({ email: 'a@b.com', password: 'pass' });
+    expect(result).toEqual({ success: true, token: 'tok' });
+    expect(mockService.login).toHaveBeenCalledWith('a@b.com', 'pass');
   });
 
   it('forgotPassword delegates to service', async () => {
