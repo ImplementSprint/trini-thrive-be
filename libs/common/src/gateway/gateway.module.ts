@@ -18,7 +18,7 @@ import { JwtGuard } from '../guards/jwt.guard';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    JwtGuard,
+    { provide: JwtGuard, useFactory: () => new JwtGuard() },
   ],
   exports: [JwtGuard],
 })
