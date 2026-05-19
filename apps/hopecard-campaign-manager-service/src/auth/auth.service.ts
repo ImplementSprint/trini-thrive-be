@@ -1,10 +1,7 @@
-import {
-  Injectable,
-  OnModuleInit,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException, OnModuleInit, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SignJWT } from 'jose';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -26,6 +23,37 @@ export class AuthService implements OnModuleInit {
     }
 
     this.supabase = createClient(supabaseUrl, supabaseKey);
+  }
+
+  async login(email: string, password: string): Promise<{ success: boolean; token: string }> {
+    const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const { data: profile, error: profileError } = await this.supabase
+      .from('campaign_manager_profiles')
+      .select('id')
+      .eq('auth_user_id', data.user.id)
+      .maybeSingle();
+
+    if (profileError) throw new InternalServerErrorException(profileError.message);
+    if (!profile) throw new UnauthorizedException('No campaign manager account found for this email');
+
+    const secret = this.configService.get<string>('JWT_SECRET');
+    if (!secret) throw new InternalServerErrorException('JWT_SECRET not configured');
+
+    const token = await new SignJWT({
+      sub: data.user.id,
+      email: data.user.email,
+      persona: 'cm',
+      system: 'hopecard',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('24h')
+      .sign(new TextEncoder().encode(secret));
+
+    return { success: true, token };
   }
 
   async getManagerProfile(authUserId: string) {

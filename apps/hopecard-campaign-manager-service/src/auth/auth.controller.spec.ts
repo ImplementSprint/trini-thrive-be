@@ -2,9 +2,27 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
+// ── jose mock (ESM-only) ─────────────────────────────────────────────────────
+jest.mock('jose', () => ({
+  SignJWT: jest.fn().mockImplementation(() => ({
+    setProtectedHeader: jest.fn().mockReturnThis(),
+    setExpirationTime: jest.fn().mockReturnThis(),
+    sign: jest.fn().mockResolvedValue('cm.jwt.token'),
+  })),
+}));
+
+// ── Supabase mock ─────────────────────────────────────────────────────────────
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn(),
+    auth: { signInWithPassword: jest.fn() },
+  })),
+}));
+
 describe('AuthController (CM)', () => {
   let controller: AuthController;
   const mockService = {
+    login: jest.fn(),
     getManagerProfile: jest.fn(),
     getBeneficiaryProfiles: jest.fn(),
   };
@@ -16,6 +34,13 @@ describe('AuthController (CM)', () => {
       providers: [{ provide: AuthService, useValue: mockService }],
     }).compile();
     controller = module.get<AuthController>(AuthController);
+  });
+
+  it('login delegates to service', async () => {
+    mockService.login.mockResolvedValue({ success: true, token: 'cm.jwt.token' });
+    const result = await controller.login({ email: 'cm@test.com', password: 'pass123' });
+    expect(result).toEqual({ success: true, token: 'cm.jwt.token' });
+    expect(mockService.login).toHaveBeenCalledWith('cm@test.com', 'pass123');
   });
 
   it('getManagerProfile delegates to service', async () => {
