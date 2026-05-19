@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TriniThrive CICD Migration Plan v9</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --border: #2a3348;
+    --border2: #344060;
+    --text: #e2e8f0;
+    --text2: #8b9ab5;
+    --text3: #5a6a85;
+    --blue: #4a9eff;
+    --blue-dim: #1a3a5c;
+    --green: #4ade80;
+    --green-dim: #14532d;
+    --amber: #fbbf24;
+    --amber-dim: #451a03;
+    --red: #f87171;
+    --red-dim: #450a0a;
+    --purple: #c084fc;
+    --purple-dim: #3b0764;
+    --cyan: #67e8f9;
+    --cyan-dim: #0a1e22;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem 1rem; }
+  .wrapper { max-width: 980px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .header { margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+  .header-top { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+  .header h1 { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.02em; }
+  .badge { font-family: var(--mono); font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
+  .badge.version { border-color: var(--blue);   color: var(--blue);   background: #0d2340; }
+  .badge.ok      { border-color: var(--green);  color: var(--green);  background: #0a1f0f; }
+  .badge.tribe   { border-color: var(--purple); color: var(--purple); background: #1a0b2e; }
+  .header-sub { font-size: 0.78rem; color: var(--text2); font-family: var(--mono); }
+
+  /* ── Applies-to banner ── */
+  .applies-to {
+    background: var(--bg2); border: 1px solid var(--purple-dim);
+    border-left: 4px solid var(--purple); border-radius: 8px;
+    padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    font-size: 0.82rem; line-height: 1.65;
+  }
+  .applies-to-title { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--purple); margin-bottom: 0.6rem; }
+  .tribe-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .tribe-chip { font-family: var(--mono); font-size: 0.72rem; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--purple-dim); background: #1a0b2e; color: var(--purple); }
+
+  /* ── Key rules banner ── */
+  .key-rules { background: var(--bg2); border: 1px solid #4a3000; border-left: 4px solid var(--amber); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 2rem; }
+  .key-rules-title { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--amber); margin-bottom: 0.75rem; }
+  .key-rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  @media (max-width: 600px) { .key-rules-grid { grid-template-columns: 1fr; } }
+  .rule-item { font-size: 0.8rem; line-height: 1.55; display: flex; gap: 0.5rem; }
+  .rule-item .ri { color: var(--amber); flex-shrink: 0; font-family: var(--mono); }
+  .rule-item code { font-family: var(--mono); font-size: 0.72rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 4px; border-radius: 3px; color: #93c5fd; }
+  .rule-item strong { color: var(--amber); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 2.25rem; }
+  .section-title {
+    font-size: 0.68rem; font-family: var(--mono); font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 0.9rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Trees ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+  .col-label { font-size: 0.72rem; font-family: var(--mono); color: var(--text3); margin-bottom: 0.5rem; }
+  .tree {
+    font-family: var(--mono); font-size: 0.71rem;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem; line-height: 2.1; color: var(--text2);
+  }
+  .tree .hl     { color: var(--blue); font-weight: 500; }
+  .tree .new    { color: var(--green); }
+  .tree .dim    { color: var(--text3); }
+  .tree .dep    { color: var(--amber); }
+  .tree .key    { color: var(--purple); }
+  .tree .shared { color: var(--cyan); }
+  .tree .off    { color: var(--red); opacity: 0.7; }
+
+  /* ── Branch flow diagram ── */
+  .branch-flow {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .branch-row { display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+  .branch-node {
+    font-family: var(--mono); font-size: 0.75rem; font-weight: 500;
+    padding: 6px 14px; border-radius: 6px; border: 1px solid;
+    white-space: nowrap;
+  }
+  .branch-node.local  { border-color: var(--purple); color: var(--purple); background: #1a0b2e; }
+  .branch-node.dev    { border-color: var(--amber);  color: var(--amber);  background: #1c1200; }
+  .branch-node.test   { border-color: var(--blue);   color: var(--blue);   background: #0d2340; }
+  .branch-node.uat    { border-color: var(--cyan);   color: var(--cyan);   background: #051a1e; }
+  .branch-node.main   { border-color: var(--green);  color: var(--green);  background: #0a1f0f; }
+  .branch-arrow { font-family: var(--mono); font-size: 0.8rem; color: var(--text3); padding: 0 6px; }
+  .branch-label { font-size: 0.72rem; color: var(--text3); margin-top: 0.5rem; font-family: var(--mono); }
+  .branch-notes { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
+  .branch-note-item { font-size: 0.79rem; line-height: 1.5; display: flex; gap: 0.5rem; }
+  .branch-note-item .bni { font-family: var(--mono); font-size: 0.72rem; flex-shrink: 0; margin-top: 1px; }
+  .branch-note-item .bni.purple { color: var(--purple); }
+  .branch-note-item .bni.amber  { color: var(--amber); }
+  .branch-note-item .bni.blue   { color: var(--blue); }
+  .branch-note-item .bni.green  { color: var(--green); }
+  .branch-note-item code { font-family: var(--mono); font-size: 0.72rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 4px; border-radius: 3px; color: #93c5fd; }
+
+  /* ── Phase cards ── */
+  .phase { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 0.875rem; background: var(--bg2); }
+  .phase.green  { border-color: #1a4a28; }
+  .phase.blue   { border-color: var(--blue-dim); }
+  .phase.amber  { border-color: #4a3000; }
+  .phase.purple { border-color: var(--purple-dim); }
+  .phase.red    { border-color: var(--red-dim); }
+  .phase.cyan   { border-color: #1a4a50; }
+
+  .phase-header {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.7rem 1rem; background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  .phase.green  .phase-header { background: #0a1f0f;   border-bottom-color: #1a4a2888; }
+  .phase.blue   .phase-header { background: #0a1a2e;   border-bottom-color: #1a305088; }
+  .phase.amber  .phase-header { background: #1c120088; border-bottom-color: #4a300088; }
+  .phase.purple .phase-header { background: #1a0b2e88; border-bottom-color: #3b076488; }
+  .phase.red    .phase-header { background: #1a060688; border-bottom-color: #45090988; }
+  .phase.cyan   .phase-header { background: #051a1e;   border-bottom-color: #0f3a4288; }
+
+  .phase-num {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: var(--text2);
+  }
+  .phase.green  .phase-num { border-color: var(--green);  color: var(--green); }
+  .phase.blue   .phase-num { border-color: var(--blue);   color: var(--blue); }
+  .phase.amber  .phase-num { border-color: var(--amber);  color: var(--amber); }
+  .phase.purple .phase-num { border-color: var(--purple); color: var(--purple); }
+  .phase.red    .phase-num { border-color: var(--red);    color: var(--red); }
+  .phase.cyan   .phase-num { border-color: var(--cyan);   color: var(--cyan); }
+
+  .phase-label { font-size: 0.85rem; font-weight: 500; flex: 1; }
+  .phase-tag {
+    font-family: var(--mono); font-size: 0.65rem;
+    padding: 2px 8px; border-radius: 20px;
+    background: var(--bg); color: var(--text3);
+    border: 1px solid var(--border); white-space: nowrap;
+  }
+  .phase-tag.green  { background: #0a200f; color: var(--green);  border-color: var(--green-dim); }
+  .phase-tag.blue   { background: #0a1a2e; color: var(--blue);   border-color: var(--blue-dim); }
+  .phase-tag.amber  { background: #1c1200; color: var(--amber);  border-color: var(--amber-dim); }
+  .phase-tag.purple { background: #1a0b2e; color: var(--purple); border-color: var(--purple-dim); }
+  .phase-tag.red    { background: #1a0606; color: var(--red);    border-color: var(--red-dim); }
+  .phase-tag.cyan   { background: #051a1e; color: var(--cyan);   border-color: #1a4a50; }
+
+  .phase-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .task { display: flex; gap: 0.6rem; align-items: flex-start; }
+  .task-icon { font-family: var(--mono); font-size: 0.75rem; color: var(--text3); margin-top: 2px; flex-shrink: 0; }
+  .task-text { font-size: 0.82rem; line-height: 1.55; color: var(--text); }
+  .task-text code { font-family: var(--mono); font-size: 0.74rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 5px; border-radius: 3px; color: #93c5fd; }
+  .task-text strong { color: var(--amber); }
+
+  /* ── Notes ── */
+  .note { border-radius: 6px; padding: 0.65rem 0.9rem; font-size: 0.8rem; line-height: 1.6; border-left: 3px solid; }
+  .note.info   { border-color: var(--blue);   background: #0d2340; }
+  .note.warn   { border-color: var(--amber);  background: #1c1200; }
+  .note.ok     { border-color: var(--green);  background: #0a1f0f; }
+  .note.danger { border-color: var(--red);    background: #1a0606; }
+  .note.purple { border-color: var(--purple); background: #1a0b2e; }
+  .note.cyan   { border-color: var(--cyan);   background: #051a1e; }
+  .note code { font-family: var(--mono); font-size: 0.73rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 4px; border-radius: 3px; color: #93c5fd; }
+  .note strong { font-weight: 600; }
+
+  /* ── Cmd / code blocks ── */
+  .cmd-block {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.75rem 1rem;
+    font-family: var(--mono); font-size: 0.72rem;
+    line-height: 2; color: var(--text2);
+  }
+  .cmd-block .comment { color: var(--text3); }
+  .cmd-block .cmd     { color: #93c5fd; }
+  .cmd-block .path    { color: var(--green); }
+  .cmd-block .val     { color: var(--amber); }
+
+  .code-block {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.75rem 1rem;
+    font-family: var(--mono); font-size: 0.72rem;
+    line-height: 1.9; color: var(--text2); overflow-x: auto;
+  }
+  .code-block .key     { color: #93c5fd; }
+  .code-block .val     { color: #86efac; }
+  .code-block .comment { color: var(--text3); }
+  .code-block .warn    { color: var(--amber); }
+  .code-block .shared  { color: var(--cyan); }
+
+  /* ── Outcome grid ── */
+  .outcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  @media (max-width: 500px) { .outcome-grid { grid-template-columns: 1fr; } }
+  .outcome { border-radius: 6px; padding: 0.65rem 0.9rem; font-size: 0.78rem; line-height: 1.55; }
+  .outcome.pass { background: #0a1f0f; border: 1px solid #1a4a28; }
+  .outcome.fail { background: #1c1200; border: 1px solid #4a3000; }
+  .outcome-title { font-weight: 600; margin-bottom: 3px; }
+
+  /* ── Tables ── */
+  .table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
+  th { font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border2); }
+  td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+  td code { font-family: var(--mono); font-size: 0.71rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 4px; border-radius: 3px; color: #93c5fd; }
+  td.use  { color: var(--cyan);  font-family: var(--mono); font-size: 0.73rem; font-weight: 500; }
+  td.copy { color: var(--amber); font-family: var(--mono); font-size: 0.73rem; font-weight: 500; }
+  td.skip { color: var(--text3); font-family: var(--mono); font-size: 0.73rem; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ── Sub-label ── */
+  .sub-label { font-size: 0.72rem; font-family: var(--mono); color: var(--text3); margin-bottom: 0.35rem; margin-top: 0.5rem; }
+
+  /* ── Conflict grid ── */
+  .conflict-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  @media (max-width: 560px) { .conflict-grid { grid-template-columns: 1fr; } }
+  .conflict-card { border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.79rem; line-height: 1.65; }
+  .conflict-card.risk   { background: #1a060622; border: 1px solid var(--red-dim); }
+  .conflict-card.fix    { background: #0a1f0f22; border: 1px solid var(--green-dim); }
+  .conflict-card .clabel { font-family: var(--mono); font-size: 0.68rem; font-weight: 500; margin-bottom: 6px; }
+  .conflict-card.risk .clabel { color: var(--red); }
+  .conflict-card.fix  .clabel { color: var(--green); }
+  .conflict-card code { font-family: var(--mono); font-size: 0.72rem; background: var(--bg3); border: 1px solid var(--border2); padding: 1px 4px; border-radius: 3px; color: #93c5fd; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <h1>TriniThrive — CICD Migration Plan</h1>
+      <span class="badge version">v9</span>
+      <span class="badge tribe">microservices</span>
+      <span class="badge ok">✓ Frontend routing structure corrected — URL prefix per persona</span>
+    </div>
+    <div class="header-sub">ImplementSprint org · trini-thrive-be + trini-thrive-fe · applies to all systems</div>
+  </div>
+
+  <!-- Applies to -->
+  <div class="applies-to">
+    <div class="applies-to-title">Applies to all systems in the ImplementSprint org</div>
+    This plan is written for any system migrating their personas into the shared CICD repositories. Each system's backend personas run as independent microservices on unique ports. Replace <strong>[system]</strong> and <strong>[persona]</strong> placeholders throughout with your own system and persona names. <strong>Your work must never reach outside your own system's designated folders.</strong> Every service must enforce JWT validation to prevent unauthorized persona switching via URL manipulation.
+    <div class="tribe-chips">
+      <span class="tribe-chip">Hopecard → hope-card/</span>
+      <span class="tribe-chip">Damayan → damayan/</span>
+      <span class="tribe-chip">BayaniHub → bayani-hub/</span>
+    </div>
+  </div>
+
+  <!-- Key rules -->
+  <div class="key-rules">
+    <div class="key-rules-title">Key structural rules — confirmed by compliance history and repo file structures</div>
+    <div class="key-rules-grid">
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Backend:</strong> microservices architecture. Each system × persona combination is an independent NestJS service running on its own unique port. No monolith. One build, one Docker image, one deploy <strong>per service</strong>.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Frontend:</strong> one Next.js app per system. All personas for a system are merged flat into that system's <code>src/</code>. Not one app per persona.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>JWT Persona Guard:</strong> every backend endpoint must validate JWT <code>persona</code> and <code>system</code> claims. Mismatch = 403 Forbidden. Frontend middleware must enforce persona-to-URL-prefix matching before page renders.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Branch flow:</strong> local branch (from <code>test</code>) → PR to <code>develop</code> (shared sandbox) → PR to <code>test</code> (CICD governance). Never push directly to <code>test</code>, <code>uat</code>, or <code>main</code>.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Strict isolation:</strong> your migration must never create, modify, or delete any file outside your own system's folders. Verify before every commit with <code>git diff develop --name-only</code>.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>No <code>.env</code> committed ever.</strong> Migration never auto-transfers <code>.env</code> files. Devs create their own <code>.env</code> locally from <code>.env.example</code>. Deployed values go to the API tribe only.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Service isolation and naming:</strong> every microservice is independent, but within your service, every module, provider, DI token, and controller must be uniquely named and scoped. Never use bare generic names — prefix with system and persona identifier.</div></div>
+    </div>
+  </div>
+
+  <!-- Branch workflow -->
+  <div class="section">
+    <div class="section-title">Branch workflow</div>
+    <div class="branch-flow">
+      <div class="branch-row">
+        <div class="branch-node local">local/[system]-migration</div>
+        <div class="branch-arrow">──PR──▶</div>
+        <div class="branch-node dev">develop</div>
+        <div class="branch-arrow">──PR──▶</div>
+        <div class="branch-node test">test</div>
+        <div class="branch-arrow">──auto──▶</div>
+        <div class="branch-node uat">uat</div>
+        <div class="branch-arrow">──auto──▶</div>
+        <div class="branch-node main">main</div>
+      </div>
+      <div class="branch-notes">
+        <div class="branch-note-item"><span class="bni purple">◆</span><div><strong>local branch</strong> — created from <code>test</code>. All migration work happens here. Never commit directly to any shared branch.</div></div>
+        <div class="branch-note-item"><span class="bni amber">◆</span><div><strong>develop</strong> — shared sandbox for all three systems. Chaotic by design. PRs here are for integration visibility and conflict discovery between system teams. No CICD governance runs here. PR authors cannot self-approve.</div></div>
+        <div class="branch-note-item"><span class="bni blue">◆</span><div><strong>test</strong> — all 12 CICD pipeline gates run here. This is the governance checkpoint. Only promote from <code>develop</code> to <code>test</code> when your work is clean, tested locally, and passes all pre-push checks.</div></div>
+        <div class="branch-note-item"><span class="bni green">◆</span><div><strong>uat → main</strong> — auto-promoted by the pipeline once all gates pass on <code>test</code>. No manual action required after that.</div></div>
+      </div>
+    </div>
+    <div class="note warn"><strong>Do not skip <code>develop</code>.</strong> The <code>develop</code> branch exists specifically to surface cross-system conflicts before governance runs. Pushing directly from your local branch to <code>test</code> bypasses the shared sandbox and risks failing the pipeline with issues that could have been caught earlier. Resolve all conflicts in <code>develop</code> first.</div>
+  </div>
+
+  <!-- Target structure -->
+  <div class="section">
+    <div class="section-title">Target repository structure — validated against actual file structure</div>
+    <div class="two-col">
+
+      <div>
+        <div class="col-label">Backend · trini-thrive-be (actual structure)</div>
+        <div class="tree">
+trini-thrive-be/<br>
+├── Dockerfile<br>
+├── tribe-manifest.json        <span class="key">← Gate 1</span><br>
+├── sonar-project.properties<br>
+├── nest-cli.json · tsconfig*.json<br>
+├── package.json               <span class="dim">← one root package</span><br>
+├── .env.example               <span class="dim">← key names only · devs copy locally</span><br>
+├── render-build.sh<br>
+├── scripts/ · tests/<br>
+│<br>
+└── <span class="hl">src/</span>                       <span class="dim">← flat · no system subfolders</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── main.ts · app.module.ts<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="shared">api-center/</span>          <span class="shared">← SDK integration · do not touch</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="shared">common/</span>              <span class="shared">← guards, config, filters, middleware</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="shared">health/</span>              <span class="shared">← root health endpoint · do not duplicate</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="shared">supabase/</span>            <span class="shared">← shared DB client · reuse via DI</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">beneficiary-auth/</span>    <span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">beneficiary-health/</span>  <span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">cm-auth/</span>             <span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">campaign-service/</span>    <span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">notification-service/</span><span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="new">reporting-service/</span>   <span class="new">← Hopecard · in-scope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">admin-auth/</span>          <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">admin-beneficiary/</span>   <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">analytics/</span>           <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">approvals/</span>           <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">donor-auth/</span>          <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">campaigns/</span>           <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">cart/ · purchases/</span>   <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dep">profile/ · gateway/</span>  <span class="dep">← Hopecard · deprioritised</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="dim">[your-system-modules]/</span> <span class="dim">← your modules land here, flat</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-label">Frontend · trini-thrive-fe</div>
+        <div class="tree">
+trini-thrive-fe/<br>
+├── .github/workflows/<br>
+│   └── <span class="key">fe-pipeline-caller.yml</span><br>
+├── tests/performance/         <span class="shared">← shared · do not modify</span><br>
+├── sonar-project.properties   <span class="shared">← shared · do not modify</span><br>
+│<br>
+├── <span class="hl">hope-card/</span>             <span class="dim">← one Next.js app</span><br>
+│   ├── <span class="new">src/</span>               <span class="new">← ALL Hopecard personas merged flat</span><br>
+│   │   └── app/<br>
+│   │       ├── (persona-a)/   <span class="dim">← route group if conflict</span><br>
+│   │       └── (persona-b)/<br>
+│   ├── public/ · tests/<br>
+│   ├── Dockerfile · package.json<br>
+│   └── [config files]<br>
+│<br>
+├── <span class="off">damayan/</span>               <span class="off">← off-limits if not your system</span><br>
+│   ├── src/               <span class="dim">← all Damayan personas here</span><br>
+│   └── ...<br>
+│<br>
+└── <span class="off">bayani-hub/</span>            <span class="off">← off-limits if not your system</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── src/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;└── ...
+        </div>
+
+        <div class="note info" style="margin-top:0.6rem; font-size:0.77rem;">
+          <strong>Legend:</strong><br>
+          <span style="color:var(--cyan)">■</span> Shared infrastructure — import via DI, never modify or duplicate<br>
+          <span style="color:var(--green)">■</span> In-scope modules — fully tested, ≥80% coverage required<br>
+          <span style="color:var(--amber)">■</span> Deprioritised — included but excluded from coverage gate<br>
+          <span style="color:var(--red)">■</span> Off-limits — another system's folder
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Phases -->
+  <div class="section">
+    <div class="section-title">Implementation phases</div>
+
+    <!-- Phase 1 -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-num">1</div>
+        <div class="phase-label">Preparation — before Claude Code touches anything</div>
+        <div class="phase-tag">manual</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Clone all persona source repos for your system into a local working folder. These are <strong>read-only</strong> — Claude Code never modifies source repos.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Clone <code>trini-thrive-be</code> and <code>trini-thrive-fe</code>. Check out the <code>test</code> branch as your starting point, then create your local working branch from it:</div></div>
+        <div class="cmd-block">
+          <span class="cmd">git</span> checkout test<br>
+          <span class="cmd">git</span> pull origin test<br>
+          <span class="cmd">git</span> checkout -b <span class="val">local/[system]-migration</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Before touching any files, map the current terrain of both target repos:</div></div>
+        <div class="cmd-block">
+          <span class="comment"># Backend — see what modules already exist in src/</span><br>
+          <span class="cmd">ls</span> <span class="path">src/</span><br><br>
+          <span class="comment"># Frontend — see what already exists in your system folder</span><br>
+          <span class="cmd">ls</span> <span class="path">[system-folder]/src/app/</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Confirm <code>tribe-manifest.json</code> exists at the <code>trini-thrive-be</code> root. If it needs a new entry for your system, request it from the CICD handlers before starting.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Audit all persona source repos and compile a complete list of every page route, API route, and dynamic segment. This becomes your routing verification checklist for Phase 5.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Set up your local <code>.env</code> manually.</strong> Copy <code>.env.example</code> to <code>.env</code> and fill in your own local values for development. The migration process never auto-copies or commits <code>.env</code> files — this step is always done by the developer by hand.</div></div>
+        <div class="note warn"><strong>Each backend service is independent. Frontend is a shared repo per system.</strong> You are working on your system's services only. Other systems have their own services. Your work must stay within your own system's folders — not just for commits, but for reading during Claude Code sessions to avoid accidental modification of other systems' code.</div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase green">
+      <div class="phase-header">
+        <div class="phase-num">2</div>
+        <div class="phase-label">Pre-extraction audit — shared services, naming, and boundaries</div>
+        <div class="phase-tag green">Claude Code</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Backend shared services — assess before adding anything.</strong> Check what is already in <code>src/</code> against what your personas need:</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Existing module</th><th>Action</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr><td><code>src/supabase/</code></td><td class="use">Reuse via DI</td><td>Import <code>SupabaseModule</code> into your module — never duplicate the service</td></tr>
+              <tr><td><code>src/health/</code></td><td class="use">Reuse</td><td>Root health endpoint is shared — never add a competing root health module</td></tr>
+              <tr><td><code>src/common/</code></td><td class="use">Reuse selectively</td><td>Import guards, decorators, filters, middleware as needed. Add to <code>common/</code> only if genuinely cross-system</td></tr>
+              <tr><td><code>src/api-center/</code></td><td class="skip">Do not touch</td><td>SDK integration infrastructure — owned by the CICD setup, not any system</td></tr>
+              <tr><td>Any other system's modules</td><td class="skip">Do not touch</td><td>Off-limits entirely — read for reference only if necessary</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="task" style="margin-top:0.5rem"><div class="task-icon">›</div><div class="task-text"><strong>Cross-system naming conflict check — run before extraction.</strong> Every module folder name you plan to create must be unique across all of <code>src/</code>. Check before creating:</div></div>
+        <div class="cmd-block">
+          <span class="comment"># Verify your proposed folder name doesn't already exist</span><br>
+          <span class="cmd">ls</span> <span class="path">src/</span> | <span class="cmd">grep</span> <span class="val">[your-proposed-name]</span><br><br>
+          <span class="comment"># List all existing module names to check for partial matches too</span><br>
+          <span class="cmd">ls</span> <span class="path">src/</span>
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Scan each persona source repo for boundary violations:</div></div>
+        <div class="cmd-block">
+          <span class="comment"># Imports escaping persona's own src/</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "from ['\"]\.\./"</span> &lt;persona&gt;/src/<br><br>
+          <span class="comment"># Path alias escapes</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "@shared\|@common\|@core\|@utils"</span> &lt;persona&gt;/src/<br><br>
+          <span class="comment"># Hardcoded localhost URLs</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "localhost:[0-9]"</span> &lt;persona&gt;/src/<br><br>
+          <span class="comment"># NestJS DI union type risk</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "@Optional()"</span> &lt;persona&gt;/src/<br><br>
+          <span class="comment"># Frontend — list all routes</span><br>
+          <span class="cmd">find</span> <span class="path">&lt;persona&gt;/src/app</span> <span class="val">-name "page.tsx" -o -name "route.ts"</span>
+        </div>
+
+        <div class="outcome-grid">
+          <div class="outcome pass"><div class="outcome-title">✓ Audit clean</div>Proceed to Phase 3. Naming is confirmed unique, shared services decision made, route list compiled.</div>
+          <div class="outcome fail"><div class="outcome-title">⚠ Issues found</div>Fix before extraction: inline deps, replace localhost URLs, resolve naming collisions, pair <code>@Optional()</code> with <code>@Inject(Token)</code>.</div>
+        </div>
+
+        <div class="note purple"><strong>NestJS DI union type rule:</strong> any constructor parameter typed as <code>SomeClass | null</code> with <code>@Optional()</code> must also have <code>@Inject(SomeClass)</code>. Without it, <code>emitDecoratorMetadata</code> emits <code>Object</code> — NestJS resolves to <code>undefined</code> at test time, causing silent failures where mocked values are never injected. Fix: <code>@Optional() @Inject(MyService) private readonly svc: MyService | null</code>.</div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase blue">
+      <div class="phase-header">
+        <div class="phase-num">3</div>
+        <div class="phase-label">Backend extraction — merge persona modules into src/ with conflict prevention</div>
+        <div class="phase-tag blue">Claude Code · trini-thrive-be</div>
+      </div>
+      <div class="phase-body">
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>No system subfolder.</strong> Your persona module folders go directly into <code>src/</code> — not into <code>src/[system]/</code>. The pipeline's Gate 3 rejects any nested structure.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Copy into each persona module folder: controllers, services, modules, DTOs, entities, guards. Exclude <code>node_modules</code>, <code>.env</code>, <code>.git</code>, <code>dist</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Register your in-scope modules in <code>src/app.module.ts</code>. This is the only shared file your migration touches in the backend — and only to add import entries, never to remove existing ones.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Append your system's env var key names to root <code>.env.example</code> under a clearly labelled comment block. <strong>Key names only — no real values. Never copy or commit your local <code>.env</code> file.</strong></div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Run <code>npm audit fix</code> after installing. Gate 7 fails on any high or critical CVE. Commit the updated <code>package-lock.json</code>.</div></div>
+
+        <!-- Cross-system conflict prevention -->
+        <div class="sub-label" style="margin-top:0.5rem;">Cross-system conflict prevention — mandatory for every module you add</div>
+
+        <div class="conflict-grid">
+          <div class="conflict-card risk">
+            <div class="clabel">✕ Conflict risk — what breaks other systems</div>
+            Two modules from different systems export a class with the same name (e.g. both export <code>AuthService</code>). NestJS resolves providers by token — if tokens collide, one system's service silently overwrites the other's in the DI container. The broken system's tests may still pass if mocks shadow the collision, making this invisible until runtime.
+          </div>
+          <div class="conflict-card fix">
+            <div class="clabel">✓ Prevention — required naming pattern</div>
+            Prefix every exported class, provider token, and controller with your system and persona identifier. Never use bare generic names. Example: <code>HopecardDonorAuthService</code> not <code>AuthService</code>. The module folder name is not enough — the class name inside it must also be unique within your service.
+          </div>
+          <div class="conflict-card risk">
+            <div class="clabel">✕ Conflict risk — duplicate global middleware or guards</div>
+            Registering a guard or middleware globally in your service's <code>app.module.ts</code> (e.g. via <code>APP_GUARD</code> or <code>APP_INTERCEPTOR</code>) applies it to every route in that service. If a guard rejects requests unexpectedly, debugging becomes difficult. Keep guards scoped to specific controllers or routes.
+          </div>
+          <div class="conflict-card fix">
+            <div class="clabel">✓ Prevention — scope guards to your own controllers</div>
+            Never register your guards or interceptors globally via <code>APP_GUARD</code> / <code>APP_INTERCEPTOR</code> in <code>app.module.ts</code>. Apply them at the controller level using <code>@UseGuards()</code> or at the module level inside your own module only. Global registration is reserved for shared infra in <code>src/common/</code>.
+          </div>
+          <div class="conflict-card risk">
+            <div class="clabel">✕ Conflict risk — duplicate route paths</div>
+            Two controllers from different systems registering the same HTTP route (e.g. both have <code>@Get('/campaigns')</code> without a controller-level prefix) will have one silently shadow the other. NestJS registers both but only the last one loaded wins.
+          </div>
+          <div class="conflict-card fix">
+            <div class="clabel">✓ Prevention — controller prefix mandatory</div>
+            Every controller must have a <code>@Controller('prefix')</code> decorator with a unique route prefix that identifies the system and persona. Example: <code>@Controller('hopecard/beneficiary/auth')</code>. Never use a bare <code>@Controller()</code> or a generic prefix that another system might also use.
+          </div>
+          <div class="conflict-card risk">
+            <div class="clabel">✕ Conflict risk — duplicate module imports in app.module.ts</div>
+            Importing the same shared module twice (e.g. <code>SupabaseModule</code> imported directly in <code>app.module.ts</code> by two different systems' migrations) can cause duplicate provider registration warnings and unexpected singleton behaviour.
+          </div>
+          <div class="conflict-card fix">
+            <div class="clabel">✓ Prevention — import shared modules inside your own module only</div>
+            Import <code>SupabaseModule</code>, <code>CommonModule</code>, and other shared modules inside your own module file (e.g. <code>BeneficiaryAuthModule</code>), not directly in <code>app.module.ts</code>. NestJS deduplicates modules when they are imported through the module graph — direct root-level imports bypass this.
+          </div>
+        </div>
+
+        <div class="note danger"><strong>Isolation rule — backend:</strong> the only files your migration may create or modify are your own new module folders inside <code>src/</code> and the import list in <code>src/app.module.ts</code>. No other file in <code>trini-thrive-be</code> is yours to touch. If you discover a bug in a shared module, report it to the CICD handlers — do not fix it unilaterally. Changes to shared infrastructure affect all three systems.</div>
+        <div class="note warn"><strong>No per-persona config files.</strong> Do not create additional <code>package.json</code>, <code>tsconfig.json</code>, <code>Dockerfile</code>, or <code>sonar-project.properties</code> inside your module folders. One of each exists at the repo root. The pipeline does not look for extras and their presence confuses Gate 3.</div>
+        <div class="note info"><strong>Shared module reuse — import, never copy.</strong> If <code>src/supabase/</code> covers your needs, import <code>SupabaseModule</code> inside your own module file via NestJS DI. Do not copy <code>supabase.service.ts</code> into your module folder. Duplicates create divergence, double maintenance surface, and DI token collisions.</div>
+      </div>
+    </div>
+
+    <!-- Phase 3B -->
+    <div class="phase red">
+      <div class="phase-header">
+        <div class="phase-num">3B</div>
+        <div class="phase-label">Persona claim enforcement — JWT routing safety</div>
+        <div class="phase-tag red">Claude Code · trini-thrive-be · mandatory</div>
+      </div>
+      <div class="phase-body">
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Why this is required.</strong> In a microservices architecture, each service must validate that incoming requests have the correct JWT claims for that service. Without explicit <code>persona</code> and <code>system</code> claims in the JWT, a frontend user could manually change the URL to access a different persona (e.g., a Donor user typing <code>/hope-card/admin</code>) without proper authorization. Backend validation + frontend middleware together prevent this security risk.</div></div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Every auth service that issues a JWT must include two mandatory claims:</strong></div></div>
+
+        <div class="sub-label">Required JWT payload shape — apply to every auth service in src/</div>
+        <div class="code-block">
+<span class="comment">// Every persona's auth service must issue tokens with these claims</span><br>
+<span class="comment">// In addition to the existing claims (sub, email, role, exp, iat)</span><br><br>
+const payload = {<br>
+&nbsp;&nbsp;sub: user.id,<br>
+&nbsp;&nbsp;email: user.email,<br>
+&nbsp;&nbsp;<span class="key">persona</span>: <span class="val">'[persona-slug]'</span>,   <span class="comment">// lowercase hyphenated · unique per persona</span><br>
+&nbsp;&nbsp;<span class="key">system</span>:  <span class="val">'[system-slug]'</span>,    <span class="comment">// lowercase hyphenated · identifies the system</span><br>
+};<br><br>
+<span class="comment">// Hopecard examples:</span><br>
+<span class="comment">// beneficiary-auth  → persona: 'beneficiary',      system: 'hopecard'</span><br>
+<span class="comment">// cm-auth           → persona: 'campaign-manager',  system: 'hopecard'</span><br>
+<span class="comment">// donor-auth        → persona: 'digital-donor',     system: 'hopecard'</span><br>
+<span class="comment">// admin-auth        → persona: 'admin',             system: 'hopecard'</span>
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Update the JWT payload DTO or interface</strong> (if one exists in the codebase) to declare <code>persona</code> and <code>system</code> as required string fields. This ensures TypeScript enforces the claims at compile time across every auth service.</div></div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>If a shared JWT strategy or guard exists in <code>src/common/</code></strong> that validates tokens, update it to read and expose the <code>persona</code> and <code>system</code> claims on the request object so downstream controllers and guards can access them without decoding the token again:</div></div>
+
+        <div class="code-block">
+<span class="comment">// In src/common/guards/jwt.guard.ts or jwt.strategy.ts</span><br>
+<span class="comment">// After token validation, attach claims to request</span><br>
+validate(payload: JwtPayload) {<br>
+&nbsp;&nbsp;return {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;userId:  payload.sub,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;email:   payload.email,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">persona</span>: payload.persona,   <span class="comment">// expose to all controllers</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">system</span>:  payload.system,    <span class="comment">// expose to all controllers</span><br>
+&nbsp;&nbsp;};<br>
+}
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Apply the persona and system values that match your system.</strong> For systems other than Hopecard — confirm the correct persona slug values with your system team before adding them. Never guess persona slugs for another system's auth services.</div></div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Update spec files.</strong> Every auth service spec must assert that the issued token contains the correct <code>persona</code> and <code>system</code> values. A test that does not assert these claims is incomplete and must be treated as a test gap:</div></div>
+
+        <div class="code-block">
+<span class="comment">// In beneficiary-auth/auth.service.spec.ts</span><br>
+it(<span class="val">'should issue a token with persona and system claims'</span>, async () => {<br>
+&nbsp;&nbsp;const result = await service.login(mockUser);<br>
+&nbsp;&nbsp;const decoded = jwtService.decode(result.access_token);<br>
+&nbsp;&nbsp;expect(decoded.persona).toBe(<span class="val">'beneficiary'</span>);<br>
+&nbsp;&nbsp;expect(decoded.system).toBe(<span class="val">'hopecard'</span>);<br>
+});
+        </div>
+
+        <div class="note danger"><strong>Backend MUST validate persona and system claims.</strong> Every protected endpoint must check that the JWT <code>persona</code> and <code>system</code> claims match the expected values for that service. If claims mismatch, return <code>403 Forbidden</code>. This prevents a user from accessing an endpoint outside their authorized persona, even if they manually change the URL. This is a security requirement, not optional.</div>
+        <div class="note warn"><strong>Never change or remove existing claims</strong> (<code>sub</code>, <code>email</code>, <code>role</code>, <code>exp</code>, <code>iat</code>). Only add <code>persona</code> and <code>system</code>. Changing existing claims will break any frontend or middleware that already reads them.</div>
+        <div class="note info"><strong>For other systems (Damayan, BayaniHub):</strong> when their auth services are migrated, the same rule applies. Every auth service must include <code>persona</code> and <code>system</code> claims using their own system and persona slug values. This is not Hopecard-specific — it is an architecture-wide requirement for all microservices.</div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase blue">
+      <div class="phase-header">
+        <div class="phase-num">4</div>
+        <div class="phase-label">Backend tests and coverage configuration</div>
+        <div class="phase-tag blue">Claude Code · trini-thrive-be</div>
+      </div>
+      <div class="phase-body">
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Write <code>*.spec.ts</code> files for every in-scope (prioritised) module. Target: ≥80% line coverage across covered files — measured from <code>coverage/coverage-summary.json</code> by Gate 6.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Update <code>coveragePathIgnorePatterns</code> in <code>package.json</code> — add your deprioritised module exclusions. <strong>Never remove or reorder exclusions added by other systems.</strong> Only append yours at the end of the array.</div></div>
+
+        <div class="sub-label">coveragePathIgnorePatterns — required baseline + your additions</div>
+        <div class="code-block">
+"coveragePathIgnorePatterns": [<br>
+&nbsp;&nbsp;<span class="comment">// Always present — never remove</span><br>
+&nbsp;&nbsp;<span class="val">"/node_modules/"</span>, <span class="val">"/coverage/"</span>, <span class="val">"/dist/"</span>,<br>
+&nbsp;&nbsp;<span class="val">"src/main.ts"</span>, <span class="val">"\\.module\\.ts$"</span>, <span class="val">"__mocks__"</span>,<br>
+&nbsp;&nbsp;<span class="val">"\\.dto\\.ts$"</span>, <span class="val">"\\.entity\\.ts$"</span>, <span class="val">"\\.interface\\.ts$"</span>,<br>
+&nbsp;&nbsp;<span class="val">"/api-center/"</span>, <span class="val">"/common/decorators/"</span>, <span class="val">"/common/guards/"</span>,<br>
+&nbsp;&nbsp;<span class="comment">// Existing exclusions from other systems — do NOT remove</span><br>
+&nbsp;&nbsp;<span class="val">"... existing entries from other systems ..."</span>,<br>
+&nbsp;&nbsp;<span class="comment">// ↓ Append your deprioritised modules below</span><br>
+&nbsp;&nbsp;<span class="shared">"/[your-deprioritised-module-a]/"</span>,<br>
+&nbsp;&nbsp;<span class="shared">"/[your-deprioritised-module-b]/"</span><br>
+]
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">After updating patterns, run <code>npm run test:cov</code> and inspect the printed summary. Confirm your patterns exclude exactly what you intend — no more, no less.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Coverage reporters must include <code>json-summary</code> and <code>lcov</code>. Test reporter must be <code>jest-junit</code> outputting to <code>test-results/junit.xml</code>. These are pipeline requirements — do not change the reporters config.</div></div>
+
+        <div class="note warn"><strong>Pattern precision in coverage exclusions matters.</strong> A pattern like <code>/auth/</code> is dangerously broad — it would exclude every module containing "auth" in its path, potentially hiding untested code. Always use the most specific segment: <code>/donor-auth/</code> not <code>/auth/</code>, <code>/campaign-auth/</code> not <code>/auth/</code>.</div>
+        <div class="note purple"><strong>SonarCloud blocker rules — Gate 9:</strong><br>
+          · Async helpers must be at module scope, not nested inside <code>describe</code> blocks (rule <code>S7721</code>)<br>
+          · No redundant type assertions — <code>{} as Partial&lt;T&gt;</code> where <code>{}</code> already satisfies <code>Partial&lt;T&gt;</code> (rule <code>S4325</code>)<br>
+          Either will fail Gate 9 and block the PR for all systems — not just yours.
+        </div>
+        <div class="note danger"><strong>Never remove coverage exclusions added by other systems.</strong> Removing another system's exclusion pulls their untested deprioritised modules back into the coverage calculation. This can drop the overall coverage below 80% and fail Gate 6 for the whole repo — blocking every system's PR, not just yours.</div>
+      </div>
+    </div>
+
+    <!-- Phase 5 -->
+    <div class="phase cyan">
+      <div class="phase-header">
+        <div class="phase-num">5</div>
+        <div class="phase-label">Frontend extraction — merge all personas into your system's src/</div>
+        <div class="phase-tag cyan">Claude Code · trini-thrive-fe</div>
+      </div>
+      <div class="phase-body">
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Your system has one Next.js app, not one per persona.</strong> All personas are merged flat into <code>[system-folder]/src/</code>. The existing system folder in the repo already has the correct scaffolding — merge into it, never replace it.</div></div>
+
+        <!-- Step A: URL prefix structure -->
+        <div class="sub-label">Step A — Assign every persona a unique URL prefix before touching any files</div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Every persona must own a distinct URL namespace.</strong> Because all personas share one Next.js app and one running instance, the URL path is the only thing that separates them. Without a unique prefix per persona, two personas with a <code>/login</code> page will produce a Next.js build error — you cannot have two <code>page.tsx</code> files resolving to the same URL.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Before moving any files, define the URL prefix for each persona. The prefix must be short, lowercase, and hyphenated. It becomes the root of every route that persona owns:</div></div>
+
+        <div class="code-block">
+<span class="comment">// Define your prefix map before extraction — example for Hopecard</span><br>
+<span class="comment">// Persona             Source route        After migration</span><br>
+<span class="comment">// Admin               /login              /admin/login</span><br>
+<span class="comment">// Admin               /dashboard          /admin/dashboard</span><br>
+<span class="comment">// Beneficiary         /login              /beneficiary/login</span><br>
+<span class="comment">// Beneficiary         /profile            /beneficiary/profile</span><br>
+<span class="comment">// Digital Donor       /login              /donor/login</span><br>
+<span class="comment">// Digital Donor       /campaigns          /donor/campaigns</span><br>
+<span class="comment">// Campaign Manager    /login              /campaign-manager/login</span><br>
+<span class="comment">// Campaign Manager    /dashboard          /campaign-manager/dashboard</span><br><br>
+<span class="comment">// Your prefix map for other systems will differ — define it before starting</span>
+        </div>
+
+        <!-- Step B: Route group + prefix folder structure -->
+        <div class="sub-label" style="margin-top:0.75rem;">Step B — Filesystem structure inside src/app/</div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Each persona gets a <strong>route group folder</strong> (parentheses, invisible to URL router) for filesystem organisation, and a <strong>prefix folder</strong> inside it that creates the unique URL namespace. This is the required pattern:</div></div>
+
+        <div class="code-block">
+[system]/src/app/<br>
+├── <span class="key">(admin)/</span>                        <span class="comment">← route group · filesystem only · invisible to URL</span><br>
+│   ├── <span class="key">admin/</span>                      <span class="comment">← URL prefix · all Admin routes live here</span><br>
+│   │   ├── login/<br>
+│   │   │   └── page.tsx            <span class="comment">→ URL: /admin/login</span><br>
+│   │   ├── dashboard/<br>
+│   │   │   └── page.tsx            <span class="comment">→ URL: /admin/dashboard</span><br>
+│   │   └── [...other-admin-routes]<br>
+│   └── layout.tsx                  <span class="comment">← Admin-scoped layout · auth context for Admin only</span><br>
+│<br>
+├── <span class="key">(beneficiary)/</span><br>
+│   ├── <span class="key">beneficiary/</span><br>
+│   │   ├── login/page.tsx          <span class="comment">→ URL: /beneficiary/login</span><br>
+│   │   ├── profile/page.tsx        <span class="comment">→ URL: /beneficiary/profile</span><br>
+│   │   └── [...other-bene-routes]<br>
+│   └── layout.tsx                  <span class="comment">← Beneficiary-scoped layout</span><br>
+│<br>
+├── <span class="key">(digital-donor)/</span><br>
+│   ├── <span class="key">donor/</span><br>
+│   │   ├── login/page.tsx          <span class="comment">→ URL: /donor/login</span><br>
+│   │   ├── campaigns/page.tsx      <span class="comment">→ URL: /donor/campaigns</span><br>
+│   │   └── [...other-donor-routes]<br>
+│   └── layout.tsx<br>
+│<br>
+├── <span class="key">(campaign-manager)/</span><br>
+│   ├── <span class="key">campaign-manager/</span><br>
+│   │   ├── login/page.tsx          <span class="comment">→ URL: /campaign-manager/login</span><br>
+│   │   ├── dashboard/page.tsx      <span class="comment">→ URL: /campaign-manager/dashboard</span><br>
+│   │   └── [...other-cm-routes]<br>
+│   └── layout.tsx<br>
+│<br>
+└── layout.tsx                      <span class="comment">← Root layout · shared shell only · no auth logic here</span>
+        </div>
+
+        <div class="note warn"><strong>The route group does not create the URL prefix — the folder inside it does.</strong> <code>(admin)/login/page.tsx</code> still resolves to <code>/login</code>, which conflicts with other personas. It is <code>(admin)/admin/login/page.tsx</code> that resolves to <code>/admin/login</code>. Always include both the route group AND the prefix folder.</div>
+
+        <!-- Step C: Per-persona layout files -->
+        <div class="sub-label" style="margin-top:0.75rem;">Step C — Per-persona layout.tsx as the auth boundary</div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Each route group's <code>layout.tsx</code> is the auth boundary for that persona. It wraps all pages under that persona's URL prefix. This is where the persona's auth context, token storage key, and session provider are scoped — completely isolated from other personas:</div></div>
+        <div class="code-block">
+<span class="comment">// (beneficiary)/layout.tsx — only wraps /beneficiary/* routes</span><br>
+export default function BeneficiaryLayout({ children }) {<br>
+&nbsp;&nbsp;return (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;BeneficiaryAuthProvider&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{children}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;/BeneficiaryAuthProvider&gt;<br>
+&nbsp;&nbsp;);<br>
+}<br><br>
+<span class="comment">// (digital-donor)/layout.tsx — completely separate auth context</span><br>
+export default function DigitalDonorLayout({ children }) {<br>
+&nbsp;&nbsp;return (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;DigitalDonorAuthProvider&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{children}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;/DigitalDonorAuthProvider&gt;<br>
+&nbsp;&nbsp;);<br>
+}
+        </div>
+
+        <!-- Step D: Merge approach -->
+        <div class="sub-label" style="margin-top:0.75rem;">Step D — Merge approach per persona</div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">For each persona source repo, copy files into the structure defined in Steps A and B:</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Copy <code>src/app/</code> contents into <code>[system-folder]/src/app/([persona-group])/[prefix]/</code>. Every route from the source repo now lives under the prefix folder. All <code>router.push()</code> and <code>Link href</code> values inside the copied files must be updated to include the new prefix.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Copy <code>src/lib/</code>, <code>src/components/</code>, <code>src/hooks/</code>, <code>src/utils/</code> into <code>[system-folder]/src/</code> prefixed with the persona name if collision exists — e.g. <code>src/admin-components/</code>, <code>src/donor-hooks/</code>.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Copy <code>public/</code> assets into <code>[system-folder]/public/[persona-prefix]/</code> to avoid asset name collisions across personas.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Merge <code>package.json</code> dependencies — add packages the persona requires that aren't already present. Never downgrade an existing version.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Do not copy <code>node_modules</code>, <code>.env</code>, <code>.git</code>, <code>dist</code>, or <code>.next</code>.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Replace all hardcoded <code>localhost</code> API URLs with <code>process.env.NEXT_PUBLIC_*</code>. Do not rename existing env var keys.</div></div>
+
+        <!-- Step E: Next.js middleware enforcement -->
+        <div class="sub-label" style="margin-top:0.75rem;">Step E — Next.js middleware for persona route enforcement</div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Create a single <code>middleware.ts</code> at <code>[system-folder]/src/middleware.ts</code></strong> that enforces persona routing at the framework level. This is the architectural guarantee that makes cross-persona misdirection impossible — it runs before any page renders:</div></div>
+        <div class="code-block">
+<span class="comment">// [system-folder]/src/middleware.ts</span><br>
+import { NextRequest, NextResponse } from <span class="val">'next/server'</span>;<br><br>
+<span class="comment">// Map each URL prefix to its expected persona slug</span><br>
+const PERSONA_PREFIX_MAP: Record&lt;string, string&gt; = {<br>
+&nbsp;&nbsp;<span class="val">'/admin'</span>:            <span class="val">'admin'</span>,<br>
+&nbsp;&nbsp;<span class="val">'/beneficiary'</span>:      <span class="val">'beneficiary'</span>,<br>
+&nbsp;&nbsp;<span class="val">'/donor'</span>:            <span class="val">'digital-donor'</span>,<br>
+&nbsp;&nbsp;<span class="val">'/campaign-manager'</span>: <span class="val">'campaign-manager'</span>,<br>
+};<br><br>
+<span class="comment">// Public routes that do not require auth — login and register pages</span><br>
+const PUBLIC_ROUTES = [<span class="val">'/login'</span>, <span class="val">'/register'</span>, <span class="val">'/forgot-password'</span>];<br><br>
+export function middleware(request: NextRequest) {<br>
+&nbsp;&nbsp;const { pathname } = request.nextUrl;<br><br>
+&nbsp;&nbsp;<span class="comment">// Determine which persona prefix this request belongs to</span><br>
+&nbsp;&nbsp;const prefix = Object.keys(PERSONA_PREFIX_MAP)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;.find(p => pathname.startsWith(p));<br><br>
+&nbsp;&nbsp;if (!prefix) return NextResponse.next();<br><br>
+&nbsp;&nbsp;<span class="comment">// Allow public routes without auth</span><br>
+&nbsp;&nbsp;const isPublic = PUBLIC_ROUTES.some(r => pathname.endsWith(r));<br>
+&nbsp;&nbsp;if (isPublic) return NextResponse.next();<br><br>
+&nbsp;&nbsp;<span class="comment">// Read stored persona from cookie or header</span><br>
+&nbsp;&nbsp;const storedPersona = request.cookies.get(<span class="val">'persona'</span>)?.value;<br>
+&nbsp;&nbsp;const expectedPersona = PERSONA_PREFIX_MAP[prefix];<br><br>
+&nbsp;&nbsp;<span class="comment">// No auth at all — redirect to this persona's login</span><br>
+&nbsp;&nbsp;if (!storedPersona) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return NextResponse.redirect(new URL(<span class="val">`${prefix}/login`</span>, request.url));<br>
+&nbsp;&nbsp;}<br><br>
+&nbsp;&nbsp;<span class="comment">// Wrong persona — redirect to correct persona's login, never another persona's home</span><br>
+&nbsp;&nbsp;if (storedPersona !== expectedPersona) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return NextResponse.redirect(new URL(<span class="val">`${prefix}/login`</span>, request.url));<br>
+&nbsp;&nbsp;}<br><br>
+&nbsp;&nbsp;return NextResponse.next();<br>
+}<br><br>
+export const config = {<br>
+&nbsp;&nbsp;matcher: [<span class="val">'/admin/:path*'</span>, <span class="val">'/beneficiary/:path*'</span>, <span class="val">'/donor/:path*'</span>, <span class="val">'/campaign-manager/:path*'</span>],<br>
+};
+        </div>
+
+        <!-- Step F: Persona storage — JWT vs store-at-login -->
+        <div class="sub-label" style="margin-top:0.75rem;">Step F — Persona storage strategy per persona type</div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Not all personas issue JWTs — the storage strategy differs based on how the backend authenticates each persona. Apply the correct pattern per persona:</div></div>
+
+        <div class="code-block">
+<span class="comment">// PATTERN 1 — JWT-issuing personas (e.g. Admin)</span><br>
+<span class="comment">// Read persona and system from the JWT claim after login</span><br>
+const decoded = JSON.parse(atob(token.split(<span class="val">'.'</span>)[1]));<br>
+if (decoded.persona !== <span class="val">'admin'</span> || decoded.system !== <span class="val">'hopecard'</span>) {<br>
+&nbsp;&nbsp;clearAuth(); router.push(<span class="val">'/admin/login'</span>); return;<br>
+}<br>
+document.cookie = <span class="val">`persona=admin; path=/; SameSite=Strict`</span>;<br>
+router.push(<span class="val">'/admin/dashboard'</span>);<br><br>
+<span class="comment">// PATTERN 2 — Supabase-session personas (Beneficiary, Digital Donor, Campaign Manager)</span><br>
+<span class="comment">// Backend returns a Supabase session, not a JWT with persona claims</span><br>
+<span class="comment">// Store the persona slug at login time — derived from which endpoint was called</span><br>
+const { data, error } = await supabase.auth.signInWithPassword(credentials);<br>
+if (error || !data.session) { <span class="comment">/* handle error */</span> return; }<br>
+<span class="comment">// The login page already knows which persona it is — store it explicitly</span><br>
+document.cookie = <span class="val">`persona=beneficiary; path=/; SameSite=Strict`</span>; <span class="comment">// or 'digital-donor', 'campaign-manager'</span><br>
+router.push(<span class="val">'/beneficiary/dashboard'</span>);
+        </div>
+
+        <div class="note info"><strong>Why a cookie instead of localStorage for persona storage:</strong> Next.js middleware runs on the server edge and cannot read <code>localStorage</code>. The middleware needs to read the persona to enforce routing before the page renders. A <code>SameSite=Strict</code> cookie with no sensitive data (persona slug only — not the auth token) is the correct mechanism for this. The actual auth token (JWT or Supabase session) is stored separately using whatever the persona's existing auth implementation uses.</div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Run from inside <code>[system-folder]/</code>: <code>npm install && npm run lint && npm run test && npm run build</code>. All must pass before Phase 6.</div></div>
+
+        <div class="note ok"><strong>With this structure in place, cross-persona misrouting is architecturally impossible.</strong> A user at <code>/donor/login</code> can only ever be redirected to <code>/donor/*</code> routes. The middleware enforces this at the framework level before any page code runs. A wrong persona cookie results in a redirect back to the correct login, not to another persona's pages.</div>
+        <div class="note danger"><strong>Isolation rule — frontend:</strong> you may only create or modify files inside <code>[your-system-folder]/</code>. Never touch another system's folder. Never modify <code>tests/performance/</code>, <code>sonar-project.properties</code>, or <code>.github/workflows/</code> at the repo root. Run <code>git diff develop --name-only</code> before committing and verify every changed file is inside your system folder.</div>
+        <div class="note warn"><strong>Internal links and redirects must be updated.</strong> Every <code>router.push()</code>, <code>redirect()</code>, and <code>Link href</code> inside each persona's copied pages must be updated to include the new URL prefix. A link to <code>/dashboard</code> that existed in the source repo must become <code>/admin/dashboard</code> (or the relevant prefix) after migration. Claude Code must scan for and update all internal navigation after copying files.</div>
+        <div class="note info"><strong>The existing system scaffold is the host app.</strong> The root <code>src/app/layout.tsx</code>, <code>jest.config.js</code>, <code>next.config.ts</code>, and other root-level config files in your system folder are already correctly wired. Merge persona code into them — never wholesale replace them with a persona's own versions.</div>
+      </div>
+    </div>
+
+    <!-- Phase 6 -->
+    <div class="phase amber">
+      <div class="phase-header">
+        <div class="phase-num">6</div>
+        <div class="phase-label">GitHub variables, secrets, and ENV handover</div>
+        <div class="phase-tag amber">manual · GitHub Settings + API tribe</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Backend services discovery</strong> — each system's backend services are discovered via service registry or <code>docker-compose.yml</code>. Services must be registered in the CI/CD configuration for deployment.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Apply <code>FE_MULTI_SYSTEMS_JSON</code> in GitHub → Settings → Variables → Actions on <code>trini-thrive-fe</code>. <strong>One entry per system, not per persona.</strong> Append only — never remove or reformat existing entries:</div></div>
+        <div class="code-block">
+<span class="comment">// One entry per system — append only, preserve existing entries</span><br>
+[<br>
+&nbsp;&nbsp;<span class="comment">// ... existing system entries ...</span><br>
+&nbsp;&nbsp;{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"name"</span>: <span class="val">"[System Display Name]"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"dir"</span>: <span class="val">"[system-folder]"</span>,      <span class="comment">// e.g. "hope-card", "damayan", "bayani-hub"</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"image"</span>: <span class="val">"[system-slug]"</span>,      <span class="comment">// e.g. "hope-card", "damayan"</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"vercel_project_secret"</span>: <span class="val">"VERCEL_PROJECT_ID_[SYSTEM_UPPER]"</span><br>
+&nbsp;&nbsp;}<br>
+]
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Environment variables for deployment go to the API tribe.</strong> Compile the full list of every <code>NEXT_PUBLIC_*</code> and backend env var key your personas require — exact key names only, no values. Hand this list to the API tribe. They manage deployed environment variables externally.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>For local development:</strong> developers copy <code>.env.example</code> to <code>.env</code> and fill in their own values. This is a manual step done by each developer — the migration process never creates or transfers <code>.env</code> files.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Set <code>RENDER_HEALTHCHECK_URL_TEST</code> as a GitHub Secret (not a variable) — full URL including path: <code>https://[service].onrender.com/api/v1/health</code>. This cannot be passed as a workflow input.</div></div>
+        <div class="note danger"><strong>Workflow input rule:</strong> never add <code>with:</code> inputs to <code>fe-pipeline-caller.yml</code> or <code>be-pipeline-caller.yml</code> that are not already declared in the central reusable workflow. GitHub validates <code>with:</code> keys at parse time and rejects the entire workflow file before any job runs. Use <code>secrets: inherit</code> — never list secrets explicitly.</div>
+      </div>
+    </div>
+
+    <!-- Phase 7 -->
+    <div class="phase green">
+      <div class="phase-header">
+        <div class="phase-num">7</div>
+        <div class="phase-label">Validation, develop PR, and test PR</div>
+        <div class="phase-tag green">Claude Code + manual review</div>
+      </div>
+      <div class="phase-body">
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Local pre-push checks — must all pass before raising any PR:</strong></div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Backend from repo root: <code>npm run lint && npm run typecheck && npm run build && npm run test:cov</code> — confirm ≥80% coverage, 0 failures.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Frontend from <code>[system-folder]/</code>: <code>npm run lint && npm run test && npm run build</code>.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Backend: <code>npm audit</code> — 0 high or critical CVEs. Run <code>npm audit fix</code> if needed and commit the updated <code>package-lock.json</code>.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Routing: manually walk every route from Phase 2 and confirm all resolve correctly under the new persona URL prefix. Confirm <code>middleware.ts</code> redirects unauthenticated requests to the correct persona login and never to another persona's pages.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Cross-system: confirm zero cross-system imports and zero hardcoded localhost URLs.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Persona claims: confirm every auth service in your system issues tokens with correct <code>persona</code> and <code>system</code> claims, and every frontend login page verifies those claims before redirecting.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">No hardcoded secrets or real <code>.env</code> values anywhere in committed files.</div></div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Isolation check — run before every commit and before every PR:</strong></div></div>
+        <div class="cmd-block">
+          <span class="comment"># Every changed file must be within your own folders</span><br>
+          <span class="cmd">git</span> diff develop --name-only<br><br>
+          <span class="comment"># Allowed backend: your own module folders + app.module.ts + .env.example + package-lock.json</span><br>
+          <span class="comment"># Allowed frontend: [your-system-folder]/ only</span><br>
+          <span class="comment"># Any file outside these is a blocking error — revert before proceeding</span>
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Commit using Conventional Commits: <code>feat([system]): extract and integrate all persona backends</code> and <code>feat([system]): extract and integrate all persona frontends</code>.</div></div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>PR to <code>develop</code> first.</strong> Open a PR from <code>local/[system]-migration</code> → <code>develop</code>. This is the shared sandbox — all three system teams may have conflicting changes here. Resolve any merge conflicts in <code>develop</code> thoroughly before proceeding. Do not self-approve.</div></div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Then PR from <code>develop</code> → <code>test</code></strong> once conflicts are resolved and the <code>develop</code> state is stable. This triggers the 12-gate CICD pipeline. Do not raise this PR until the <code>develop</code> merge is clean and all local pre-push checks have been re-run on the merged state.</div></div>
+
+        <div class="note ok">All 12 pipeline gates must be green before promotion to <code>uat</code> → <code>main</code>. A failure in any gate blocks the entire PR. Fix on your local branch, merge to <code>develop</code> again, then re-raise the <code>develop → test</code> PR. Do not open a new PR — update the existing one.</div>
+        <div class="note warn"><strong>After merging to <code>develop</code>, re-run all local pre-push checks on the merged state before raising the <code>develop → test</code> PR.</strong> Other systems may have merged changes into <code>develop</code> that interact with yours. The merge itself is the moment conflicts can reappear — catch them locally before they reach the pipeline.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Hard rules -->
+  <div class="section">
+    <div class="section-title">Hard rules — always in effect for all systems</div>
+    <div class="phase">
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Branch flow: <code>local/[system]-migration</code> (from <code>test</code>) → PR to <code>develop</code> → PR to <code>test</code> → auto <code>uat</code> → auto <code>main</code>. No direct commits to any shared branch.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">PR authors cannot self-approve at any stage. A second reviewer is always required.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Backend:</strong> microservices architecture — each system × persona is an independent NestJS service running on its own unique port. No shared monolith. One build, one Docker image, one deploy <strong>per service</strong>. Every exported class, provider token, controller prefix, and route path must be globally unique within that service.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Frontend:</strong> one Next.js app per system — all personas flat in that system's <code>src/</code>, one build and deploy per system. Routing must be preserved exactly. Verify every route before pushing.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Your process must never create, modify, or delete any file outside your own system's folders. Verify with <code>git diff develop --name-only</code> before every commit and PR.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>No <code>.env</code> committed ever.</strong> <code>.env.example</code> lists key names only. Developers create <code>.env</code> locally by hand. Deployed values go to the API tribe. Migration never auto-transfers <code>.env</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Never register guards, interceptors, or middleware globally via <code>APP_GUARD</code> / <code>APP_INTERCEPTOR</code> in <code>app.module.ts</code>. Scope everything to your own controllers or module.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Never use bare generic class names. Every exported class in your service must be prefixed with a system and persona identifier.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Import shared modules (<code>SupabaseModule</code>, etc.) inside your own module — not directly in <code>app.module.ts</code>. This prevents duplicate provider registration across systems.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">100% test pass rate, ≥80% line coverage (correctly scoped), lint zero errors, TypeScript strict mode.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">No hardcoded secrets. No hardcoded <code>localhost</code> URLs. All runtime values via <code>process.env.*</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Never remove <code>coveragePathIgnorePatterns</code> entries from other systems. Append only.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><code>FE_MULTI_SYSTEMS_JSON</code>: one entry per system, not per persona. Append only — preserve all existing entries exactly.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Conventional Commits: scope is the system name — e.g. <code>feat(damayan):</code>, <code>fix(hope-card):</code>, <code>chore(bayani-hub):</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Persona claim rule (CRITICAL SECURITY):</strong> every auth service must issue JWTs containing <code>persona</code> and <code>system</code> claims. Every backend endpoint must validate these claims — if <code>persona</code> or <code>system</code> claim does not match the expected values for that service, return <code>403 Forbidden</code>. Every system must implement a <code>middleware.ts</code> that enforces persona-to-URL-prefix matching at the framework level before any page renders. This prevents users from manually switching URLs to unauthorized personas (e.g., donor user typing <code>/hope-card/admin</code> must redirect to correct login, never load admin page).</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>URL prefix rule:</strong> every persona must own a unique URL namespace inside its system's Next.js app. Structure is route group for filesystem organisation + prefix folder for URL uniqueness. All internal <code>router.push()</code>, <code>redirect()</code>, and <code>Link href</code> values must be updated to include the prefix after migration.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
