@@ -38,7 +38,7 @@ export class JwtGuard implements CanActivate {
     let payload: JwtPayload;
     try {
       const verified = await jwtVerify(token, JWT_SECRET);
-      payload = verified.payload as JwtPayload;
+      payload = verified.payload as unknown as JwtPayload;
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       let detail = 'Invalid or expired JWT token';
