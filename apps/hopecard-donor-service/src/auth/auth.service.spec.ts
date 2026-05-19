@@ -120,5 +120,15 @@ describe('AuthService (donor)', () => {
       mockFrom.mockReturnValue(pendingChain);
       await expect(service.login('x@y.com', 'pass')).rejects.toMatchObject({ status: 403 });
     });
+
+    it('throws 500 when JWT_SECRET is not configured', async () => {
+      mockSignInWithPassword.mockResolvedValue({
+        data: { user: { id: 'uid-4', email: 'x@y.com' }, session: {} },
+        error: null,
+      });
+      mockFrom.mockReturnValue(profileChain());
+      delete process.env.JWT_SECRET;
+      await expect(service.login('x@y.com', 'pass')).rejects.toMatchObject({ status: 500 });
+    });
   });
 });

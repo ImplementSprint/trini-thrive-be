@@ -3,7 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
 import { SignJWT } from 'jose';
 
-const JWT_SECRET = () => new TextEncoder().encode(process.env['JWT_SECRET'] ?? '');
+const getJwtSecret = () => {
+  const secret = process.env['JWT_SECRET'];
+  if (!secret) throw new HttpException('JWT_SECRET not configured', 500);
+  return new TextEncoder().encode(secret);
+};
 
 @Injectable()
 export class AuthService {
@@ -61,7 +65,7 @@ export class AuthService {
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
-      .sign(JWT_SECRET());
+      .sign(getJwtSecret());
 
     return { success: true, token, user: data.user };
   }
