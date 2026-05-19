@@ -5,11 +5,15 @@ import {
 } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ApiCenterSdkModule } from '@app/api-center';
-import { CorrelationIdMiddleware, validateEnv } from '@app/common';
+import {
+  CorrelationIdMiddleware,
+  GatewayModule,
+  HealthModule,
+  validateEnv,
+} from '@app/common';
 import { SupabaseModule } from '@app/supabase';
 import { ApiController } from './api.controller';
 import { ApiService } from './api.service';
-import { HealthModule } from './health/health.module';
 
 const shouldValidateEnv = process.env.NODE_ENV === 'production';
 
@@ -24,6 +28,7 @@ const shouldValidateEnv = process.env.NODE_ENV === 'production';
     SupabaseModule,
     HealthModule,
     ApiCenterSdkModule,
+    GatewayModule,
   ],
   controllers: [ApiController],
   providers: [ApiService],
