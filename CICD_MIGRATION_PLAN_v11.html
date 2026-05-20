@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TriniThrive CICD Migration Plan v11</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;
+    --border:#2a3348;--border2:#344060;
+    --text:#e2e8f0;--text2:#8b9ab5;--text3:#5a6a85;
+    --blue:#4a9eff;--blue-dim:#1a3a5c;
+    --green:#4ade80;--green-dim:#14532d;
+    --amber:#fbbf24;--amber-dim:#451a03;
+    --red:#f87171;--red-dim:#450a0a;
+    --purple:#c084fc;--purple-dim:#3b0764;
+    --cyan:#67e8f9;
+    --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  }
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;padding:2rem 1rem}
+  .wrapper{max-width:980px;margin:0 auto}
+
+  /* Header */
+  .header{margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+  .header-top{display:flex;align-items:baseline;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.4rem}
+  .header h1{font-size:1.45rem;font-weight:600;letter-spacing:-0.02em}
+  .badge{font-family:var(--mono);font-size:0.68rem;padding:2px 8px;border-radius:4px;border:1px solid;white-space:nowrap}
+  .badge.version{border-color:var(--blue);color:var(--blue);background:#0d2340}
+  .badge.ok{border-color:var(--green);color:var(--green);background:#0a1f0f}
+  .badge.tribe{border-color:var(--purple);color:var(--purple);background:#1a0b2e}
+  .badge.security{border-color:var(--red);color:var(--red);background:#1a0606}
+  .header-sub{font-size:0.78rem;color:var(--text2);font-family:var(--mono)}
+
+  /* Applies-to */
+  .applies-to{background:var(--bg2);border:1px solid var(--purple-dim);border-left:4px solid var(--purple);border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:0.82rem;line-height:1.65}
+  .applies-to-title{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--purple);margin-bottom:0.6rem}
+  .tribe-chips{display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem}
+  .tribe-chip{font-family:var(--mono);font-size:0.72rem;padding:3px 10px;border-radius:20px;border:1px solid var(--purple-dim);background:#1a0b2e;color:var(--purple)}
+
+  /* Key rules */
+  .key-rules{background:var(--bg2);border:1px solid #4a3000;border-left:4px solid var(--amber);border-radius:8px;padding:1rem 1.25rem;margin-bottom:2rem}
+  .key-rules-title{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--amber);margin-bottom:0.75rem}
+  .key-rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem}
+  @media(max-width:600px){.key-rules-grid{grid-template-columns:1fr}}
+  .rule-item{font-size:0.8rem;line-height:1.55;display:flex;gap:0.5rem}
+  .rule-item .ri{color:var(--amber);flex-shrink:0;font-family:var(--mono)}
+  .rule-item code{font-family:var(--mono);font-size:0.72rem;background:var(--bg3);border:1px solid var(--border2);padding:1px 4px;border-radius:3px;color:#93c5fd}
+  .rule-item strong{color:var(--amber)}
+
+  /* Section */
+  .section{margin-bottom:2.25rem}
+  .section-title{font-size:0.68rem;font-family:var(--mono);font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:0.9rem;display:flex;align-items:center;gap:0.5rem}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  /* Trees */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  @media(max-width:640px){.two-col{grid-template-columns:1fr}}
+  .col-label{font-size:0.72rem;font-family:var(--mono);color:var(--text3);margin-bottom:0.5rem}
+  .tree{font-family:var(--mono);font-size:0.71rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;line-height:2.1;color:var(--text2)}
+  .tree .hl{color:var(--blue);font-weight:500}
+  .tree .new{color:var(--green)}
+  .tree .dim{color:var(--text3)}
+  .tree .dep{color:var(--amber)}
+  .tree .key{color:var(--purple)}
+  .tree .shared{color:var(--cyan)}
+  .tree .off{color:var(--red);opacity:0.7}
+
+  /* Branch flow */
+  .branch-flow{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+  .branch-row{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin-bottom:0.75rem}
+  .branch-node{font-family:var(--mono);font-size:0.75rem;font-weight:500;padding:6px 14px;border-radius:6px;border:1px solid;white-space:nowrap}
+  .branch-node.local{border-color:var(--purple);color:var(--purple);background:#1a0b2e}
+  .branch-node.dev{border-color:var(--amber);color:var(--amber);background:#1c1200}
+  .branch-node.test{border-color:var(--blue);color:var(--blue);background:#0d2340}
+  .branch-node.uat{border-color:var(--cyan);color:var(--cyan);background:#051a1e}
+  .branch-node.main{border-color:var(--green);color:var(--green);background:#0a1f0f}
+  .branch-arrow{font-family:var(--mono);font-size:0.8rem;color:var(--text3);padding:0 6px}
+  .branch-notes{display:flex;flex-direction:column;gap:0.35rem}
+  .branch-note-item{font-size:0.79rem;line-height:1.5;display:flex;gap:0.5rem}
+  .bni{font-family:var(--mono);font-size:0.72rem;flex-shrink:0;margin-top:1px}
+  .bni.purple{color:var(--purple)} .bni.amber{color:var(--amber)} .bni.blue{color:var(--blue)} .bni.green{color:var(--green)}
+  .branch-note-item code{font-family:var(--mono);font-size:0.72rem;background:var(--bg3);border:1px solid var(--border2);padding:1px 4px;border-radius:3px;color:#93c5fd}
+
+  /* Phase cards */
+  .phase{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:0.875rem;background:var(--bg2)}
+  .phase.green{border-color:#1a4a28} .phase.blue{border-color:var(--blue-dim)} .phase.amber{border-color:#4a3000}
+  .phase.purple{border-color:var(--purple-dim)} .phase.red{border-color:var(--red-dim)} .phase.cyan{border-color:#1a4a50}
+  .phase-header{display:flex;align-items:center;gap:0.75rem;padding:0.7rem 1rem;background:var(--bg3);border-bottom:1px solid var(--border)}
+  .phase.green .phase-header{background:#0a1f0f;border-bottom-color:#1a4a2888}
+  .phase.blue .phase-header{background:#0a1a2e;border-bottom-color:#1a305088}
+  .phase.amber .phase-header{background:#1c120088;border-bottom-color:#4a300088}
+  .phase.purple .phase-header{background:#1a0b2e88;border-bottom-color:#3b076488}
+  .phase.red .phase-header{background:#1a060688;border-bottom-color:#45090988}
+  .phase.cyan .phase-header{background:#051a1e;border-bottom-color:#0f3a4288}
+  .phase-num{font-family:var(--mono);font-size:0.72rem;font-weight:500;width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2)}
+  .phase.green .phase-num{border-color:var(--green);color:var(--green)}
+  .phase.blue .phase-num{border-color:var(--blue);color:var(--blue)}
+  .phase.amber .phase-num{border-color:var(--amber);color:var(--amber)}
+  .phase.purple .phase-num{border-color:var(--purple);color:var(--purple)}
+  .phase.red .phase-num{border-color:var(--red);color:var(--red)}
+  .phase.cyan .phase-num{border-color:var(--cyan);color:var(--cyan)}
+  .phase-label{font-size:0.85rem;font-weight:500;flex:1}
+  .phase-tag{font-family:var(--mono);font-size:0.65rem;padding:2px 8px;border-radius:20px;background:var(--bg);color:var(--text3);border:1px solid var(--border);white-space:nowrap}
+  .phase-tag.green{background:#0a200f;color:var(--green);border-color:var(--green-dim)}
+  .phase-tag.blue{background:#0a1a2e;color:var(--blue);border-color:var(--blue-dim)}
+  .phase-tag.amber{background:#1c1200;color:var(--amber);border-color:var(--amber-dim)}
+  .phase-tag.purple{background:#1a0b2e;color:var(--purple);border-color:var(--purple-dim)}
+  .phase-tag.red{background:#1a0606;color:var(--red);border-color:var(--red-dim)}
+  .phase-tag.cyan{background:#051a1e;color:var(--cyan);border-color:#1a4a50}
+  .phase-body{padding:1rem;display:flex;flex-direction:column;gap:0.6rem}
+  .task{display:flex;gap:0.6rem;align-items:flex-start}
+  .task-icon{font-family:var(--mono);font-size:0.75rem;color:var(--text3);margin-top:2px;flex-shrink:0}
+  .task-text{font-size:0.82rem;line-height:1.55;color:var(--text)}
+  .task-text code{font-family:var(--mono);font-size:0.74rem;background:var(--bg3);border:1px solid var(--border2);padding:1px 5px;border-radius:3px;color:#93c5fd}
+  .task-text strong{color:var(--amber)}
+
+  /* Notes */
+  .note{border-radius:6px;padding:0.65rem 0.9rem;font-size:0.8rem;line-height:1.6;border-left:3px solid}
+  .note.info{border-color:var(--blue);background:#0d2340}
+  .note.warn{border-color:var(--amber);background:#1c1200}
+  .note.ok{border-color:var(--green);background:#0a1f0f}
+  .note.danger{border-color:var(--red);background:#1a0606}
+  .note.purple{border-color:var(--purple);background:#1a0b2e}
+  .note.cyan{border-color:var(--cyan);background:#051a1e}
+  .note code{font-family:var(--mono);font-size:0.73rem;background:var(--bg3);border:1px solid var(--border2);padding:1px 4px;border-radius:3px;color:#93c5fd}
+  .note strong{font-weight:600}
+
+  /* Cmd / code blocks */
+  .cmd-block{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.75rem 1rem;font-family:var(--mono);font-size:0.72rem;line-height:2;color:var(--text2)}
+  .cmd-block .comment{color:var(--text3)} .cmd-block .cmd{color:#93c5fd} .cmd-block .path{color:var(--green)} .cmd-block .val{color:var(--amber)}
+  .code-block{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.75rem 1rem;font-family:var(--mono);font-size:0.72rem;line-height:1.9;color:var(--text2);overflow-x:auto}
+  .code-block .key{color:#93c5fd} .code-block .val{color:#86efac} .code-block .comment{color:var(--text3)} .code-block .shared{color:var(--cyan)} .code-block .warn{color:var(--amber)}
+
+  /* Tables */
+  .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:0.79rem}
+  th{font-family:var(--mono);font-size:0.66rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:0.5rem 0.75rem;text-align:left;border-bottom:1px solid var(--border2)}
+  td{padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+  td code{font-family:var(--mono);font-size:0.71rem;background:var(--bg3);border:1px solid var(--border2);padding:1px 4px;border-radius:3px;color:#93c5fd}
+  td.use{color:var(--cyan);font-family:var(--mono);font-size:0.73rem;font-weight:500}
+  td.skip{color:var(--text3);font-family:var(--mono);font-size:0.73rem}
+  td.pass{color:var(--green);font-family:var(--mono);font-size:0.73rem;font-weight:500}
+  td.fail{color:var(--red);font-family:var(--mono);font-size:0.73rem;font-weight:500}
+  tr:last-child td{border-bottom:none}
+
+  .sub-label{font-size:0.72rem;font-family:var(--mono);color:var(--text3);margin-bottom:0.35rem;margin-top:0.5rem}
+  .outcome-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem}
+  .outcome{border-radius:6px;padding:0.65rem 0.9rem;font-size:0.78rem;line-height:1.55}
+  .outcome.pass{background:#0a1f0f;border:1px solid #1a4a28}
+  .outcome.fail{background:#1c1200;border:1px solid #4a3000}
+  .outcome-title{font-weight:600;margin-bottom:3px}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <h1>TriniThrive — CICD Migration Plan</h1>
+      <span class="badge version">v11</span>
+      <span class="badge tribe">system-agnostic</span>
+      <span class="badge security">🔒 JWT Persona Guard</span>
+      <span class="badge ok">✓ NestJS Monorepo · apps/ microservices</span>
+    </div>
+    <div class="header-sub">ImplementSprint org · trini-thrive-be + trini-thrive-fe · applies to all systems · cross-referenced against Tribe Rules and Guidelines</div>
+  </div>
+
+  <!-- Applies to -->
+  <div class="applies-to">
+    <div class="applies-to-title">Applies to all systems in the ImplementSprint org</div>
+    This plan is written for any system migrating their personas into the shared CICD repositories. Replace <strong>[system]</strong> and <strong>[persona]</strong> placeholders throughout with your own system and persona names. Each system has a unique set of personas and services — this plan does not prescribe what those are, only how to structure and integrate them. <strong>Your work must never reach outside your own system's designated scope.</strong>
+    <div class="tribe-chips">
+      <span class="tribe-chip">Hopecard</span>
+      <span class="tribe-chip">Damayan</span>
+      <span class="tribe-chip">BayaniHub</span>
+    </div>
+  </div>
+
+  <!-- Key rules -->
+  <div class="key-rules">
+    <div class="key-rules-title">Architectural rules — confirmed by CICD handlers</div>
+    <div class="key-rules-grid">
+      <div class="rule-item"><span class="ri">▸</span><div><strong>True microservices via NestJS monorepo.</strong> Each persona is its own app under <code>apps/</code> with its own <code>main.ts</code>, <code>Dockerfile</code>, and independent port. Not a monolith.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Shared code lives in <code>libs/</code>.</strong> Common utilities, Supabase client, API Center SDK, and contracts are shared libraries — never duplicated across apps.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Services must be under <code>apps/</code>.</strong> The CICD handler's most critical requirement. No exceptions. Every runnable persona service is an app entry point.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>JWT persona + system claims are mandatory.</strong> Every auth service issues tokens with <code>persona</code> and <code>system</code> claims. Every protected endpoint validates them via <code>PersonaGuard</code>. Mismatch = 403.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>No <code>.env</code> committed.</strong> <code>.env.example</code> lists key names only. Devs create <code>.env</code> locally. Deployed values go to the API tribe. Migration never auto-transfers <code>.env</code>.</div></div>
+      <div class="rule-item"><span class="ri">▸</span><div><strong>Branch flow:</strong> local branch (from <code>test</code>) → PR to <code>develop</code> (sandbox) → PR to <code>test</code> (CICD governance) → auto <code>uat</code> → auto <code>main</code>. <code>develop</code> is an internal convention, not an official governed branch.</div></div>
+    </div>
+  </div>
+
+  <!-- Target structure -->
+  <div class="section">
+    <div class="section-title">Target repository structure — NestJS monorepo</div>
+    <div class="two-col">
+
+      <div>
+        <div class="col-label">Backend · trini-thrive-be</div>
+        <div class="tree">
+trini-thrive-be/<br>
+├── <span class="hl">apps/</span>                               <span class="dim">← every runnable service here</span><br>
+│   ├── <span class="shared">api/</span>                          <span class="shared">← existing gateway app · off-limits</span><br>
+│   │   ├── src/<br>
+│   │   │   ├── main.ts<br>
+│   │   │   └── api.module.ts<br>
+│   │   ├── tsconfig.app.json<br>
+│   │   └── Dockerfile<br>
+│   ├── <span class="shared">location-service/</span>             <span class="shared">← existing shared service · off-limits</span><br>
+│   │   ├── src/  ·  tsconfig.app.json  ·  Dockerfile<br>
+│   │<br>
+│   ├── <span class="new">hopecard-admin-service/</span>       <span class="new">← Hopecard Admin app</span><br>
+│   ├── <span class="new">hopecard-beneficiary-service/</span> <span class="new">← Hopecard Beneficiary app</span><br>
+│   ├── <span class="new">hopecard-campaign-manager-service/</span><span class="new">← Hopecard CM app</span><br>
+│   ├── <span class="new">hopecard-donor-service/</span>       <span class="new">← Hopecard Digital Donor app</span><br>
+│   ├── <span class="new">hopecard-notification-service/</span><span class="new">← Hopecard Notifications app</span><br>
+│   └── <span class="dim">[other-system]-[persona]-service/</span><span class="dim">← future systems land here</span><br>
+│<br>
+├── <span class="hl">libs/</span>                               <span class="dim">← shared code · not runnable</span><br>
+│   ├── <span class="shared">api-center/src/</span>               <span class="shared">← SDK · do not modify</span><br>
+│   ├── <span class="shared">common/src/</span>                   <span class="shared">← guards · health · filters · config · middleware</span><br>
+│   ├── <span class="shared">contracts/src/</span>                <span class="shared">← shared message patterns</span><br>
+│   └── <span class="shared">supabase/src/</span>                 <span class="shared">← shared DB client</span><br>
+│<br>
+├── tests/<br>
+│   ├── e2e/                          <span class="dim">← Playwright e2e specs</span><br>
+│   └── performance/                  <span class="dim">← k6 smoke tests per app</span><br>
+│<br>
+├── nest-cli.json                     <span class="dim">← monorepo app registry</span><br>
+├── tsconfig.json  ·  tsconfig.build.json<br>
+├── package.json                      <span class="dim">← one root package</span><br>
+├── tribe-manifest.json               <span class="dim">← pipeline Gate 1</span><br>
+└── .env.example                      <span class="dim">← key names only · no real values</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="col-label">Frontend · trini-thrive-fe</div>
+        <div class="tree">
+trini-thrive-fe/<br>
+├── .github/workflows/<br>
+│   └── <span class="key">fe-pipeline-caller.yml</span><br>
+├── tests/performance/           <span class="shared">← shared · do not modify</span><br>
+├── sonar-project.properties     <span class="shared">← shared · do not modify</span><br>
+│<br>
+├── <span class="hl">hope-card/</span>               <span class="dim">← one Next.js app per system</span><br>
+│   ├── src/app/<br>
+│   │   ├── <span class="new">(admin)/</span>           <span class="new">← route group</span><br>
+│   │   │   ├── <span class="new">admin/</span>         <span class="new">← URL prefix → /admin/*</span><br>
+│   │   │   └── layout.tsx<br>
+│   │   ├── <span class="new">(donor)/</span><br>
+│   │   │   ├── <span class="new">donor/</span>         <span class="new">→ /donor/*</span><br>
+│   │   │   └── layout.tsx<br>
+│   │   ├── <span class="new">(campaign-manager)/</span><br>
+│   │   │   └── <span class="new">campaign-manager/</span><br>
+│   │   └── <span class="new">(beneficiary)/</span><br>
+│   │       └── <span class="new">beneficiary/</span><br>
+│   ├── src/middleware.ts        <span class="new">← persona route enforcement</span><br>
+│   ├── Dockerfile · package.json<br>
+│   └── [config files]<br>
+│<br>
+├── <span class="off">damayan/</span>                 <span class="off">← off-limits if not your system</span><br>
+└── <span class="off">bayani-hub/</span>              <span class="off">← off-limits if not your system</span>
+        </div>
+
+        <div class="note info" style="margin-top:0.6rem;font-size:0.77rem;">
+          <strong>Legend:</strong><br>
+          <span style="color:var(--cyan)">■</span> Existing shared infrastructure — import only, never modify<br>
+          <span style="color:var(--green)">■</span> New — your system adds these<br>
+          <span style="color:var(--amber)">■</span> Deprioritised — included but excluded from coverage gate<br>
+          <span style="color:var(--red)">■</span> Off-limits — another system's scope
+        </div>
+
+        <div style="margin-top:1rem">
+          <div class="col-label">Pipeline gates — in order</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Gate</th><th>Pass condition</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>Resolve Backend Systems</td><td><code>tribe-manifest.json</code> present</td></tr>
+                <tr><td>2</td><td>Detect Active Systems</td><td>Service discovery via <code>nest-cli.json</code></td></tr>
+                <tr><td>3</td><td>Validate Backend Dirs</td><td>Services under <code>apps/</code></td></tr>
+                <tr><td>4</td><td>Branch Diff Check</td><td>Branch ahead of base</td></tr>
+                <tr><td>5</td><td>Unit Tests</td><td>0 failures · <code>jest-junit</code></td></tr>
+                <tr><td>6</td><td>Parse Coverage</td><td>≥80% line coverage</td></tr>
+                <tr><td>7</td><td>Dependency Audit</td><td>0 high/critical CVEs</td></tr>
+                <tr><td>8</td><td>License Compliance</td><td>No disallowed licenses</td></tr>
+                <tr><td>9</td><td>SonarCloud</td><td>0 blocker/critical findings</td></tr>
+                <tr><td>10</td><td>Docker Build</td><td>Each app image builds to GHCR</td></tr>
+                <tr><td>11</td><td>Deploy to Render</td><td>Each app health URL resolves</td></tr>
+                <tr><td>12</td><td>E2E + k6 Gate</td><td>Playwright + k6 pass on test/uat</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How monorepo works -->
+  <div class="section">
+    <div class="section-title">How the NestJS monorepo achieves microservices</div>
+    <div class="phase">
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Each folder under <code>apps/</code> is a fully independent NestJS application registered in <code>nest-cli.json</code>. It has its own <code>main.ts</code> (its own port), its own root module, its own <code>tsconfig.app.json</code> extending the root, and its own <code>Dockerfile</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Shared code lives in <code>libs/</code> and is imported via TypeScript path aliases (e.g. <code>@app/common</code>, <code>@app/supabase</code>) defined in the root <code>tsconfig.json</code>. Nothing in <code>libs/</code> is runnable — it is consumed by apps.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Each app is built independently: <code>nest build [app-name]</code>. Each app is deployed independently. Each app runs on its own port and its own Render service. There is no shared runtime between personas.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">The <code>ACTIVE_SERVICE</code> env var pattern from earlier specs is <strong>no longer needed</strong> — the monorepo structure achieves true process isolation natively. Each app is its own entry point.</div></div>
+        <div class="sub-label">nest-cli.json — register every app (example)</div>
+        <div class="code-block">
+{<br>
+&nbsp;&nbsp;<span class="key">"monorepo"</span>: <span class="val">true</span>,<br>
+&nbsp;&nbsp;<span class="key">"root"</span>: <span class="val">"apps/api"</span>,<br>
+&nbsp;&nbsp;<span class="key">"projects"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"api"</span>: { <span class="key">"type"</span>: <span class="val">"application"</span>, <span class="key">"root"</span>: <span class="val">"apps/api"</span>, <span class="key">"sourceRoot"</span>: <span class="val">"apps/api/src"</span> },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"location-service"</span>: { <span class="key">"type"</span>: <span class="val">"application"</span>, <span class="key">"root"</span>: <span class="val">"apps/location-service"</span> },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Add your persona apps here</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"[system]-[persona]"</span>: { <span class="key">"type"</span>: <span class="val">"application"</span>, <span class="key">"root"</span>: <span class="val">"apps/[system]-[persona]"</span>, <span class="key">"sourceRoot"</span>: <span class="val">"apps/[system]-[persona]/src"</span> },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Repeat for each persona</span><br>
+&nbsp;&nbsp;}<br>
+}
+        </div>
+        <div class="note warn"><strong>Every new app must be registered in <code>nest-cli.json</code></strong> or the NestJS build system will not recognise it. This is the first thing to do after creating a new app folder. The pipeline discovers apps via this file.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Branch workflow -->
+  <div class="section">
+    <div class="section-title">Branch workflow</div>
+    <div class="branch-flow">
+      <div class="branch-row">
+        <div class="branch-node local">local/[system]-migration</div>
+        <div class="branch-arrow">──PR──▶</div>
+        <div class="branch-node dev">develop</div>
+        <div class="branch-arrow">──PR──▶</div>
+        <div class="branch-node test">test</div>
+        <div class="branch-arrow">──auto──▶</div>
+        <div class="branch-node uat">uat</div>
+        <div class="branch-arrow">──auto──▶</div>
+        <div class="branch-node main">main</div>
+      </div>
+      <div class="branch-notes">
+        <div class="branch-note-item"><span class="bni purple">◆</span><div><strong>local branch</strong> — created from <code>test</code>. All migration work happens here. Never commit directly to any shared branch.</div></div>
+        <div class="branch-note-item"><span class="bni amber">◆</span><div><strong>develop</strong> — internal shared sandbox (not an official governed branch per the Rules and Guidelines). All three system teams surface conflicts here before governance. No CICD gates run here. No self-approval.</div></div>
+        <div class="branch-note-item"><span class="bni blue">◆</span><div><strong>test</strong> — all 12 pipeline gates run here. Official governance checkpoint. Only promote from <code>develop</code> after local checks pass on the merged state.</div></div>
+        <div class="branch-note-item"><span class="bni green">◆</span><div><strong>uat → main</strong> — auto-promoted by pipeline once all gates pass. E2E + k6 enforced here per Rules and Guidelines section 1.4 and 5.1.</div></div>
+      </div>
+    </div>
+    <div class="note warn"><strong>Official protected branch flow per Rules and Guidelines:</strong> <code>test → uat → main</code>. The <code>develop</code> branch is an internal working convention used by this org — it is not mentioned in the official rules and carries no CICD governance. Treat it as a pre-<code>test</code> conflict surface only.</div>
+  </div>
+
+  <!-- Phases -->
+  <div class="section">
+    <div class="section-title">Implementation phases</div>
+
+    <!-- Phase 1 -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-num">1</div>
+        <div class="phase-label">Preparation — before touching any files</div>
+        <div class="phase-tag">manual</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Clone all persona source repos into a local read-only working folder. Claude Code never modifies source repos.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Clone <code>trini-thrive-be</code> and <code>trini-thrive-fe</code>. Check out <code>test</code> and create your local branch from it:</div></div>
+        <div class="cmd-block">
+          <span class="cmd">git</span> checkout test && <span class="cmd">git</span> pull origin test<br>
+          <span class="cmd">git</span> checkout -b <span class="val">local/[system]-migration</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Map the terrain before writing anything:</div></div>
+        <div class="cmd-block">
+          <span class="comment"># See all existing apps (services)</span><br>
+          <span class="cmd">ls</span> <span class="path">apps/</span><br>
+          <span class="comment"># See all shared libraries</span><br>
+          <span class="cmd">ls</span> <span class="path">libs/</span><br>
+          <span class="comment"># Inspect contents of a specific service</span><br>
+          <span class="cmd">ls</span> <span class="path">apps/hopecard-[persona]-service/src/</span><br>
+          <span class="comment"># Check registered projects in the monorepo</span><br>
+          <span class="cmd">cat</span> <span class="path">nest-cli.json</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Confirm <code>tribe-manifest.json</code> exists at repo root. If your system needs a new entry, request it from the CICD handlers before starting.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Audit all persona source repos and compile a complete list of every page route, API route, controller, and dynamic segment — this is your verification checklist for Phase 5.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Set up your local <code>.env</code> manually.</strong> Copy <code>.env.example</code> to <code>.env</code> and fill in your own local values. Migration never creates or transfers <code>.env</code> files.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Use synthetic test data only — no real PII in any test dataset or fixture. This applies to all environments including local development.</div></div>
+        <div class="note warn"><strong>The backend is a shared NestJS monorepo.</strong> Other systems' apps already exist under <code>apps/</code>. You are adding to what exists. Other apps, <code>libs/</code> contents, root config files, and <code>nest-cli.json</code> entries for other apps are off-limits to modification.</div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase green">
+      <div class="phase-header">
+        <div class="phase-num">2</div>
+        <div class="phase-label">Pre-extraction audit — libs assessment + persona boundaries</div>
+        <div class="phase-tag green">Claude Code</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Assess <code>libs/</code> before writing any app code.</strong> Understand what shared libraries already exist and what your apps can import:</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Library</th><th>Action</th><th>How to use</th></tr></thead>
+            <tbody>
+              <tr><td><code>libs/supabase</code></td><td class="use">Import via alias</td><td>Import <code>SupabaseModule</code> from <code>@app/supabase</code> in your app module. Never copy the service into your app.</td></tr>
+              <tr><td><code>libs/common</code></td><td class="use">Import selectively</td><td>Guards, health, filters, config, middleware — import what your app needs via <code>@app/common</code>. The <code>HealthModule</code> lives inside <code>libs/common</code>, not as a standalone top-level directory. Add to <code>libs/common</code> only for genuinely cross-system utilities.</td></tr>
+              <tr><td><code>libs/contracts</code></td><td class="use">Import patterns</td><td>Shared message/event patterns (e.g. <code>location.patterns.ts</code>). Import via <code>@app/contracts</code>. Do not duplicate pattern constants inside your own service.</td></tr>
+              <tr><td><code>libs/api-center</code></td><td class="skip">Do not modify</td><td>SDK integration — import only via <code>@app/api-center</code>. Owned by CICD infrastructure.</td></tr>
+              <tr><td><code>apps/api</code> · <code>apps/location-service</code></td><td class="skip">Do not touch</td><td>Existing shared infrastructure apps — off-limits entirely.</td></tr>
+              <tr><td>Other system's apps</td><td class="skip">Do not touch</td><td>Another system's <code>apps/</code> folder is off-limits entirely.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note cyan"><strong>TypeScript path alias convention — always use these, never relative paths into libs/:</strong><br>
+          <code>@app/common</code> → <code>libs/common/src/</code><br>
+          <code>@app/supabase</code> → <code>libs/supabase/src/</code><br>
+          <code>@app/api-center</code> → <code>libs/api-center/src/</code><br>
+          <code>@app/contracts</code> → <code>libs/contracts/src/</code><br>
+          These aliases are configured in the root <code>tsconfig.json</code>. Never use relative paths like <code>../../../libs/</code> to import shared code.
+        </div>
+
+        <div class="task" style="margin-top:0.5rem"><div class="task-icon">›</div><div class="task-text">Scan each persona source repo for boundary violations before extraction:</div></div>
+        <div class="cmd-block">
+          <span class="comment"># Imports escaping the persona's own src/</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "from ['\"]\.\./"</span> &lt;persona&gt;/src/<br>
+          <span class="comment"># Hardcoded localhost or port references</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "localhost:[0-9]"</span> &lt;persona&gt;/src/<br>
+          <span class="comment"># NestJS DI union type risk</span><br>
+          <span class="cmd">grep</span> <span class="val">-rn "@Optional()"</span> &lt;persona&gt;/src/<br>
+          <span class="comment"># Frontend — list all routes</span><br>
+          <span class="cmd">find</span> <span class="path">&lt;persona&gt;/src/app</span> <span class="val">-name "page.tsx" -o -name "route.ts"</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Confirm every proposed <code>apps/[name]-service</code> folder name is unique — since each persona app is a fully isolated NestJS app, naming collisions at the <code>src/</code> level do not apply. The check concerns uniqueness within <code>apps/</code> and across Dockerized service ports:</div></div>
+        <div class="cmd-block">
+          <span class="cmd">ls</span> <span class="path">apps/</span> | <span class="cmd">grep</span> <span class="val">[your-proposed-app-name]</span>
+        </div>
+        <div class="outcome-grid">
+          <div class="outcome pass"><div class="outcome-title">✓ Audit clean</div>Proceed to Phase 3. App names confirmed unique, libs assessed, route list compiled.</div>
+          <div class="outcome fail"><div class="outcome-title">⚠ Issues found</div>Fix before extraction: resolve import escapes, replace localhost refs, fix DI union types, rename conflicting app names.</div>
+        </div>
+        <div class="note purple"><strong>NestJS DI union type rule:</strong> <code>@Optional()</code> on a union-typed parameter must be paired with <code>@Inject(Token)</code>. Without it, <code>emitDecoratorMetadata</code> emits <code>Object</code> and NestJS resolves to <code>undefined</code> at test time.</div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase blue">
+      <div class="phase-header">
+        <div class="phase-num">3</div>
+        <div class="phase-label">Backend extraction — create persona apps under apps/</div>
+        <div class="phase-tag blue">Claude Code · trini-thrive-be</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Each persona is its own app under <code>apps/</code>.</strong> Create one folder per persona: <code>apps/[system]-[persona]/</code>. This is the governance requirement — services must be under <code>apps/</code>.</div></div>
+
+        <div class="sub-label">Required structure for every persona app</div>
+        <div class="code-block">
+apps/[system]-[persona]/<br>
+├── src/<br>
+│   ├── main.ts                  <span class="comment">← listens on unique port via process.env.PORT</span><br>
+│   └── [persona].module.ts      <span class="comment">← imports persona controllers + libs/</span><br>
+├── tsconfig.app.json            <span class="comment">← extends ../../tsconfig.json</span><br>
+└── Dockerfile                   <span class="comment">← builds this app only: nest build [app-name]</span>
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Port assignment.</strong> Each persona app must listen on a unique port. Never hardcode — always read from environment:</div></div>
+        <div class="code-block">
+<span class="comment">// apps/[system]-[persona]/src/main.ts</span><br>
+async function bootstrap() {<br>
+&nbsp;&nbsp;const app = await NestFactory.create([Persona]Module);<br>
+&nbsp;&nbsp;const port = process.env.PORT ?? <span class="val">3001</span>; <span class="comment">← unique default per persona</span><br>
+&nbsp;&nbsp;await app.listen(port);<br>
+&nbsp;&nbsp;Logger.log(<span class="val">`[system]-[persona] running on port ${port}`</span>);<br>
+}
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Controller prefix convention.</strong> Every controller must use a unique, versioned route prefix that identifies the system and persona. This satisfies the API versioning rule from the Tribe Rules:</div></div>
+        <div class="code-block">
+<span class="comment">// Pattern: @Controller('api/v1/[system]/[persona]/[resource]')</span><br>
+@Controller(<span class="val">'api/v1/hopecard/admin/auth'</span>)     <span class="comment">← Admin auth</span><br>
+@Controller(<span class="val">'api/v1/hopecard/donor/auth'</span>)     <span class="comment">← Digital Donor auth</span><br>
+@Controller(<span class="val">'api/v1/hopecard/donor/campaigns'</span>) <span class="comment">← Donor campaigns</span><br>
+@Controller(<span class="val">'api/v1/hopecard/cm/campaigns'</span>)   <span class="comment">← CM campaigns</span><br>
+<span class="comment">// Never use bare generic prefixes. Always include api/v1/ system/ persona/ resource/</span>
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Shared code via lib imports.</strong> Import from <code>libs/</code> using path aliases — never copy library files into your app:</div></div>
+        <div class="code-block">
+<span class="comment">// In [persona].module.ts</span><br>
+import { SupabaseModule } from <span class="val">'@app/supabase'</span>;<br>
+import { CommonModule } from <span class="val">'@app/common'</span>;<br>
+import { ApiCenterSdkModule } from <span class="val">'@app/api-center'</span>;
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Register every new app in <code>nest-cli.json</code></strong> immediately after creating its folder. Build will fail silently for unregistered apps.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Append your system's env var key names to root <code>.env.example</code> under a labelled comment block. Key names only — no real values. Provide actual values to the API tribe separately.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Run <code>npm audit fix</code> after installing. Gate 7 fails on high or critical CVEs.</div></div>
+
+        <div class="note danger"><strong>Isolation rule — backend:</strong> you may only create files inside <code>apps/[your-new-app]-service/</code>, add entries to <code>nest-cli.json</code>, append to <code>.env.example</code>, and update <code>package-lock.json</code>. There is no shared <code>app.module.ts</code> — each service has its own root module inside its own <code>apps/</code> folder. Persona feature modules are registered inside that service's root module only. If you discover a bug in a lib, report it — do not fix unilaterally.</div>
+        <div class="note warn"><strong>No per-app config duplication at root level.</strong> Each app has its own <code>tsconfig.app.json</code> inside its folder — do not add a new root-level tsconfig per app. The root <code>package.json</code>, root <code>tsconfig.json</code>, and root <code>Dockerfile</code> are shared — one of each.</div>
+        <div class="note info"><strong>APP_GUARD rule:</strong> never register your own persona-specific guards globally via <code>APP_GUARD</code> or <code>APP_INTERCEPTOR</code>. Apply them at the controller level only using decorators. The only permitted <code>APP_GUARD</code> providers are shared infrastructure guards in <code>libs/common/GatewayModule</code> (e.g. <code>ThrottlerGuard</code>) — these are already registered by the shared infra and must not be re-registered by persona apps.</div>
+        <div class="note cyan"><strong>Reporting is not a standalone service.</strong> Reporting functionality lives inside <code>apps/hopecard-campaign-manager-service/src/reporting/</code> as a feature module of the Campaign Manager service — it is not its own separate <code>apps/</code> entry. Do not create a separate <code>hopecard-reporting-service/</code> app.</div>
+      </div>
+    </div>
+
+    <!-- Phase 3B: JWT + PersonaGuard -->
+    <div class="phase red">
+      <div class="phase-header">
+        <div class="phase-num">3B</div>
+        <div class="phase-label">JWT persona claims + PersonaGuard — mandatory security layer</div>
+        <div class="phase-tag red">Claude Code · trini-thrive-be · never skip</div>
+      </div>
+      <div class="phase-body">
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Why this is required.</strong> Even with separate apps on separate ports, a malicious or misconfigured client could send a valid JWT from one persona to another persona's endpoint. The PersonaGuard closes this gap at the application layer — every protected endpoint rejects tokens whose persona claim does not match its own expected persona.</div></div>
+
+        <div class="sub-label">JWT payload — required claims for every auth service</div>
+        <div class="code-block">
+<span class="comment">// Every persona's auth service must include these two claims</span><br>
+const payload = {<br>
+&nbsp;&nbsp;sub: user.id,<br>
+&nbsp;&nbsp;email: user.email,<br>
+&nbsp;&nbsp;<span class="key">persona</span>: <span class="val">'[persona-slug]'</span>,   <span class="comment">← lowercase hyphenated · unique per persona</span><br>
+&nbsp;&nbsp;<span class="key">system</span>:  <span class="val">'[system-slug]'</span>,    <span class="comment">← lowercase hyphenated · identifies the system</span><br>
+};<br><br>
+<span class="comment">// Hopecard reference values:</span><br>
+<span class="comment">// admin-auth           → persona: 'admin',            system: 'hopecard'</span><br>
+<span class="comment">// donor-auth           → persona: 'digital-donor',    system: 'hopecard'</span><br>
+<span class="comment">// cm-auth              → persona: 'campaign-manager', system: 'hopecard'</span><br>
+<span class="comment">// beneficiary-auth     → persona: 'beneficiary',      system: 'hopecard'</span>
+        </div>
+
+        <div class="sub-label" style="margin-top:0.75rem">PersonaGuard — lives in libs/common/src/guards/</div>
+        <div class="code-block">
+<span class="comment">// libs/common/src/guards/persona.guard.ts</span><br>
+@Injectable()<br>
+export class PersonaGuard implements CanActivate {<br>
+&nbsp;&nbsp;constructor(private reflector: Reflector) {}<br><br>
+&nbsp;&nbsp;canActivate(ctx: ExecutionContext): boolean {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const { expectedPersona, expectedSystem } =<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.reflector.get(<span class="val">'persona_meta'</span>, ctx.getHandler());<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const user = ctx.switchToHttp().getRequest().user;<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;if (!user?.persona || !user?.system) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new ForbiddenException({ code: <span class="val">'INVALID_CLAIMS'</span> });<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if (user.persona !== expectedPersona || user.system !== expectedSystem) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new ForbiddenException({ code: <span class="val">'PERSONA_MISMATCH'</span> });<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return true;<br>
+&nbsp;&nbsp;}<br>
+}<br><br>
+<span class="comment">// Response body NEVER leaks expected values — only the code</span><br>
+<span class="comment">// { "statusCode": 403, "message": "Access denied", "code": "PERSONA_MISMATCH" }</span>
+        </div>
+
+        <div class="note info"><strong>JwtGuard implementation note:</strong> the guard at <code>libs/common/src/guards/jwt.guard.ts</code> is a custom <code>CanActivate</code> implementation using <code>jose</code>'s <code>jwtVerify</code> — it is NOT a Passport strategy. There is no <code>validate()</code> method and no <code>jwt.strategy.ts</code>. Do not reference or create a Passport-style strategy. The guard verifies the token, attaches the full payload to <code>request.user</code>, and exposes all claims (including <code>persona</code> and <code>system</code>) to downstream controllers.</div>
+
+        <div class="note ok"><strong>Already complete for Hopecard — do not re-apply:</strong><br>
+          ✅ <code>JwtPayload</code> interface already declares <code>persona: string</code> and <code>system: string</code> in <code>libs/common/src/guards/jwt.guard.ts</code> (lines 10–18)<br>
+          ✅ <code>JwtGuard.canActivate</code> already validates <code>persona !== expectedPersona || system !== 'hopecard'</code> and throws 403 (lines 50–53)<br>
+          ✅ <code>request.user = payload</code> already exposes all claims to controllers (line 56)<br>
+          These items are complete. New systems migrating after Hopecard inherit this implementation automatically.
+        </div>
+
+        <div class="sub-label" style="margin-top:0.75rem">GatewayModule factory pattern — how JwtGuard is wired per service</div>
+        <div class="code-block">
+<span class="comment">// Services import GatewayModule from @app/common</span><br>
+<span class="comment">// GatewayModule provides JwtGuard via useFactory:</span><br>
+{<br>
+&nbsp;&nbsp;provide: JwtGuard,<br>
+&nbsp;&nbsp;useFactory: () => new JwtGuard(),<br>
+}<br><br>
+<span class="comment">// To enforce persona validation on a specific controller,</span><br>
+<span class="comment">// instantiate the guard with the expected persona argument:</span><br>
+@UseGuards(new JwtGuard(<span class="val">'beneficiary'</span>))<br>
+@Controller(<span class="val">'api/v1/hopecard/beneficiary/auth'</span>)<br>
+export class BeneficiaryAuthController { ... }<br><br>
+<span class="comment">// Do not re-register JwtGuard separately in your own module.</span><br>
+<span class="comment">// Import GatewayModule from @app/common and use the factory pattern.</span>
+        </div>
+
+        <div class="sub-label" style="margin-top:0.75rem">@RequirePersona() decorator — applies JwtGuard + PersonaGuard together</div>
+        <div class="code-block">
+<span class="comment">// libs/common/src/decorators/require-persona.decorator.ts</span><br>
+export const RequirePersona = (persona: string, system: string) =><br>
+&nbsp;&nbsp;applyDecorators(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SetMetadata(<span class="val">'persona_meta'</span>, { expectedPersona: persona, expectedSystem: system }),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;UseGuards(JwtGuard, PersonaGuard),<br>
+&nbsp;&nbsp;);<br><br>
+<span class="comment">// Usage on any controller method or class:</span><br>
+@RequirePersona(<span class="val">'admin'</span>, <span class="val">'hopecard'</span>)<br>
+@Get(<span class="val">'dashboard'</span>)<br>
+getDashboard() { ... }
+        </div>
+
+        <div class="sub-label" style="margin-top:0.75rem">Complete isolation matrix — every combination must be tested</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Token / Condition</th><th>/admin/*</th><th>/donor/*</th><th>/cm/*</th><th>/beneficiary/*</th></tr></thead>
+            <tbody>
+              <tr><td>admin token</td><td class="pass">✅ 200</td><td class="fail">❌ 403</td><td class="fail">❌ 403</td><td class="fail">❌ 403</td></tr>
+              <tr><td>digital-donor token</td><td class="fail">❌ 403</td><td class="pass">✅ 200</td><td class="fail">❌ 403</td><td class="fail">❌ 403</td></tr>
+              <tr><td>campaign-manager token</td><td class="fail">❌ 403</td><td class="fail">❌ 403</td><td class="pass">✅ 200</td><td class="fail">❌ 403</td></tr>
+              <tr><td>beneficiary token</td><td class="fail">❌ 403</td><td class="fail">❌ 403</td><td class="fail">❌ 403</td><td class="pass">✅ 200</td></tr>
+              <tr><td>No token</td><td class="fail">❌ 401</td><td class="fail">❌ 401</td><td class="fail">❌ 401</td><td class="fail">❌ 401</td></tr>
+              <tr><td>Expired token</td><td class="fail">❌ 401</td><td class="fail">❌ 401</td><td class="fail">❌ 401</td><td class="fail">❌ 401</td></tr>
+              <tr><td>Wrong system (e.g. damayan)</td><td class="fail">❌ 403</td><td class="fail">❌ 403</td><td class="fail">❌ 403</td><td class="fail">❌ 403</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note danger"><strong>Every off-diagonal cell must be 403 or 401. No exceptions.</strong> A test suite that does not cover the full isolation matrix is incomplete and the PR must not be merged.</div>
+        <div class="note warn"><strong>PersonaGuard is never registered globally.</strong> It is applied per-controller or per-method via <code>@RequirePersona()</code> only. Public endpoints (health checks, password reset, login) are explicitly left unguarded.</div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase blue">
+      <div class="phase-header">
+        <div class="phase-num">4</div>
+        <div class="phase-label">Tests, coverage, and Docker configuration</div>
+        <div class="phase-tag blue">Claude Code · trini-thrive-be</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Write <code>*.spec.ts</code> files for every in-scope module across all your persona apps. Target: ≥80% line coverage. Tests must cover the full isolation matrix from Phase 3B.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Auth service specs must assert persona and system claim values in every issued token. A spec that does not assert these claims is incomplete.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Coverage reporters must include <code>json-summary</code> and <code>lcov</code>. Test reporter must be <code>jest-junit</code> → <code>test-results/junit.xml</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Create <code>docker-compose.yml</code></strong> at repo root for local multi-service development. One service per persona app, each with its own port and env vars. Same <code>Dockerfile</code> pattern, different build targets:</div></div>
+        <div class="code-block">
+<span class="comment"># docker-compose.yml — one service per persona app</span><br>
+services:<br>
+&nbsp;&nbsp;[system]-[persona-a]:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;build:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;context: .<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dockerfile: apps/[system]-[persona-a]/Dockerfile<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ports: [<span class="val">"3001:3001"</span>]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;env_file: .env<br>
+&nbsp;&nbsp;&nbsp;&nbsp;environment:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PORT: <span class="val">"3001"</span><br>
+&nbsp;&nbsp;[system]-[persona-b]:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;build:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;context: .<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dockerfile: apps/[system]-[persona-b]/Dockerfile<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ports: [<span class="val">"3002:3002"</span>]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;env_file: .env<br>
+&nbsp;&nbsp;&nbsp;&nbsp;environment:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PORT: <span class="val">"3002"</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Add k6 smoke test file</strong> per persona app under <code>tests/performance/</code> — required for Gate 12. Follow the naming pattern of existing files (e.g. <code>api-smoke.js</code>, <code>location-service-smoke.js</code>).</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Add E2E spec</strong> under <code>tests/e2e/</code> for your persona app — required for Gate 12 promotion on <code>test</code> and <code>uat</code>.</div></div>
+        <div class="note purple"><strong>SonarCloud blocker rules:</strong> async helpers at module scope not inside <code>describe</code> (S7721). No redundant type assertions (S4325). Either fails Gate 9.</div>
+        <div class="note warn"><strong>Coverage path patterns must use monorepo-aware paths.</strong> Use <code>apps/hopecard-[persona]-service/</code>-prefixed patterns for deprioritised service exclusions (e.g. <code>"/apps/hopecard-admin-service/"</code>) rather than bare folder names — bare names like <code>/analytics/</code> could accidentally match unrelated paths elsewhere in the monorepo. Shared lib exclusions use <code>"/libs/api-center/"</code>, <code>"/libs/common/decorators/"</code>, <code>"/libs/common/guards/"</code>. App main entry exclusions use <code>"apps/[app-name]/src/main.ts"</code>. Never remove exclusions added by other systems — append only.</div>
+      </div>
+    </div>
+
+    <!-- Phase 5 -->
+    <div class="phase cyan">
+      <div class="phase-header">
+        <div class="phase-num">5</div>
+        <div class="phase-label">Frontend extraction — route groups + URL prefix + persona middleware</div>
+        <div class="phase-tag cyan">Claude Code · trini-thrive-fe</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Your system has one Next.js app</strong> — all personas merge into <code>[system-folder]/src/</code>. Each persona gets a route group for filesystem organisation and a URL prefix folder for routing uniqueness.</div></div>
+
+        <div class="sub-label">Step A — Define URL prefix map before touching any files</div>
+        <div class="code-block">
+<span class="comment">// Map each persona to a unique URL prefix (Hopecard example)</span><br>
+<span class="comment">// Admin               → /admin/*</span><br>
+<span class="comment">// Digital Donor       → /donor/*</span><br>
+<span class="comment">// Campaign Manager    → /campaign-manager/*</span><br>
+<span class="comment">// Beneficiary         → /beneficiary/*</span>
+        </div>
+
+        <div class="sub-label" style="margin-top:0.75rem">Step B — Filesystem structure: route group + prefix folder</div>
+        <div class="code-block">
+[system]/src/app/<br>
+├── (admin)/<br>
+│   ├── admin/login/page.tsx         <span class="comment">→ URL: /admin/login</span><br>
+│   ├── admin/dashboard/page.tsx     <span class="comment">→ URL: /admin/dashboard</span><br>
+│   └── layout.tsx                   <span class="comment">← Admin auth context only</span><br>
+├── (donor)/<br>
+│   ├── donor/login/page.tsx         <span class="comment">→ URL: /donor/login</span><br>
+│   ├── donor/campaigns/page.tsx     <span class="comment">→ URL: /donor/campaigns</span><br>
+│   └── layout.tsx<br>
+├── (campaign-manager)/<br>
+│   ├── campaign-manager/login/page.tsx<br>
+│   └── layout.tsx<br>
+└── (beneficiary)/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── beneficiary/login/page.tsx<br>
+&nbsp;&nbsp;&nbsp;&nbsp;└── layout.tsx
+        </div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">All internal <code>router.push()</code>, <code>redirect()</code>, and <code>Link href</code> inside each persona's copied pages must be updated to include the new URL prefix.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Merge <code>package.json</code> dependencies. Copy non-conflicting assets into <code>public/[persona-prefix]/</code>. Prefix component folders on name collision.</div></div>
+
+        <div class="sub-label" style="margin-top:0.75rem">Step C — Next.js middleware: persona route enforcement</div>
+        <div class="code-block">
+<span class="comment">// [system]/src/middleware.ts — prevents URL-switching exploits</span><br>
+const PERSONA_MAP: Record&lt;string, string&gt; = {<br>
+&nbsp;&nbsp;<span class="val">'/admin'</span>: <span class="val">'admin'</span>, <span class="val">'/donor'</span>: <span class="val">'digital-donor'</span>,<br>
+&nbsp;&nbsp;<span class="val">'/campaign-manager'</span>: <span class="val">'campaign-manager'</span>, <span class="val">'/beneficiary'</span>: <span class="val">'beneficiary'</span>,<br>
+};<br>
+const PUBLIC = [<span class="val">'/login'</span>, <span class="val">'/register'</span>, <span class="val">'/forgot-password'</span>];<br><br>
+export function middleware(req: NextRequest) {<br>
+&nbsp;&nbsp;const prefix = Object.keys(PERSONA_MAP).find(p => req.nextUrl.pathname.startsWith(p));<br>
+&nbsp;&nbsp;if (!prefix) return NextResponse.next();<br>
+&nbsp;&nbsp;if (PUBLIC.some(r => req.nextUrl.pathname.endsWith(r))) return NextResponse.next();<br><br>
+&nbsp;&nbsp;const stored = req.cookies.get(<span class="val">'persona'</span>)?.value;<br>
+&nbsp;&nbsp;if (!stored || stored !== PERSONA_MAP[prefix]) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return NextResponse.redirect(new URL(<span class="val">`${prefix}/login`</span>, req.url));<br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;return NextResponse.next();<br>
+}<br>
+export const config = { matcher: [<span class="val">'/admin/:path*'</span>, <span class="val">'/donor/:path*'</span>, <span class="val">'/campaign-manager/:path*'</span>, <span class="val">'/beneficiary/:path*'</span>] };
+        </div>
+
+        <div class="sub-label" style="margin-top:0.75rem">Step D — Persona cookie storage strategy (per persona type)</div>
+        <div class="code-block">
+<span class="comment">// JWT-issuing personas (e.g. Admin) — read from token claim</span><br>
+const decoded = JSON.parse(atob(token.split(<span class="val">'.'</span>)[1]));<br>
+if (decoded.persona !== <span class="val">'admin'</span> || decoded.system !== <span class="val">'hopecard'</span>) {<br>
+&nbsp;&nbsp;clearAuth(); router.push(<span class="val">'/admin/login'</span>); return;<br>
+}<br>
+document.cookie = <span class="val">`persona=admin; path=/; SameSite=Strict`</span>;<br>
+router.push(<span class="val">'/admin/dashboard'</span>);<br><br>
+<span class="comment">// Supabase-session personas — store at login time (no JWT claim to read)</span><br>
+<span class="comment">// The login page already knows which persona it is</span><br>
+document.cookie = <span class="val">`persona=digital-donor; path=/; SameSite=Strict`</span>;<br>
+router.push(<span class="val">'/donor/dashboard'</span>);
+        </div>
+
+        <div class="sub-label" style="margin-top:0.75rem">Step E — Logout: persona cookie must be cleared on every sign-out</div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Why this matters.</strong> The middleware reads the <code>persona</code> cookie to decide whether to allow or redirect a request. If a user logs out but the cookie is not cleared, the next person who opens the same browser will have a stale <code>persona</code> cookie from the previous session. If they try to log in as a different persona (e.g. previous user was donor, new user is admin), the middleware will redirect them away from <code>/admin/*</code> until the old cookie expires naturally. Clearing it on logout prevents this entirely.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Every persona's logout handler must clear both the auth token and the persona cookie before redirecting to login:</strong></div></div>
+        <div class="code-block">
+<span class="comment">// In every persona's logout handler — order matters</span><br>
+<span class="comment">// 1. Clear the auth token (JWT or Supabase session)</span><br>
+clearAuthToken();           <span class="comment">// remove from localStorage / sessionStorage / httpOnly cookie</span><br>
+supabase.auth.signOut();    <span class="comment">// if Supabase-session persona</span><br><br>
+<span class="comment">// 2. Clear the persona cookie explicitly — set Max-Age=0 to expire it immediately</span><br>
+document.cookie = <span class="val">`persona=; path=/; SameSite=Strict; Max-Age=0`</span>;<br><br>
+<span class="comment">// 3. Only redirect AFTER both are cleared</span><br>
+router.push(<span class="val">'/[persona-prefix]/login'</span>);<br><br>
+<span class="comment">// NEVER redirect before clearing — the middleware reads the cookie</span><br>
+<span class="comment">// synchronously on the next request. A stale cookie means the new</span><br>
+<span class="comment">// user gets redirected away from their intended persona login page.</span>
+        </div>
+        <div class="note danger"><strong>Never rely on cookie expiry to clear persona state.</strong> The persona cookie must be explicitly expired with <code>Max-Age=0</code> on every logout. Do not set a long-lived expiry on the persona cookie — it should last only as long as the session. If the auth token expires or is revoked, the persona cookie must be cleared simultaneously, not left to expire on its own schedule.</div>
+        <div class="note warn"><strong>Cross-persona login scenario:</strong> if a browser has a stale <code>persona=digital-donor</code> cookie and someone navigates directly to <code>/admin/login</code>, the middleware will redirect them to <code>/admin/login</code> (the login page is public so it passes through). The admin login page must call the logout handler on mount if a mismatched persona cookie is detected — this clears the stale cookie before the new login proceeds.</div>
+
+        <div class="sub-label" style="margin-top:0.75rem">Step F — Port registry: prevent duplicate service ports locally</div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Why this matters.</strong> Since each persona service runs as its own NestJS process on its own port, two services accidentally assigned the same port will cause a bind error on startup — one service will fail to start and all its routes will be unreachable. In a <code>docker-compose</code> setup this causes the conflicting container to exit immediately. Port assignments must be unique across every service in the monorepo and must be documented in one canonical place.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Canonical port registry — maintain this in <code>.env.example</code> and <code>docker-compose.yml</code>. Every system must consult the registry before assigning ports and must not claim a port already listed:</strong></div></div>
+        <div class="code-block">
+<span class="comment"># PORT REGISTRY — trini-thrive-be</span><br>
+<span class="comment"># Every service port must be unique. Check this list before adding a new service.</span><br>
+<span class="comment"># Format: SERVICE_NAME=PORT</span><br><br>
+<span class="comment"># ── Existing shared services (do not modify) ──</span><br>
+<span class="comment"># api (gateway)            = 3000</span><br>
+<span class="comment"># location-service         = 3010</span><br><br>
+<span class="comment"># ── Hopecard services ──</span><br>
+<span class="comment"># hopecard-admin-service           = 3101</span><br>
+<span class="comment"># hopecard-beneficiary-service     = 3102</span><br>
+<span class="comment"># hopecard-campaign-manager-service= 3103</span><br>
+<span class="comment"># hopecard-donor-service           = 3104</span><br>
+<span class="comment"># hopecard-notification-service    = 3105</span><br><br>
+<span class="comment"># ── Future systems — claim a range and document it here ──</span><br>
+<span class="comment"># Damayan:   3201–3299</span><br>
+<span class="comment"># BayaniHub: 3301–3399</span><br><br>
+<span class="comment"># In .env — each service reads its own PORT variable</span><br>
+HOPECARD_ADMIN_PORT=3101<br>
+HOPECARD_BENEFICIARY_PORT=3102<br>
+HOPECARD_CM_PORT=3103<br>
+HOPECARD_DONOR_PORT=3104<br>
+HOPECARD_NOTIFICATION_PORT=3105
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Each service's <code>main.ts</code> reads its own dedicated port env var — never a generic <code>PORT</code> that could be accidentally shared between services running simultaneously:</div></div>
+        <div class="code-block">
+<span class="comment">// apps/hopecard-admin-service/src/main.ts</span><br>
+const port = process.env.HOPECARD_ADMIN_PORT ?? <span class="val">3101</span>;<br><br>
+<span class="comment">// apps/hopecard-donor-service/src/main.ts</span><br>
+const port = process.env.HOPECARD_DONOR_PORT ?? <span class="val">3104</span>;<br><br>
+<span class="comment">// Never: process.env.PORT — this is ambiguous when multiple services</span><br>
+<span class="comment">// run simultaneously and the same PORT env var is set in the shell.</span>
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Before starting any local multi-service session, verify no port is already bound:</strong></div></div>
+        <div class="cmd-block">
+          <span class="comment"># Check if a port is already in use before starting services</span><br>
+          <span class="comment"># Windows</span><br>
+          <span class="cmd">netstat</span> <span class="val">-ano | findstr :3101</span><br>
+          <span class="comment"># macOS / Linux</span><br>
+          <span class="cmd">lsof</span> <span class="val">-i :3101</span><br><br>
+          <span class="comment"># If a port is bound by a leftover process, find and kill it</span><br>
+          <span class="comment"># Windows: taskkill /PID [pid] /F</span><br>
+          <span class="comment"># macOS / Linux: kill -9 [pid]</span><br><br>
+          <span class="comment"># With docker-compose — conflicting ports surface at startup</span><br>
+          <span class="cmd">docker-compose up</span> <span class="comment"># will fail with "port is already allocated" if conflict exists</span><br>
+          <span class="cmd">docker-compose down</span> <span class="comment"># always run this before re-starting to release all ports</span>
+        </div>
+        <div class="note warn"><strong>When a new system (Damayan, BayaniHub) migrates their services</strong>, they must check the port registry in <code>.env.example</code> before assigning any port, claim a port range for their system, and add their entries to both <code>.env.example</code> and <code>docker-compose.yml</code>. Never pick a port by guessing — always consult the registry first.</div>
+        <div class="note info"><strong>docker-compose <code>ports</code> mapping must exactly match the service's env var default.</strong> If <code>HOPECARD_ADMIN_PORT=3101</code> then <code>docker-compose.yml</code> must have <code>ports: ["3101:3101"]</code> and <code>environment: HOPECARD_ADMIN_PORT: "3101"</code>. A mismatch between the published port and the port the process binds to will make the service unreachable from the host even if the container starts successfully.</div>
+
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Run from inside <code>[system-folder]/</code>: <code>npm install && npm run lint && npm run test && npm run build</code>. All must pass before Phase 6.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">E2E tests must cover Chromium and WebKit/Safari per Rules and Guidelines section 5.1.</div></div>
+        <div class="note ok"><strong>With URL prefix + middleware + PersonaGuard together:</strong> a logged-in donor user who manually types <code>/admin/dashboard</code> in the URL bar is redirected to <code>/admin/login</code> by the frontend middleware before the page loads. If they somehow bypass the frontend and call the backend directly with a donor JWT, the PersonaGuard returns 403. Both layers must fail simultaneously for an exploit to succeed.</div>
+        <div class="note danger"><strong>Isolation rule — frontend:</strong> only create or modify files inside <code>[your-system-folder]/</code>. Never touch another system's folder or root-level shared files. Verify with <code>git diff develop --name-only</code> before every commit.</div>
+      </div>
+    </div>
+
+    <!-- Phase 6 -->
+    <div class="phase amber">
+      <div class="phase-header">
+        <div class="phase-num">6</div>
+        <div class="phase-label">GitHub variables, secrets, and ENV handover</div>
+        <div class="phase-tag amber">manual · GitHub Settings + API tribe</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Apply <code>BACKEND_MULTI_SYSTEMS_JSON</code> or <code>BACKEND_SINGLE_SYSTEMS_JSON</code> in GitHub Settings → Variables on <code>trini-thrive-be</code>. Confirm with CICD handlers which variable the pipeline reads and what format it expects for the <code>apps/</code> monorepo structure.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Apply <code>FE_MULTI_SYSTEMS_JSON</code> or <code>FE_SINGLE_SYSTEMS_JSON</code> in GitHub Settings → Variables on <code>trini-thrive-fe</code>. One entry per system (not per persona). Append only — never remove or reformat existing entries.</div></div>
+        <div class="code-block">
+<span class="comment">// FE_MULTI_SYSTEMS_JSON — one entry per system</span><br>
+[<br>
+&nbsp;&nbsp;{ <span class="key">"name"</span>: <span class="val">"[System Name]"</span>, <span class="key">"dir"</span>: <span class="val">"[system-folder]"</span>, <span class="key">"image"</span>: <span class="val">"[slug]"</span>, <span class="key">"vercel_project_secret"</span>: <span class="val">"VERCEL_PROJECT_ID_[SYSTEM]"</span> }<br>
+]
+        </div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>ENV vars for deployment go to the API tribe.</strong> Compile every key name your personas require. Hand the list to the API tribe — they manage deployed values externally.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Set <code>RENDER_HEALTHCHECK_URL_TEST</code> as a GitHub Secret — full URL to each persona app's health endpoint.</div></div>
+        <div class="note danger"><strong>Workflow input rule:</strong> never add <code>with:</code> inputs to caller workflows that are not declared in the central reusable workflow. GitHub rejects the entire file at parse time. Use <code>secrets: inherit</code> only.</div>
+      </div>
+    </div>
+
+    <!-- Phase 7 -->
+    <div class="phase green">
+      <div class="phase-header">
+        <div class="phase-num">7</div>
+        <div class="phase-label">Validation, develop PR, and test PR</div>
+        <div class="phase-tag green">Claude Code + manual review</div>
+      </div>
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Local pre-push checks — all must pass before any PR:</strong></div></div>
+        <div class="cmd-block">
+          <span class="comment"># Build each persona service individually</span><br>
+          <span class="cmd">npm run</span> <span class="val">build:hopecard-[persona]-service</span><br><br>
+          <span class="comment"># Run tests for a specific service</span><br>
+          <span class="cmd">npm run</span> <span class="val">test:hopecard-[persona]-service</span><br><br>
+          <span class="comment"># Run tests with coverage across all projects</span><br>
+          <span class="cmd">npm run test:cov</span>    <span class="comment"># ≥80% · 0 failures · isolation matrix covered</span><br><br>
+          <span class="comment"># Start a service in dev mode (local testing)</span><br>
+          <span class="cmd">npm run</span> <span class="val">start:hopecard-[persona]-service:dev</span><br><br>
+          <span class="comment"># Full quality suite</span><br>
+          <span class="cmd">npm run lint</span>        <span class="comment"># 0 errors</span><br>
+          <span class="cmd">npm run typecheck</span>   <span class="comment"># 0 errors</span><br>
+          <span class="cmd">npm audit</span>           <span class="comment"># 0 high/critical CVEs</span><br><br>
+          <span class="comment"># Isolation check</span><br>
+          <span class="cmd">git diff develop --name-only</span><br>
+          <span class="comment"># Allowed: apps/hopecard-[persona]-service/ · that service's root module</span><br>
+          <span class="comment"># · nest-cli.json · .env.example · package-lock.json</span><br>
+          <span class="comment"># Anything else = blocking error
+        </span></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Every auth service spec asserts <code>persona</code> and <code>system</code> claim values.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Full 7×4 isolation matrix covered in PersonaGuard specs.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Frontend: route verification — walk every route, confirm middleware redirects correctly, confirm logout clears <code>persona</code> cookie before redirect.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">Port registry: confirm every new service port is documented in <code>.env.example</code> and <code>docker-compose.yml</code>, and that no two services share a port. Run <code>docker-compose up</code> locally and confirm all containers start without port bind errors.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">No hardcoded secrets, no real <code>.env</code> values, no hardcoded localhost URLs anywhere.</div></div>
+        <div class="task"><div class="task-icon">·</div><div class="task-text">E2E specs and k6 smoke tests present for each persona app.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Commit: <code>feat([system]): extract and integrate all persona apps into apps/</code></div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">PR to <code>develop</code> first. Resolve cross-system conflicts. Re-run all local checks on the merged state. Then PR <code>develop → test</code>.</div></div>
+        <div class="note ok">All 12 pipeline gates must be green before promotion to <code>uat → main</code>. Fix on your branch, re-merge to <code>develop</code>, update the existing PR. Do not open a new one.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Hard rules -->
+  <div class="section">
+    <div class="section-title">Hard rules — always in effect for all systems</div>
+    <div class="phase">
+      <div class="phase-body">
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Branch: <code>local/[system]</code> (from <code>test</code>) → <code>develop</code> → <code>test</code> → auto <code>uat</code> → auto <code>main</code>. No direct commits to any shared branch. No self-approval.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Services must be under <code>apps/</code>.</strong> No exceptions. Every runnable persona service is its own app entry point under <code>apps/[system]-[persona]/</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Shared code lives in <code>libs/</code>.</strong> Never duplicate library code into an app. Import via path aliases (<code>@app/common</code>, <code>@app/supabase</code> etc.).</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Every new app must be registered in <code>nest-cli.json</code> immediately on creation.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">All controller prefixes must follow <code>api/v1/[system]/[persona]/[resource]</code>. Semantic versioning is mandatory per Tribe Rules section 1.1.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>PersonaGuard is mandatory on every protected endpoint.</strong> Applied via <code>@RequirePersona(persona, system)</code> at controller or method level only — never globally. Public endpoints are explicitly left unguarded.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Full 7×4 isolation matrix must be tested. Every off-diagonal cell must return 403 or 401. No exceptions.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Frontend URL prefix + middleware + persona cookie</strong> — all three layers required. A logged-in donor manually typing <code>/admin/dashboard</code> must be redirected to <code>/admin/login</code> by middleware before any page loads.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">No <code>.env</code> committed. <code>.env.example</code> key names only. Deployed values to API tribe. Devs create <code>.env</code> locally by hand.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">100% test pass rate · ≥80% coverage · lint zero errors · TypeScript strict mode · 0 high/critical CVEs.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">E2E (Playwright, Chromium + WebKit) and k6 performance smoke tests required per app for Gate 12 promotion.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Never touch another system's <code>apps/</code> folder, <code>apps/api/</code>, <code>apps/location-service/</code>, <code>libs/</code> without approval, or root-level config owned by CICD. Allowed changes per migration: your service folders under <code>apps/hopecard-[persona]-service/</code>, that service's root module file, <code>nest-cli.json</code>, <code>.env.example</code>, and <code>package-lock.json</code>. Verify with <code>git diff develop --name-only</code>.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Synthetic test data only — no real PII in any environment including local.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">No force-merge around failed quality gates per Tribe Rules section 6.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Logout must clear the persona cookie.</strong> Every persona's logout handler must expire the <code>persona</code> cookie with <code>Max-Age=0</code> before redirecting. Never rely on natural cookie expiry to clear persona state. Auth token and persona cookie are cleared together as one atomic logout operation.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text"><strong>Port registry is mandatory.</strong> Every service port must be unique, documented in <code>.env.example</code> under the port registry comment block, and reflected in <code>docker-compose.yml</code>. Each service reads its own named port env var (e.g. <code>HOPECARD_ADMIN_PORT</code>) — never a generic <code>PORT</code>. New systems claim a port range and add it to the registry before assigning any ports.</div></div>
+        <div class="task"><div class="task-icon">›</div><div class="task-text">Conventional Commits: <code>feat([system]):</code>, <code>fix([system]):</code>, <code>chore([system]):</code>.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
