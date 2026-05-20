@@ -67,7 +67,7 @@ export class AuthService {
       .setExpirationTime('24h')
       .sign(getJwtSecret());
 
-    return { success: true, token, user: data.user };
+    return { success: true, token, user: data.user, session: data.session };
   }
 
   async signup(body: {

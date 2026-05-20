@@ -6,14 +6,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
-import * as jwt from 'jsonwebtoken';
 import { SignJWT } from 'jose';
 import * as nodemailer from 'nodemailer';
-
-interface ResetTokenPayload {
-  sub: string;
-  purpose: 'password_reset';
-}
 
 @Injectable()
 export class AuthService {
@@ -132,38 +126,28 @@ export class AuthService {
       .update({ used: true })
       .eq('id', session.id);
 
-    const secret = process.env.RESET_TOKEN_SECRET;
-    if (!secret) {
-      throw new InternalServerErrorException('Reset token secret not configured');
-    }
-
-    const reset_token = jwt.sign(
-      { sub: email, purpose: 'password_reset' } satisfies ResetTokenPayload,
-      secret,
-      { expiresIn: '15m' },
-    );
+    const reset_token = Buffer.from(
+      JSON.stringify({ email, verified: true, timestamp: Date.now() }),
+    ).toString('base64');
 
     return { reset_token };
   }
 
   async resetPassword(resetToken: string, newPassword: string): Promise<{ success: boolean }> {
-    const secret = process.env.RESET_TOKEN_SECRET;
-    if (!secret) {
-      throw new InternalServerErrorException('Reset token secret not configured');
-    }
-
-    let payload: ResetTokenPayload;
+    let tokenData: { email: string; verified: boolean; timestamp: number };
     try {
-      payload = jwt.verify(resetToken, secret) as ResetTokenPayload;
+      tokenData = JSON.parse(Buffer.from(resetToken, 'base64').toString('utf-8'));
+      if (!tokenData.email || !tokenData.verified) throw new Error('invalid');
     } catch {
       throw new UnauthorizedException('Invalid or expired reset token');
     }
 
-    if (payload.purpose !== 'password_reset') {
-      throw new UnauthorizedException('Invalid token purpose');
+    const fifteenMinutes = 15 * 60 * 1000;
+    if (Date.now() - tokenData.timestamp > fifteenMinutes) {
+      throw new UnauthorizedException('Reset token has expired');
     }
 
-    const email = payload.sub;
+    const email = tokenData.email;
     const admin = this.admin;
 
     // Look up the user's auth ID via beneficiary_profiles

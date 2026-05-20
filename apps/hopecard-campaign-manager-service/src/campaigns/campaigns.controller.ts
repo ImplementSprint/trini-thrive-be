@@ -3,7 +3,7 @@ import { CampaignsService } from './campaigns.service';
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('cm')
-@Controller('api/campaigns')
+@Controller('campaigns')
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 

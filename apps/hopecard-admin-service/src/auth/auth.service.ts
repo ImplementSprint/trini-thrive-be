@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { SignJWT } from "jose";
 import { supabase } from "@app/common/supabase-client";
 import { sendOTPEmail } from "@app/common/email";
-const JWT_SECRET = new TextEncoder().encode(process.env['JWT_SECRET'] ?? '');
+const getJwtSecret = () => new TextEncoder().encode(process.env['JWT_SECRET'] ?? '');
 
 @Injectable()
 export class AuthService {
@@ -241,7 +241,7 @@ export class AuthService {
       })
         .setProtectedHeader({ alg: "HS256" })
         .setExpirationTime("24h")
-        .sign(JWT_SECRET);
+        .sign(getJwtSecret());
 
       console.log(`[AUTH] ✅✅ JWT token generated for ${email}`);
 

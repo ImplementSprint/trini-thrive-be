@@ -35,7 +35,12 @@
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('compilerOptions',{}\\), indent=2\\)\\)\")",
       "Bash(node -e \"const p = require\\('./node_modules/jose/package.json'\\); console.log\\('jose type:', p.type, 'main:', p.main, 'exports:', JSON.stringify\\(Object.keys\\(p.exports||{}\\)\\)\\)\")",
       "Bash(node *)",
-      "Bash(kill %1)"
+      "Bash(kill %1)",
+      "Bash(Get-ChildItem *)",
+      "PowerShell(head *)",
+      "Bash(Select-Object -First 50)",
+      "Bash(xargs grep -l \"fetch\\(\")",
+      "Bash(Find-Item *)"
     ]
   }
 }
