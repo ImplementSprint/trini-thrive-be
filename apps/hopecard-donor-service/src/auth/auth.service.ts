@@ -2,6 +2,7 @@ import { Injectable, HttpException } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
 import { SignJWT } from 'jose';
+import { TribeClient } from '@implementsprint/sdk';
 
 const getJwtSecret = () => {
   const secret = process.env['JWT_SECRET'];
@@ -19,6 +20,28 @@ export class AuthService {
     const supabase = createClient(url, anonKey);
     const admin = createClient(url, serviceKey || anonKey);
     return { url, anonKey, serviceKey, supabase, admin };
+  }
+
+  private getSdkClient() {
+    return new TribeClient({
+      gatewayUrl: process.env['APICENTER_URL']!,
+      tribeId: process.env['APICENTER_TRIBE_ID']!,
+      secret: process.env['APICENTER_TRIBE_SECRET']!,
+    });
+  }
+
+  async googleGetAuthUrl(callbackUrl: string) {
+    const client = this.getSdkClient();
+    try {
+      const { url } = await client.gauthGetAuthorizationUrl({
+        redirectUri: callbackUrl,
+        scopes: ['openid', 'email', 'profile'],
+        accessType: 'offline',
+      });
+      return { url };
+    } catch {
+      throw new HttpException('Failed to get Google authorization URL', 502);
+    }
   }
 
   async login(email: string, password: string) {

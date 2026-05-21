@@ -56,6 +56,17 @@ jest.mock('nodemailer', () => {
   return { __esModule: true, default: { createTransport: mockCreate } };
 });
 
+// ── SDK mock ──────────────────────────────────────────────────────────────────
+const mockGauthGetAuthorizationUrl = jest.fn();
+const mockGauthExchangeCode = jest.fn();
+
+jest.mock('@implementsprint/sdk', () => ({
+  TribeClient: jest.fn().mockImplementation(() => ({
+    gauthGetAuthorizationUrl: mockGauthGetAuthorizationUrl,
+    gauthExchangeCode: mockGauthExchangeCode,
+  })),
+}));
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 const makeChain = (overrides: Record<string, any> = {}) => ({
   select: jest.fn().mockReturnThis(),
@@ -86,6 +97,8 @@ describe('AuthService (donor)', () => {
     process.env.SMTP_FROM = 'Hopecard';
     capturedPayload = {};
     jest.clearAllMocks();
+    mockGauthGetAuthorizationUrl.mockReset();
+    mockGauthExchangeCode.mockReset();
 
     const { SignJWT } = require('jose') as { SignJWT: jest.Mock };
     SignJWT.mockImplementation((payload: Record<string, unknown>) => {
@@ -458,6 +471,30 @@ describe('AuthService (donor)', () => {
     it('throws 400 on other storage upload errors', async () => {
       mockStorageUpload.mockResolvedValue({ data: null, error: { message: 'Permission denied' } });
       await expect(service.uploadId(makeFile(), 'uid-1')).rejects.toMatchObject({ status: 400 });
+    });
+  });
+
+  // ── googleGetAuthUrl ──────────────────────────────────────────────────────
+  describe('googleGetAuthUrl', () => {
+    it('returns the authorization URL from the SDK', async () => {
+      mockGauthGetAuthorizationUrl.mockResolvedValue({ url: 'https://accounts.google.com/o/oauth2/auth?foo=bar' });
+
+      const result = await service.googleGetAuthUrl('https://api.example.com/hopecard/donor/auth/google/callback');
+
+      expect(result).toEqual({ url: 'https://accounts.google.com/o/oauth2/auth?foo=bar' });
+      expect(mockGauthGetAuthorizationUrl).toHaveBeenCalledWith({
+        redirectUri: 'https://api.example.com/hopecard/donor/auth/google/callback',
+        scopes: ['openid', 'email', 'profile'],
+        accessType: 'offline',
+      });
+    });
+
+    it('throws HttpException 502 when SDK call fails', async () => {
+      mockGauthGetAuthorizationUrl.mockRejectedValue(new Error('APICenter unreachable'));
+
+      await expect(
+        service.googleGetAuthUrl('https://api.example.com/hopecard/donor/auth/google/callback'),
+      ).rejects.toMatchObject({ status: 502 });
     });
   });
 });
