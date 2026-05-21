@@ -33,12 +33,12 @@ export class AuthService {
   async googleGetAuthUrl(callbackUrl: string) {
     const client = this.getSdkClient();
     try {
-      const { url } = await client.gauthGetAuthorizationUrl({
+      const { authorizationUrl } = await client.gauthGetAuthorizationUrl({
         redirectUri: callbackUrl,
         scopes: ['openid', 'email', 'profile'],
         accessType: 'offline',
       });
-      return { url };
+      return { url: authorizationUrl };
     } catch {
       throw new HttpException('Failed to get Google authorization URL', 502);
     }

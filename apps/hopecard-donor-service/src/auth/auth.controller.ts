@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Req, Get, Res, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { AuthService } from './auth.service';
 
 @Controller('hopecard/donor/auth')

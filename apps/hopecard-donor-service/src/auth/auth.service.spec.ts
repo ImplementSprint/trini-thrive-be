@@ -491,7 +491,7 @@ describe('AuthService (donor)', () => {
   // ── googleGetAuthUrl ──────────────────────────────────────────────────────
   describe('googleGetAuthUrl', () => {
     it('returns the authorization URL from the SDK', async () => {
-      mockGauthGetAuthorizationUrl.mockResolvedValue({ url: 'https://accounts.google.com/o/oauth2/auth?foo=bar' });
+      mockGauthGetAuthorizationUrl.mockResolvedValue({ authorizationUrl: 'https://accounts.google.com/o/oauth2/auth?foo=bar' });
 
       const result = await service.googleGetAuthUrl('https://api.example.com/hopecard/donor/auth/google/callback');
 
