@@ -579,7 +579,7 @@ describe('AuthService (donor)', () => {
       }));
 
       const result = await service.googleCallback('auth-code-abc', callbackUrl);
-      expect(result.redirectUrl).toContain('/auth/google/success');
+      expect(result.redirectUrl).toContain('/donor/auth/google/success');
       expect(result.redirectUrl).toContain('token=donor.jwt.token');
     });
 

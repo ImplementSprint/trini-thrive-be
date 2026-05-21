@@ -45,8 +45,8 @@ export class AuthService {
   }
 
   async googleCallback(code: string, callbackUrl: string): Promise<{ redirectUrl: string }> {
-    const successBase = `${process.env['NEXT_PUBLIC_APP_URL']}/auth/google/success`;
-    const errorBase = `${process.env['NEXT_PUBLIC_APP_URL']}/auth/google/error`;
+    const successBase = `${process.env['NEXT_PUBLIC_APP_URL']}/donor/auth/google/success`;
+    const errorBase = `${process.env['NEXT_PUBLIC_APP_URL']}/donor/auth/google/error`;
 
     // Exchange code for tokens
     let idToken: string;
