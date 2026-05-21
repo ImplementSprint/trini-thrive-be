@@ -1,7 +1,7 @@
 import { Injectable, HttpException } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
-import { SignJWT } from 'jose';
+import { SignJWT, decodeJwt } from 'jose';
 import { TribeClient } from '@implementsprint/sdk';
 
 const getJwtSecret = () => {
@@ -42,6 +42,106 @@ export class AuthService {
     } catch {
       throw new HttpException('Failed to get Google authorization URL', 502);
     }
+  }
+
+  async googleCallback(code: string, callbackUrl: string): Promise<{ redirectUrl: string }> {
+    const successBase = `${process.env['NEXT_PUBLIC_APP_URL']}/auth/google/success`;
+    const errorBase = `${process.env['NEXT_PUBLIC_APP_URL']}/auth/google/error`;
+
+    // Exchange code for tokens
+    let idToken: string;
+    try {
+      const tokens = await this.getSdkClient().gauthExchangeCode({ code, redirectUri: callbackUrl });
+      if (!tokens.idToken) throw new Error('no idToken');
+      idToken = tokens.idToken;
+    } catch {
+      return { redirectUrl: `${errorBase}?reason=code_exchange_failed` };
+    }
+
+    // Decode idToken to get profile
+    let email: string;
+    let firstName: string;
+    let lastName: string;
+    try {
+      const claims = decodeJwt(idToken) as Record<string, string>;
+      if (!claims.email) throw new Error('no email');
+      email = claims.email;
+      firstName = claims.given_name || (claims.name?.split(' ')[0] ?? '');
+      lastName = claims.family_name || (claims.name?.split(' ').slice(1).join(' ') ?? '');
+    } catch {
+      return { redirectUrl: `${errorBase}?reason=no_email` };
+    }
+
+    const { admin } = this.getClients();
+
+    // Find or create Supabase auth user
+    let supabaseUserId: string;
+    const { data: listData } = await admin.auth.admin.listUsers();
+    const existingAuthUser = (listData?.users as any[] ?? []).find((u) => u.email === email);
+
+    if (existingAuthUser) {
+      supabaseUserId = existingAuthUser.id;
+    } else {
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+        email,
+        email_confirm: true,
+      });
+      if (createErr || !created?.user?.id) {
+        return { redirectUrl: `${errorBase}?reason=account_creation_failed` };
+      }
+      supabaseUserId = created.user.id;
+    }
+
+    // Look up existing donor profile
+    const { data: existingProfile } = await admin
+      .from('digital_donor_profiles')
+      .select('id, auth_user_id, status')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingProfile) {
+      // Link auth_user_id if not yet linked
+      if (!existingProfile.auth_user_id) {
+        await admin
+          .from('digital_donor_profiles')
+          .update({ auth_user_id: supabaseUserId })
+          .eq('email', email);
+      }
+
+      if (existingProfile.status !== 'approved') {
+        return { redirectUrl: `${errorBase}?reason=${existingProfile.status === 'rejected' ? 'rejected' : 'pending_approval'}` };
+      }
+    } else {
+      // Insert new profile
+      const { error: insertErr } = await admin.from('digital_donor_profiles').insert({
+        auth_user_id: supabaseUserId,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        barangay: null,
+        municipality: null,
+        province: null,
+        id_verification_key: null,
+        status: 'pending',
+        role: 'buyer',
+      });
+      if (insertErr) {
+        return { redirectUrl: `${errorBase}?reason=profile_creation_failed` };
+      }
+    }
+
+    // Issue JWT
+    const token = await new SignJWT({
+      sub: supabaseUserId,
+      email,
+      persona: 'donor',
+      system: 'hopecard',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('24h')
+      .sign(getJwtSecret());
+
+    return { redirectUrl: `${successBase}?token=${token}` };
   }
 
   async login(email: string, password: string) {
