@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, Body, Req, Get, Res, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 
-@Controller('auth')
+@Controller('hopecard/donor/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -55,5 +56,18 @@ export class AuthController {
   @UseInterceptors(FileInterceptor('file'))
   uploadId(@UploadedFile() file: Express.Multer.File, @Body('userId') userId: string) {
     return this.authService.uploadId(file, userId);
+  }
+
+  @Get('google/url')
+  async googleUrl(@Req() req: any) {
+    const callbackUrl = `${req.protocol}://${req.get('host')}/hopecard/donor/auth/google/callback`;
+    return this.authService.googleGetAuthUrl(callbackUrl);
+  }
+
+  @Get('google/callback')
+  async googleCallback(@Req() req: any, @Res() res: Response) {
+    const callbackUrl = `${req.protocol}://${req.get('host')}/hopecard/donor/auth/google/callback`;
+    const { redirectUrl } = await this.authService.googleCallback(req.query.code as string, callbackUrl);
+    return res.redirect(302, redirectUrl);
   }
 }
