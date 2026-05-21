@@ -128,6 +128,7 @@ export class AuthService {
       if (insertErr) {
         return { redirectUrl: `${errorBase}?reason=profile_creation_failed` };
       }
+      return { redirectUrl: `${errorBase}?reason=pending_approval` };
     }
 
     // Issue JWT
