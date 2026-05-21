@@ -7,3 +7,5 @@ export * from './health/health.module';
 export * from './health/health.service';
 export * from './middleware/correlation-id.middleware';
 export * from './decorators/require-persona.decorator';
+export * from './guards/jwt.guard';
+export * from './guards/persona.guard';

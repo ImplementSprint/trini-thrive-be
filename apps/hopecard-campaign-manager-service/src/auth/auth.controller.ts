@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/com
 import { RequirePersona } from '@app/common';
 import { AuthService } from './auth.service';
 
-@Controller('auth')
+@Controller('hopecard/cm/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

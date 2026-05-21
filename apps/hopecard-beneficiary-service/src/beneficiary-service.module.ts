@@ -14,6 +14,11 @@ import {
 import { SupabaseModule } from '@app/supabase';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule as BeneficiaryHealthModule } from './beneficiary-health/health.module';
+import { BankAccountsModule } from './bank-accounts/bank-accounts.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
+import { IdentityDocumentsModule } from './identity-documents/identity-documents.module';
+import { WithdrawalsModule } from './withdrawals/withdrawals.module';
+import { BeneficiaryNotificationsModule } from './notifications/notifications.module';
 
 const shouldValidateEnv = process.env.NODE_ENV === 'production';
 
@@ -31,6 +36,11 @@ const shouldValidateEnv = process.env.NODE_ENV === 'production';
     HealthModule,
     AuthModule,
     BeneficiaryHealthModule,
+    BankAccountsModule,
+    CampaignsModule,
+    IdentityDocumentsModule,
+    WithdrawalsModule,
+    BeneficiaryNotificationsModule,
   ],
 })
 export class HopecardBeneficiaryServiceModule implements NestModule {

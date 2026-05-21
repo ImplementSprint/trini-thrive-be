@@ -3,7 +3,7 @@ import { DigitalDonorApprovalsService } from './digital-donor-approvals.service'
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('admin')
-@Controller('approvals/digital-donors')
+@Controller('hopecard/admin/approvals/digital-donors')
 export class DigitalDonorApprovalsController {
   constructor(private readonly approvalsService: DigitalDonorApprovalsService) {}
 

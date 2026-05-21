@@ -55,39 +55,36 @@ describe('AuthController (donor)', () => {
   });
 
   describe('googleUrl', () => {
-    it('calls googleGetAuthUrl with the derived callback URL and returns the result', async () => {
+    it('calls googleGetAuthUrl with the frontend callback URL and returns the result', async () => {
+      process.env['NEXT_PUBLIC_APP_URL'] = 'https://app.example.com';
       mockAuthService.googleGetAuthUrl.mockResolvedValue({ url: 'https://accounts.google.com/...' });
 
-      const req = { protocol: 'https', get: jest.fn().mockReturnValue('api.example.com') };
-      const result = await controller.googleUrl(req);
+      const result = await controller.googleUrl();
 
       expect(mockAuthService.googleGetAuthUrl).toHaveBeenCalledWith(
-        'https://api.example.com/hopecard/donor/auth/google/callback',
+        'https://app.example.com/donor/auth/google/callback',
       );
       expect(result).toEqual({ url: 'https://accounts.google.com/...' });
     });
   });
 
   describe('googleCallback', () => {
-    it('calls googleCallback with code and callback URL, then redirects 302', async () => {
+    it('calls googleCallback with code and frontend callback URL, then redirects 302', async () => {
+      process.env['NEXT_PUBLIC_APP_URL'] = 'https://app.example.com';
       mockAuthService.googleCallback.mockResolvedValue({
-        redirectUrl: 'https://app.example.com/auth/google/success?token=abc',
+        redirectUrl: 'https://app.example.com/donor/auth/google/success?token=abc',
       });
 
-      const req = {
-        protocol: 'https',
-        get: jest.fn().mockReturnValue('api.example.com'),
-        query: { code: 'auth-code-xyz' },
-      };
+      const req = { query: { code: 'auth-code-xyz' } };
       const res = { redirect: jest.fn() };
 
       await controller.googleCallback(req, res as any);
 
       expect(mockAuthService.googleCallback).toHaveBeenCalledWith(
         'auth-code-xyz',
-        'https://api.example.com/hopecard/donor/auth/google/callback',
+        'https://app.example.com/donor/auth/google/callback',
       );
-      expect(res.redirect).toHaveBeenCalledWith(302, 'https://app.example.com/auth/google/success?token=abc');
+      expect(res.redirect).toHaveBeenCalledWith(302, 'https://app.example.com/donor/auth/google/success?token=abc');
     });
   });
 });

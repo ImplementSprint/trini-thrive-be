@@ -39,7 +39,8 @@ export class AuthService {
         accessType: 'offline',
       });
       return { url: authorizationUrl };
-    } catch {
+    } catch (err) {
+      console.error('[googleGetAuthUrl] gauth error:', err);
       throw new HttpException('Failed to get Google authorization URL', 502);
     }
   }

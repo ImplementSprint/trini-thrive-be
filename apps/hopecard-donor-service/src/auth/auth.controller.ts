@@ -59,14 +59,14 @@ export class AuthController {
   }
 
   @Get('google/url')
-  async googleUrl(@Req() req: any) {
-    const callbackUrl = `${req.protocol}://${req.get('host')}/hopecard/donor/auth/google/callback`;
+  async googleUrl() {
+    const callbackUrl = `${process.env['NEXT_PUBLIC_APP_URL']}/donor/auth/google/callback`;
     return this.authService.googleGetAuthUrl(callbackUrl);
   }
 
   @Get('google/callback')
   async googleCallback(@Req() req: any, @Res() res: Response) {
-    const callbackUrl = `${req.protocol}://${req.get('host')}/hopecard/donor/auth/google/callback`;
+    const callbackUrl = `${process.env['NEXT_PUBLIC_APP_URL']}/donor/auth/google/callback`;
     const { redirectUrl } = await this.authService.googleCallback(req.query.code as string, callbackUrl);
     return res.redirect(302, redirectUrl);
   }
