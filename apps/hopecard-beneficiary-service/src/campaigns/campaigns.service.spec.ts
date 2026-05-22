@@ -192,7 +192,7 @@ describe('CampaignsService', () => {
   describe('getInvitations', () => {
     it('returns mapped invitations', async () => {
       mockSingle.mockResolvedValueOnce({ data: { id: 'p-1' }, error: null });
-      mockChain.limit.mockResolvedValueOnce({
+      mockChain.order.mockResolvedValueOnce({
         data: [{
           id: 'inv-1',
           campaign_id: 'c-1',
@@ -212,14 +212,14 @@ describe('CampaignsService', () => {
 
     it('returns empty invitations when none pending', async () => {
       mockSingle.mockResolvedValueOnce({ data: { id: 'p-1' }, error: null });
-      // limit() returns this by default; await chain = chain; data = undefined → []
+      // order() returns this by default; await chain = chain; data = undefined → []
       const result = await service.getInvitations('uid-1');
       expect(result.invitations).toEqual([]);
     });
 
     it('throws BadRequestException on invitations DB error', async () => {
       mockSingle.mockResolvedValueOnce({ data: { id: 'p-1' }, error: null });
-      mockChain.limit.mockResolvedValueOnce({ data: null, error: { message: 'db error' } });
+      mockChain.order.mockResolvedValueOnce({ data: null, error: { message: 'db error' } });
 
       await expect(service.getInvitations('uid-1')).rejects.toBeInstanceOf(BadRequestException);
     });
