@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 
 @Injectable()
 export class PersonaGuard implements CanActivate {
@@ -11,11 +16,20 @@ export class PersonaGuard implements CanActivate {
     const user = ctx.switchToHttp().getRequest().user;
 
     if (!user?.persona || !user?.system) {
-      throw new ForbiddenException({ message: 'Access denied', code: 'INVALID_CLAIMS' });
+      throw new ForbiddenException({
+        message: 'Access denied',
+        code: 'INVALID_CLAIMS',
+      });
     }
 
-    if (user.persona !== this.expectedPersona || user.system !== this.expectedSystem) {
-      throw new ForbiddenException({ message: 'Access denied', code: 'PERSONA_MISMATCH' });
+    if (
+      user.persona !== this.expectedPersona ||
+      user.system !== this.expectedSystem
+    ) {
+      throw new ForbiddenException({
+        message: 'Access denied',
+        code: 'PERSONA_MISMATCH',
+      });
     }
 
     return true;

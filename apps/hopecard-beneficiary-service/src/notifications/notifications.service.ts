@@ -12,14 +12,23 @@ export class BeneficiaryNotificationsService {
 
   private async getProfileAndBeneficiary(authUserId: string) {
     const [{ data: profile }, { data: beneficiary }] = await Promise.all([
-      this.admin.from('beneficiary_profiles').select('id').eq('auth_user_id', authUserId).maybeSingle(),
-      this.admin.from('beneficiaries').select('id').eq('auth_user_id', authUserId).maybeSingle(),
+      this.admin
+        .from('beneficiary_profiles')
+        .select('id')
+        .eq('auth_user_id', authUserId)
+        .maybeSingle(),
+      this.admin
+        .from('beneficiaries')
+        .select('id')
+        .eq('auth_user_id', authUserId)
+        .maybeSingle(),
     ]);
     return { profile, beneficiary };
   }
 
   async getNotifications(authUserId: string) {
-    const { profile, beneficiary } = await this.getProfileAndBeneficiary(authUserId);
+    const { profile, beneficiary } =
+      await this.getProfileAndBeneficiary(authUserId);
 
     const notifications: {
       id: string;
@@ -79,7 +88,10 @@ export class BeneficiaryNotificationsService {
     }
 
     // Sort by date descending
-    notifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    notifications.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
 
     return {
       notifications,

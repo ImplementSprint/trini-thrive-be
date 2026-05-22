@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Req,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RequirePersona } from '@app/common';
 import { IdentityDocumentsService } from './identity-documents.service';
@@ -6,7 +16,9 @@ import { IdentityDocumentsService } from './identity-documents.service';
 @RequirePersona('beneficiary')
 @Controller('hopecard/beneficiary/identity-documents')
 export class IdentityDocumentsController {
-  constructor(private readonly identityDocumentsService: IdentityDocumentsService) {}
+  constructor(
+    private readonly identityDocumentsService: IdentityDocumentsService,
+  ) {}
 
   @Get()
   getDocuments(@Req() req: any) {
@@ -20,7 +32,11 @@ export class IdentityDocumentsController {
     @UploadedFile() file: Express.Multer.File,
     @Body('label') label?: string,
   ) {
-    return this.identityDocumentsService.uploadDocument(req.user.sub, file, label);
+    return this.identityDocumentsService.uploadDocument(
+      req.user.sub,
+      file,
+      label,
+    );
   }
 
   @Delete(':id')
@@ -30,6 +46,9 @@ export class IdentityDocumentsController {
 
   @Post('signed-url')
   getSignedUrl(@Req() req: any, @Body('documentKey') documentKey: string) {
-    return this.identityDocumentsService.getSignedUrl(req.user.sub, documentKey);
+    return this.identityDocumentsService.getSignedUrl(
+      req.user.sub,
+      documentKey,
+    );
   }
 }
