@@ -8,7 +8,7 @@ import { LocationModule } from './location/location.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ['.env'],
       cache: true,
     }),
     ApiCenterSdkModule,

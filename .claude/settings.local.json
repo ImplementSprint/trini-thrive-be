@@ -64,7 +64,8 @@
       "Bash(npx nx *)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d.get\\('scripts',{}\\).keys\\(\\)\\)\\)\")",
       "Bash(Select-Object Name)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); jest=d.get\\('jest',{}\\); print\\(json.dumps\\(jest, indent=2\\)\\)\")"
     ]
   }
 }

@@ -15,6 +15,7 @@ import { SupabaseModule } from '@app/supabase';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { AuthModule } from './auth/auth.module';
+import { BackfillModule } from './backfill/backfill.module';
 import { BeneficiariesModule } from './beneficiary-management/beneficiaries.module';
 
 const shouldValidateEnv = process.env.NODE_ENV === 'production';
@@ -23,7 +24,7 @@ const shouldValidateEnv = process.env.NODE_ENV === 'production';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ['.env'],
       cache: true,
       ...(shouldValidateEnv ? { validate: validateEnv } : {}),
     }),
@@ -35,6 +36,7 @@ const shouldValidateEnv = process.env.NODE_ENV === 'production';
     BeneficiariesModule,
     AnalyticsModule,
     ApprovalsModule,
+    BackfillModule,
   ],
 })
 export class HopecardAdminServiceModule implements NestModule {

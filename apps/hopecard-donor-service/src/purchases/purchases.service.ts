@@ -22,6 +22,45 @@ export class PurchasesService {
     });
   }
 
+  private async getDonorProfile(buyerAuthId: string): Promise<{
+    email: string;
+    first_name: string;
+    last_name: string;
+    phone: string;
+    payment_customer_id: string | null;
+  } | null> {
+    const rows = await supabaseRequest<any[]>(
+      `digital_donor_profiles?auth_user_id=eq.${buyerAuthId}&select=email,first_name,last_name,phone,payment_customer_id&limit=1`
+    ).catch(() => [] as any[]);
+    return rows[0] ?? null;
+  }
+
+  private async getOrCreatePaymentCustomer(
+    buyerAuthId: string,
+    profile: { email: string; first_name: string; last_name: string; phone: string; payment_customer_id: string | null },
+  ): Promise<string | null> {
+    if (profile.payment_customer_id) return profile.payment_customer_id;
+
+    try {
+      const customer = await this.getSdkClient().paymentCreateCustomer({
+        email: profile.email || undefined,
+        phone: profile.phone || undefined,
+        name: [profile.first_name, profile.last_name].filter(Boolean).join(' ') || undefined,
+        metadata: { buyerAuthId },
+      });
+
+      await supabaseRequest(`digital_donor_profiles?auth_user_id=eq.${buyerAuthId}`, {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ payment_customer_id: customer.customerId }),
+      }).catch(() => {});
+
+      return customer.customerId;
+    } catch {
+      return null;
+    }
+  }
+
   private buildReferenceId(): string {
     const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const suffix = crypto.randomUUID().slice(0, 8).toUpperCase();
@@ -138,6 +177,11 @@ export class PurchasesService {
       }] : []),
     ];
 
+    const donorProfile = await this.getDonorProfile(buyerAuthId);
+    const customerId = donorProfile
+      ? await this.getOrCreatePaymentCustomer(buyerAuthId, donorProfile)
+      : null;
+
     try {
       const session = await this.getSdkClient().paymentCreateCheckoutSession({
         referenceId,
@@ -146,6 +190,15 @@ export class PurchasesService {
         lineItems,
         paymentMethods: ['gcash', 'maya', 'grabpay', 'qrph', 'card'],
         metadata: { buyerAuthId },
+        ...(customerId && { customerId }),
+        ...(donorProfile && {
+          customer: {
+            email: donorProfile.email || undefined,
+            phone: donorProfile.phone || undefined,
+            firstName: donorProfile.first_name || undefined,
+            lastName: donorProfile.last_name || undefined,
+          },
+        }),
       });
 
       return {
@@ -214,6 +267,37 @@ export class PurchasesService {
     }
 
     return this.finalizePurchases(buyerAuthId, items, referenceId, hopecards);
+  }
+
+  async cancelCheckoutSession(checkoutId: string, reason?: string) {
+    if (!checkoutId) throw new HttpException('checkoutId is required.', 400);
+    try {
+      const session = await this.getSdkClient().paymentMarkCheckoutCancelled(
+        checkoutId,
+        reason ? { reason } : {},
+      );
+      return { checkoutId: session.checkoutId, status: session.status };
+    } catch (err) {
+      console.error('[cancelCheckoutSession] SDK error:', err);
+      throw new HttpException('Failed to cancel checkout session.', 502);
+    }
+  }
+
+  async getCheckoutSession(checkoutId: string) {
+    if (!checkoutId) throw new HttpException('checkoutId is required.', 400);
+    try {
+      const session = await this.getSdkClient().paymentGetCheckoutSession(checkoutId);
+      return {
+        checkoutId: session.checkoutId,
+        status: session.status,
+        referenceId: session.referenceId,
+        amount: session.amount,
+        expiresAt: session.expiresAt,
+      };
+    } catch (err) {
+      console.error('[getCheckoutSession] SDK error:', err);
+      throw new HttpException('Failed to retrieve checkout session.', 502);
+    }
   }
 
   async getPurchases(buyerAuthId: string) {
