@@ -84,13 +84,23 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? request.headers['x-correlation-id']
         : null);
 
-    const body: ErrorEnvelope = {
+    let extraFields: Record<string, unknown> = {};
+    if (exception instanceof HttpException) {
+      const exceptionResponse = exception.getResponse();
+      if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+        const { message: _m, error: _e, statusCode: _s, ...extra } = exceptionResponse as Record<string, unknown>;
+        extraFields = extra;
+      }
+    }
+
+    const body = {
       statusCode,
       message,
       error,
       correlationId,
       timestamp: new Date().toISOString(),
       path: request.url,
+      ...extraFields,
     };
 
     response.status(statusCode).json(body);
