@@ -59,9 +59,10 @@
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
     "helmet": "^8.1.0",
-    "jose": "^5.9.6",
+    "jose": "^6.2.3",
+    "jsonwebtoken": "^9.0.3",
     "multer": "^1.4.5-lts.1",
-    "nodemailer": "^8.0.5",
+    "nodemailer": "^8.0.7",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
@@ -75,9 +76,10 @@
     "@types/express": "^5.0.0",
     "@types/helmet": "^0.0.48",
     "@types/jest": "^30.0.0",
-    "@types/multer": "^1.4.12",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.1.0",
     "@types/node": "^22.10.7",
-    "@types/nodemailer": "^6.4.17",
+    "@types/nodemailer": "^8.0.0",
     "@types/qrcode": "^1.5.6",
     "@types/supertest": "^6.0.2",
     "eslint": "^10.1.0",
@@ -282,6 +284,181 @@
             "lines": 80
           }
         },
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "hopecard-admin-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "(apps/hopecard-admin-service|libs)/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/api-center$": "<rootDir>/libs/api-center/src",
+          "^@app/api-center/(.*)$": "<rootDir>/libs/api-center/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/hopecard-admin-service/src/**/*.ts",
+          "libs/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/hopecard-admin-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "hopecard-beneficiary-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "(apps/hopecard-beneficiary-service|libs)/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/api-center$": "<rootDir>/libs/api-center/src",
+          "^@app/api-center/(.*)$": "<rootDir>/libs/api-center/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/hopecard-beneficiary-service/src/**/*.ts",
+          "libs/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/hopecard-beneficiary-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "hopecard-campaign-manager-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "(apps/hopecard-campaign-manager-service|libs)/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/api-center$": "<rootDir>/libs/api-center/src",
+          "^@app/api-center/(.*)$": "<rootDir>/libs/api-center/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/hopecard-campaign-manager-service/src/**/*.ts",
+          "libs/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/hopecard-campaign-manager-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "hopecard-notification-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "(apps/hopecard-notification-service|libs)/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/api-center$": "<rootDir>/libs/api-center/src",
+          "^@app/api-center/(.*)$": "<rootDir>/libs/api-center/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/hopecard-notification-service/src/**/*.ts",
+          "libs/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/hopecard-notification-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "hopecard-donor-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "(apps/hopecard-donor-service|libs)/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/api-center$": "<rootDir>/libs/api-center/src",
+          "^@app/api-center/(.*)$": "<rootDir>/libs/api-center/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/hopecard-donor-service/src/**/*.ts",
+          "libs/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/hopecard-donor-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
         "testEnvironment": "node"
       }
     ],

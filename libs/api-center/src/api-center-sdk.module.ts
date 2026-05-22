@@ -2,12 +2,14 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigService, ConfigModule } from '@nestjs/config';
 import { TribeClient } from '@implementsprint/sdk';
 import { TribeRegistrationService } from './tribe-registration.service';
+import { ProcedureEventService } from './procedure-event.service';
 
 @Global()
 @Module({
   imports: [ConfigModule],
   providers: [
     TribeRegistrationService,
+    ProcedureEventService,
     {
       provide: TribeClient,
       inject: [ConfigService],
@@ -42,13 +44,19 @@ import { TribeRegistrationService } from './tribe-registration.service';
           secret,
         });
 
-        // Authenticate immediately to ensure connectivity
-        await client.authenticate();
+        try {
+          await client.authenticate();
+        } catch (err) {
+          console.warn(
+            `ApiCenter authentication failed (${(err as Error).message}) — TribeClient will be unavailable`,
+          );
+          return null;
+        }
 
         return client;
       },
     },
   ],
-  exports: [TribeClient],
+  exports: [TribeClient, ProcedureEventService],
 })
 export class ApiCenterSdkModule {}
