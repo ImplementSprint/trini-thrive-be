@@ -64,6 +64,33 @@
         "tsConfigPath": "libs/contracts/tsconfig.lib.json"
       }
     },
+<<<<<<< HEAD
+    "bayanihub-admin-service": {
+      "type": "application",
+      "root": "apps/bayanihub-admin-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/bayanihub-admin-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/bayanihub-admin-service/tsconfig.app.json"
+      }
+    },
+    "bayanihub-enduser-service": {
+      "type": "application",
+      "root": "apps/bayanihub-enduser-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/bayanihub-enduser-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/bayanihub-enduser-service/tsconfig.app.json"
+      }
+    },
+    "bayanihub-sitemanager-service": {
+      "type": "application",
+      "root": "apps/bayanihub-sitemanager-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/bayanihub-sitemanager-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/bayanihub-sitemanager-service/tsconfig.app.json"
+=======
     "hopecard-admin-service": {
       "type": "application",
       "root": "apps/hopecard-admin-service",
@@ -143,6 +170,7 @@
       "sourceRoot": "apps/damayan-citizen-service/src",
       "compilerOptions": {
         "tsConfigPath": "apps/damayan-citizen-service/tsconfig.app.json"
+>>>>>>> origin/Develop
       }
     }
   }
