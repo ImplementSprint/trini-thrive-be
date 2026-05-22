@@ -3,6 +3,7 @@ import { InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { of } from 'rxjs';
+import { ProcedureEventService } from '@app/api-center';
 import { CampaignsService } from './campaigns.service';
 
 // ── Supabase mock ────────────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ describe('CampaignsService', () => {
         CampaignsService,
         { provide: ConfigService, useValue: mockConfigService },
         { provide: HttpService, useValue: mockHttpService },
+        { provide: ProcedureEventService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
@@ -337,6 +339,7 @@ describe('CampaignsService', () => {
             useValue: { get: jest.fn().mockReturnValue(undefined) },
           },
           { provide: HttpService, useValue: mockHttpService },
+          { provide: ProcedureEventService, useValue: { emit: jest.fn() } },
         ],
       }).compile();
       expect(mod.get<CampaignsService>(CampaignsService)).toBeDefined();
@@ -354,6 +357,7 @@ describe('CampaignsService', () => {
           CampaignsService,
           { provide: ConfigService, useValue: partialConfig },
           { provide: HttpService, useValue: mockHttpService },
+          { provide: ProcedureEventService, useValue: { emit: jest.fn() } },
         ],
       }).compile();
       expect(mod.get<CampaignsService>(CampaignsService)).toBeDefined();
