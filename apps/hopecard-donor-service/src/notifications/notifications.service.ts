@@ -22,11 +22,14 @@ export class NotificationsService {
   }
 
   async markRead(id: string) {
-    await supabaseRequest(`hc_donor_notifications?id=eq.${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ is_read: true }),
-    });
+    await supabaseRequest(
+      `hc_donor_notifications?id=eq.${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ is_read: true }),
+      },
+    );
     return { success: true };
   }
 

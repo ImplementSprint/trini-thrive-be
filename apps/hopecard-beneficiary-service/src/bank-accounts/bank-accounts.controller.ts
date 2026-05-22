@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+} from '@nestjs/common';
 import { RequirePersona } from '@app/common';
 import { BankAccountsService } from './bank-accounts.service';
 
@@ -13,7 +22,15 @@ export class BankAccountsController {
   }
 
   @Post()
-  createAccount(@Req() req: any, @Body() body: { bank_name: string; account_holder_name: string; account_number: string }) {
+  createAccount(
+    @Req() req: any,
+    @Body()
+    body: {
+      bank_name: string;
+      account_holder_name: string;
+      account_number: string;
+    },
+  ) {
     return this.bankAccountsService.createAccount(req.user.sub, body);
   }
 

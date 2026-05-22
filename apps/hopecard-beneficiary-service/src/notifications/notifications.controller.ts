@@ -5,7 +5,9 @@ import { BeneficiaryNotificationsService } from './notifications.service';
 @RequirePersona('beneficiary')
 @Controller('hopecard/beneficiary/notifications')
 export class BeneficiaryNotificationsController {
-  constructor(private readonly notificationsService: BeneficiaryNotificationsService) {}
+  constructor(
+    private readonly notificationsService: BeneficiaryNotificationsService,
+  ) {}
 
   @Get()
   getNotifications(@Req() req: any) {
