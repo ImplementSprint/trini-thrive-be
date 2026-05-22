@@ -22,7 +22,8 @@ export class BankAccountsService {
       .select('id')
       .eq('auth_user_id', authUserId)
       .single();
-    if (error || !data) throw new NotFoundException('Beneficiary profile not found');
+    if (error || !data)
+      throw new NotFoundException('Beneficiary profile not found');
     return data;
   }
 
@@ -30,7 +31,9 @@ export class BankAccountsService {
     const profile = await this.getProfile(authUserId);
     const { data, error } = await this.admin
       .from('beneficiary_bank_accounts')
-      .select('id, bank_name, account_holder_name, account_number, is_primary, status')
+      .select(
+        'id, bank_name, account_holder_name, account_number, is_primary, status',
+      )
       .eq('beneficiary_profile_id', profile.id)
       .eq('is_active', true)
       .eq('status', 'approved')
@@ -41,7 +44,11 @@ export class BankAccountsService {
 
   async createAccount(
     authUserId: string,
-    body: { bank_name: string; account_holder_name: string; account_number: string },
+    body: {
+      bank_name: string;
+      account_holder_name: string;
+      account_number: string;
+    },
   ) {
     const { bank_name, account_holder_name, account_number } = body;
     if (!bank_name || !account_holder_name || !account_number) {
@@ -90,7 +97,12 @@ export class BankAccountsService {
   async updateAccount(
     authUserId: string,
     accountId: string,
-    body: Partial<{ bank_name: string; account_holder_name: string; account_number: string; is_primary: boolean }>,
+    body: Partial<{
+      bank_name: string;
+      account_holder_name: string;
+      account_number: string;
+      is_primary: boolean;
+    }>,
   ) {
     const profile = await this.getProfile(authUserId);
     const { data, error } = await this.admin

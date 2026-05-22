@@ -33,11 +33,20 @@ export class WithdrawalsService {
     }
 
     const [{ data: profile }, { data: beneficiary }] = await Promise.all([
-      this.admin.from('beneficiary_profiles').select('id').eq('auth_user_id', authUserId).single(),
-      this.admin.from('beneficiaries').select('id').eq('auth_user_id', authUserId).single(),
+      this.admin
+        .from('beneficiary_profiles')
+        .select('id')
+        .eq('auth_user_id', authUserId)
+        .single(),
+      this.admin
+        .from('beneficiaries')
+        .select('id')
+        .eq('auth_user_id', authUserId)
+        .single(),
     ]);
 
-    if (!beneficiary || !profile) throw new NotFoundException('Beneficiary not found');
+    if (!beneficiary || !profile)
+      throw new NotFoundException('Beneficiary not found');
 
     const [{ data: txRows }, { data: wdRows }] = await Promise.all([
       this.admin
@@ -52,8 +61,14 @@ export class WithdrawalsService {
         .eq('status', 'approved'),
     ]);
 
-    const totalReceived = (txRows ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
-    const totalWithdrawn = (wdRows ?? []).reduce((sum, r) => sum + Number(r.amount), 0);
+    const totalReceived = (txRows ?? []).reduce(
+      (sum, r) => sum + Number(r.amount),
+      0,
+    );
+    const totalWithdrawn = (wdRows ?? []).reduce(
+      (sum, r) => sum + Number(r.amount),
+      0,
+    );
     const available = totalReceived - totalWithdrawn;
 
     if (amount > available) {

@@ -23,7 +23,8 @@ export class CampaignsService {
       .select('id')
       .eq('auth_user_id', authUserId)
       .single();
-    if (error || !data) throw new NotFoundException('Beneficiary profile not found');
+    if (error || !data)
+      throw new NotFoundException('Beneficiary profile not found');
     return data;
   }
 
@@ -43,28 +44,49 @@ export class CampaignsService {
 
     const campaignIds = (enrollments ?? []).map((e: any) => e.campaign_id);
     if (campaignIds.length === 0) {
-      return { campaigns: [], summary: { total_support: 0, active_count: 0, pending_invitations: pendingInvitations ?? 0 } };
+      return {
+        campaigns: [],
+        summary: {
+          total_support: 0,
+          active_count: 0,
+          pending_invitations: pendingInvitations ?? 0,
+        },
+      };
     }
 
     const { data: campaigns, error } = await this.admin
       .from('hc_campaigns')
-      .select('id, title, description, category, status, target_amount, collected_amount')
+      .select(
+        'id, title, description, category, status, target_amount, collected_amount',
+      )
       .in('id', campaignIds);
 
     if (error) throw new BadRequestException(error.message);
 
-    const activeCount = (campaigns ?? []).filter((c: any) => c.status === 'active').length;
-    const totalSupport = (campaigns ?? []).reduce((sum: number, c: any) => sum + Number(c.collected_amount), 0);
+    const activeCount = (campaigns ?? []).filter(
+      (c: any) => c.status === 'active',
+    ).length;
+    const totalSupport = (campaigns ?? []).reduce(
+      (sum: number, c: any) => sum + Number(c.collected_amount),
+      0,
+    );
 
     return {
       campaigns: (campaigns ?? []).map((c: any) => ({
-        id: c.id, title: c.title, description: c.description,
-        category: c.category, status: c.status,
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        category: c.category,
+        status: c.status,
         target_amount: Number(c.target_amount),
         collected_amount: Number(c.collected_amount),
         total_received: Number(c.collected_amount),
       })),
-      summary: { total_support: totalSupport, active_count: activeCount, pending_invitations: pendingInvitations ?? 0 },
+      summary: {
+        total_support: totalSupport,
+        active_count: activeCount,
+        pending_invitations: pendingInvitations ?? 0,
+      },
     };
   }
 
@@ -95,7 +117,8 @@ export class CampaignsService {
         .maybeSingle();
       if (mgr) {
         manager = {
-          full_name: `${mgr.first_name ?? ''} ${mgr.last_name ?? ''}`.trim() || null,
+          full_name:
+            `${mgr.first_name ?? ''} ${mgr.last_name ?? ''}`.trim() || null,
           organization_name: mgr.organization_name ?? null,
           email: mgr.email ?? null,
           phone: mgr.phone ?? null,
@@ -103,14 +126,21 @@ export class CampaignsService {
       }
     }
 
-    return { campaign, manager, disbursements: [], total_received: Number(campaign.collected_amount ?? 0) };
+    return {
+      campaign,
+      manager,
+      disbursements: [],
+      total_received: Number(campaign.collected_amount ?? 0),
+    };
   }
 
   async getInvitations(authUserId: string) {
     const profile = await this.getProfile(authUserId);
     const { data, error } = await this.admin
       .from('campaign_invitations')
-      .select('*, hc_campaigns(id, title, description, category, status, target_amount, collected_amount)')
+      .select(
+        '*, hc_campaigns(id, title, description, category, status, target_amount, collected_amount)',
+      )
       .eq('beneficiary_profile_id', profile.id)
       .eq('status', 'pending')
       .order('invited_at', { ascending: false });
@@ -146,12 +176,17 @@ export class CampaignsService {
       .eq('beneficiary_profile_id', profile.id)
       .single();
     if (!invitation) throw new NotFoundException('Invitation not found');
-    if (invitation.status !== 'pending') throw new ConflictException('Invitation already responded to');
+    if (invitation.status !== 'pending')
+      throw new ConflictException('Invitation already responded to');
 
     const { error: enrollError } = await this.admin
       .from('campaign_beneficiaries')
-      .insert({ campaign_id: invitation.campaign_id, beneficiary_profile_id: profile.id });
-    if (enrollError && enrollError.code !== '23505') throw new BadRequestException(enrollError.message);
+      .insert({
+        campaign_id: invitation.campaign_id,
+        beneficiary_profile_id: profile.id,
+      });
+    if (enrollError && enrollError.code !== '23505')
+      throw new BadRequestException(enrollError.message);
 
     await this.admin
       .from('campaign_invitations')
@@ -176,7 +211,8 @@ export class CampaignsService {
       .eq('beneficiary_profile_id', profile.id)
       .single();
     if (!invitation) throw new NotFoundException('Invitation not found');
-    if (invitation.status !== 'pending') throw new ConflictException('Invitation already responded to');
+    if (invitation.status !== 'pending')
+      throw new ConflictException('Invitation already responded to');
 
     await this.admin
       .from('campaign_invitations')

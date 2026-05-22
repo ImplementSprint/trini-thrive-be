@@ -192,10 +192,15 @@ describe('AuthService (Beneficiary)', () => {
         error: null,
       });
       mockUpdateChain.eq.mockResolvedValueOnce({ data: null, error: null });
-      jwtMod.sign.mockReturnValue('signed-token');
 
       const result = await service.verifyResetOtp('x@y.com', '123456');
-      expect(result.reset_token).toBe('signed-token');
+      expect(result.reset_token).toBeDefined();
+      expect(typeof result.reset_token).toBe('string');
+      // Token should be base64-encoded JSON with email, verified, timestamp
+      const decoded = JSON.parse(Buffer.from(result.reset_token, 'base64').toString('utf-8'));
+      expect(decoded.email).toBe('x@y.com');
+      expect(decoded.verified).toBe(true);
+      expect(decoded.timestamp).toBeDefined();
     });
 
     it('throws InternalServerErrorException on DB error', async () => {
@@ -215,61 +220,55 @@ describe('AuthService (Beneficiary)', () => {
       });
       await expect(service.verifyResetOtp('x@y.com', '123456')).rejects.toBeInstanceOf(BadRequestException);
     });
-
-    it('throws InternalServerErrorException when RESET_TOKEN_SECRET is missing', async () => {
-      delete process.env.RESET_TOKEN_SECRET;
-      mockMaybeSingle.mockResolvedValueOnce({
-        data: { id: 'otp-3', expires_at_ms: Date.now() + 60_000 },
-        error: null,
-      });
-      mockUpdateChain.eq.mockResolvedValueOnce({ data: null, error: null });
-      await expect(service.verifyResetOtp('x@y.com', '123456')).rejects.toBeInstanceOf(InternalServerErrorException);
-    });
   });
 
   // ── resetPassword ────────────────────────────────────────────────────────────
   describe('resetPassword', () => {
     it('resets password successfully with valid token', async () => {
-      jwtMod.verify.mockReturnValue({ sub: 'x@y.com', purpose: 'password_reset' });
+      const tokenData = { email: 'x@y.com', verified: true, timestamp: Date.now() };
+      const validToken = Buffer.from(JSON.stringify(tokenData)).toString('base64');
       mockMaybeSingle.mockResolvedValueOnce({ data: { auth_user_id: 'auth-uid-1' }, error: null });
       mockAuthAdmin.updateUserById.mockResolvedValue({ error: null });
 
-      const result = await service.resetPassword('valid-token', 'NewPass123!');
+      const result = await service.resetPassword(validToken, 'NewPass123!');
       expect(result.success).toBe(true);
     });
 
-    it('throws InternalServerErrorException when RESET_TOKEN_SECRET is missing', async () => {
-      delete process.env.RESET_TOKEN_SECRET;
-      await expect(service.resetPassword('tok', 'pass')).rejects.toBeInstanceOf(InternalServerErrorException);
+    it('throws UnauthorizedException on invalid base64 token', async () => {
+      await expect(service.resetPassword('invalid-token', 'pass')).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
-    it('throws UnauthorizedException on invalid JWT', async () => {
-      jwtMod.verify.mockImplementation(() => { throw new Error('invalid'); });
-      await expect(service.resetPassword('bad-token', 'pass')).rejects.toBeInstanceOf(UnauthorizedException);
+    it('throws UnauthorizedException on malformed token data', async () => {
+      const badToken = Buffer.from(JSON.stringify({ email: 'x@y.com', verified: false })).toString('base64');
+      await expect(service.resetPassword(badToken, 'pass')).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
-    it('throws UnauthorizedException when token purpose is wrong', async () => {
-      jwtMod.verify.mockReturnValue({ sub: 'x@y.com', purpose: 'other' });
-      await expect(service.resetPassword('tok', 'pass')).rejects.toBeInstanceOf(UnauthorizedException);
+    it('throws UnauthorizedException when token is expired', async () => {
+      const expiredTokenData = { email: 'x@y.com', verified: true, timestamp: Date.now() - (20 * 60 * 1000) };
+      const expiredToken = Buffer.from(JSON.stringify(expiredTokenData)).toString('base64');
+      await expect(service.resetPassword(expiredToken, 'pass')).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
     it('throws NotFoundException when profile is not found', async () => {
-      jwtMod.verify.mockReturnValue({ sub: 'x@y.com', purpose: 'password_reset' });
+      const tokenData = { email: 'x@y.com', verified: true, timestamp: Date.now() };
+      const validToken = Buffer.from(JSON.stringify(tokenData)).toString('base64');
       mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
-      await expect(service.resetPassword('tok', 'pass')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.resetPassword(validToken, 'pass')).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws InternalServerErrorException when auth update fails', async () => {
-      jwtMod.verify.mockReturnValue({ sub: 'x@y.com', purpose: 'password_reset' });
+      const tokenData = { email: 'x@y.com', verified: true, timestamp: Date.now() };
+      const validToken = Buffer.from(JSON.stringify(tokenData)).toString('base64');
       mockMaybeSingle.mockResolvedValueOnce({ data: { auth_user_id: 'uid' }, error: null });
       mockAuthAdmin.updateUserById.mockResolvedValue({ error: { message: 'update fail' } });
-      await expect(service.resetPassword('tok', 'pass')).rejects.toBeInstanceOf(InternalServerErrorException);
+      await expect(service.resetPassword(validToken, 'pass')).rejects.toBeInstanceOf(InternalServerErrorException);
     });
 
     it('throws NotFoundException on profile DB error', async () => {
-      jwtMod.verify.mockReturnValue({ sub: 'x@y.com', purpose: 'password_reset' });
+      const tokenData = { email: 'x@y.com', verified: true, timestamp: Date.now() };
+      const validToken = Buffer.from(JSON.stringify(tokenData)).toString('base64');
       mockMaybeSingle.mockResolvedValueOnce({ data: null, error: { message: 'db err' } });
-      await expect(service.resetPassword('tok', 'pass')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.resetPassword(validToken, 'pass')).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

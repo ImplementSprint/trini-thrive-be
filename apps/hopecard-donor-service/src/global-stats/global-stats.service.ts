@@ -13,7 +13,10 @@ export class GlobalStatsService {
   async getStats() {
     const [purchasesResult, beneficiariesResult] = await Promise.all([
       // Total amount from all purchases ever (all statuses counted as paid)
-      this.admin.from('hopecard_purchases').select('amount_paid').eq('status', 'paid'),
+      this.admin
+        .from('hopecard_purchases')
+        .select('amount_paid')
+        .eq('status', 'paid'),
       // Count of all beneficiary accounts
       this.admin
         .from('beneficiary_profiles')

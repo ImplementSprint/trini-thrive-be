@@ -13,7 +13,10 @@ export class WithdrawalsController {
   }
 
   @Post()
-  requestWithdrawal(@Req() req: any, @Body() body: { amount: number; bank_account_id?: string; notes?: string }) {
+  requestWithdrawal(
+    @Req() req: any,
+    @Body() body: { amount: number; bank_account_id?: string; notes?: string },
+  ) {
     return this.withdrawalsService.requestWithdrawal(req.user.sub, body);
   }
 }

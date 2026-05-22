@@ -1,4 +1,5 @@
-import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import type { ExecutionContext } from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { JwtGuard } from './jwt.guard';
 
 jest.mock('jose', () => ({ jwtVerify: jest.fn() }));
@@ -6,7 +7,10 @@ jest.mock('jose', () => ({ jwtVerify: jest.fn() }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const mockJwtVerify = require('jose').jwtVerify as jest.Mock;
 
-function mockContext(authHeader?: string, cookies: Record<string, string> = {}) {
+function mockContext(
+  authHeader?: string,
+  cookies: Record<string, string> = {},
+) {
   const request: any = { headers: {}, cookies, user: undefined };
   if (authHeader) request.headers.authorization = authHeader;
   return {
@@ -23,7 +27,9 @@ describe('JwtGuard', () => {
   describe('no token', () => {
     it('throws UnauthorizedException with MISSING_AUTH_TOKEN', async () => {
       const guard = new JwtGuard();
-      await expect(guard.canActivate(mockContext())).rejects.toThrow(UnauthorizedException);
+      await expect(guard.canActivate(mockContext())).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -31,13 +37,20 @@ describe('JwtGuard', () => {
     it('throws UnauthorizedException with INVALID_JWT', async () => {
       mockJwtVerify.mockRejectedValue(new Error('signature mismatch'));
       const guard = new JwtGuard();
-      await expect(guard.canActivate(mockContext('Bearer bad.token'))).rejects.toThrow(UnauthorizedException);
+      await expect(
+        guard.canActivate(mockContext('Bearer bad.token')),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
   describe('valid token, no expectedPersona', () => {
     it('passes and sets request.user', async () => {
-      const payload = { sub: 'u1', email: 'a@b.com', persona: 'admin', system: 'hopecard' };
+      const payload = {
+        sub: 'u1',
+        email: 'a@b.com',
+        persona: 'admin',
+        system: 'hopecard',
+      };
       mockJwtVerify.mockResolvedValue({ payload });
       const ctx = mockContext('Bearer valid.token');
       const guard = new JwtGuard();
@@ -50,7 +63,12 @@ describe('JwtGuard', () => {
   describe('valid token, expectedPersona matches', () => {
     it('passes when persona and system match', async () => {
       mockJwtVerify.mockResolvedValue({
-        payload: { sub: 'u1', email: 'a@b.com', persona: 'donor', system: 'hopecard' },
+        payload: {
+          sub: 'u1',
+          email: 'a@b.com',
+          persona: 'donor',
+          system: 'hopecard',
+        },
       });
       const guard = new JwtGuard('donor');
       const result = await guard.canActivate(mockContext('Bearer valid.token'));
@@ -61,27 +79,48 @@ describe('JwtGuard', () => {
   describe('valid token, persona mismatch', () => {
     it('throws ForbiddenException with PERSONA_MISMATCH when persona is wrong', async () => {
       mockJwtVerify.mockResolvedValue({
-        payload: { sub: 'u1', email: 'a@b.com', persona: 'donor', system: 'hopecard' },
+        payload: {
+          sub: 'u1',
+          email: 'a@b.com',
+          persona: 'donor',
+          system: 'hopecard',
+        },
       });
       const guard = new JwtGuard('admin');
-      await expect(guard.canActivate(mockContext('Bearer valid.token'))).rejects.toThrow(ForbiddenException);
+      await expect(
+        guard.canActivate(mockContext('Bearer valid.token')),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('throws ForbiddenException with PERSONA_MISMATCH when system is wrong', async () => {
       mockJwtVerify.mockResolvedValue({
-        payload: { sub: 'u1', email: 'a@b.com', persona: 'admin', system: 'other-system' },
+        payload: {
+          sub: 'u1',
+          email: 'a@b.com',
+          persona: 'admin',
+          system: 'other-system',
+        },
       });
       const guard = new JwtGuard('admin');
-      await expect(guard.canActivate(mockContext('Bearer valid.token'))).rejects.toThrow(ForbiddenException);
+      await expect(
+        guard.canActivate(mockContext('Bearer valid.token')),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe('cookie fallback', () => {
     it('reads token from admin_token cookie', async () => {
-      const payload = { sub: 'u1', email: 'a@b.com', persona: 'admin', system: 'hopecard' };
+      const payload = {
+        sub: 'u1',
+        email: 'a@b.com',
+        persona: 'admin',
+        system: 'hopecard',
+      };
       mockJwtVerify.mockResolvedValue({ payload });
       const guard = new JwtGuard();
-      const result = await guard.canActivate(mockContext(undefined, { admin_token: 'cookie.token' }));
+      const result = await guard.canActivate(
+        mockContext(undefined, { admin_token: 'cookie.token' }),
+      );
       expect(result).toBe(true);
     });
   });
