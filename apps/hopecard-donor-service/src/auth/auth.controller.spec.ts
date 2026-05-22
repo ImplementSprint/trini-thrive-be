@@ -54,6 +54,105 @@ describe('AuthController (donor)', () => {
     controller = module.get<AuthController>(AuthController);
   });
 
+  describe('login', () => {
+    it('delegates to authService.login', async () => {
+      mockAuthService.login.mockResolvedValue({ token: 'jwt' });
+      const result = await controller.login({ email: 'a@b.com', password: 'pass' });
+      expect(mockAuthService.login).toHaveBeenCalledWith('a@b.com', 'pass');
+      expect(result).toEqual({ token: 'jwt' });
+    });
+  });
+
+  describe('signup', () => {
+    it('delegates to authService.signup with origin from request headers', async () => {
+      mockAuthService.signup.mockResolvedValue({ id: '1' });
+      const req = { headers: { origin: 'https://app.example.com' } };
+      const result = await controller.signup({ name: 'Alice' }, req as any);
+      expect(mockAuthService.signup).toHaveBeenCalledWith({
+        name: 'Alice',
+        origin: 'https://app.example.com',
+      });
+      expect(result).toEqual({ id: '1' });
+    });
+  });
+
+  describe('sendOtp', () => {
+    it('delegates to authService.sendOtp', async () => {
+      mockAuthService.sendOtp.mockResolvedValue({ sent: true });
+      const result = await controller.sendOtp({ email: 'a@b.com' });
+      expect(mockAuthService.sendOtp).toHaveBeenCalledWith('a@b.com');
+      expect(result).toEqual({ sent: true });
+    });
+  });
+
+  describe('verifyOtp', () => {
+    it('delegates to authService.verifyOtp', async () => {
+      mockAuthService.verifyOtp.mockResolvedValue({ verified: true });
+      const result = await controller.verifyOtp({ email: 'a@b.com', token: '123456', type: 'signup' });
+      expect(mockAuthService.verifyOtp).toHaveBeenCalledWith('a@b.com', '123456', 'signup');
+      expect(result).toEqual({ verified: true });
+    });
+  });
+
+  describe('generateOtp', () => {
+    it('delegates to authService.generateOtp', async () => {
+      mockAuthService.generateOtp.mockResolvedValue({ generated: true });
+      const result = await controller.generateOtp({ email: 'a@b.com' });
+      expect(mockAuthService.generateOtp).toHaveBeenCalledWith('a@b.com');
+      expect(result).toEqual({ generated: true });
+    });
+  });
+
+  describe('verifyNumericOtp', () => {
+    it('delegates to authService.verifyNumericOtp', async () => {
+      mockAuthService.verifyNumericOtp.mockResolvedValue({ valid: true });
+      const result = await controller.verifyNumericOtp({ email: 'a@b.com', code: '654321' });
+      expect(mockAuthService.verifyNumericOtp).toHaveBeenCalledWith('a@b.com', '654321');
+      expect(result).toEqual({ valid: true });
+    });
+  });
+
+  describe('checkEmail', () => {
+    it('delegates to authService.checkEmail', async () => {
+      mockAuthService.checkEmail.mockResolvedValue({ exists: false });
+      const result = await controller.checkEmail({ email: 'a@b.com' });
+      expect(mockAuthService.checkEmail).toHaveBeenCalledWith('a@b.com');
+      expect(result).toEqual({ exists: false });
+    });
+  });
+
+  describe('resetPasswordWithOtp', () => {
+    it('delegates to authService.resetPasswordWithOtp', async () => {
+      mockAuthService.resetPasswordWithOtp.mockResolvedValue({ reset: true });
+      const result = await controller.resetPasswordWithOtp({
+        email: 'a@b.com',
+        password: 'newPass',
+        sessionToken: 'tok',
+      });
+      expect(mockAuthService.resetPasswordWithOtp).toHaveBeenCalledWith('a@b.com', 'newPass', 'tok');
+      expect(result).toEqual({ reset: true });
+    });
+  });
+
+  describe('updatePassword', () => {
+    it('delegates to authService.updatePassword', async () => {
+      mockAuthService.updatePassword.mockResolvedValue({ updated: true });
+      const result = await controller.updatePassword({ password: 'newPass', accessToken: 'at' });
+      expect(mockAuthService.updatePassword).toHaveBeenCalledWith('newPass', 'at');
+      expect(result).toEqual({ updated: true });
+    });
+  });
+
+  describe('uploadId', () => {
+    it('delegates to authService.uploadId', async () => {
+      mockAuthService.uploadId.mockResolvedValue({ url: 'https://storage/id.jpg' });
+      const file = { originalname: 'id.jpg' } as Express.Multer.File;
+      const result = await controller.uploadId(file, 'user-1');
+      expect(mockAuthService.uploadId).toHaveBeenCalledWith(file, 'user-1');
+      expect(result).toEqual({ url: 'https://storage/id.jpg' });
+    });
+  });
+
   describe('googleUrl', () => {
     it('calls googleGetAuthUrl with the frontend callback URL and returns the result', async () => {
       process.env['NEXT_PUBLIC_APP_URL'] = 'https://app.example.com';

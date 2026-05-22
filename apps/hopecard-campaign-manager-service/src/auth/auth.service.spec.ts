@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ProcedureEventService } from '@app/api-center';
 import { AuthService } from './auth.service';
 
 // ── jose mock (ESM-only) ─────────────────────────────────────────────────────
@@ -75,6 +76,7 @@ describe('AuthService (CM)', () => {
       providers: [
         AuthService,
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: ProcedureEventService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
     service = module.get<AuthService>(AuthService);
@@ -186,6 +188,7 @@ describe('AuthService (CM)', () => {
         providers: [
           AuthService,
           { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
+          { provide: ProcedureEventService, useValue: { emit: jest.fn() } },
         ],
       }).compile();
       expect(mod.get<AuthService>(AuthService)).toBeDefined();
