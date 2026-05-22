@@ -108,6 +108,42 @@
       "compilerOptions": {
         "tsConfigPath": "apps/hopecard-donor-service/tsconfig.app.json"
       }
+    },
+    "damayan-admin-service": {
+      "type": "application",
+      "root": "apps/damayan-admin-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/damayan-admin-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/damayan-admin-service/tsconfig.app.json"
+      }
+    },
+    "damayan-site-manager-service": {
+      "type": "application",
+      "root": "apps/damayan-site-manager-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/damayan-site-manager-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/damayan-site-manager-service/tsconfig.app.json"
+      }
+    },
+    "damayan-dispatcher-service": {
+      "type": "application",
+      "root": "apps/damayan-dispatcher-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/damayan-dispatcher-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/damayan-dispatcher-service/tsconfig.app.json"
+      }
+    },
+    "damayan-citizen-service": {
+      "type": "application",
+      "root": "apps/damayan-citizen-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/damayan-citizen-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/damayan-citizen-service/tsconfig.app.json"
+      }
     }
   }
 }
