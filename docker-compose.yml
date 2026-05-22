@@ -1,0 +1,88 @@
+version: '3.9'
+
+services:
+  bayanihub-admin-service:
+    build:
+      context: .
+      dockerfile: apps/bayanihub-admin-service/Dockerfile
+    image: bayanihub-admin-service:latest
+    container_name: bayanihub-admin-service
+    restart: unless-stopped
+    ports:
+      - '${BAYANIHUB_ADMIN_PORT:-3301}:3301'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      BAYANIHUB_ADMIN_PORT: 3301
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3301/api/v1/bayanihub/admin/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  bayanihub-enduser-service:
+    build:
+      context: .
+      dockerfile: apps/bayanihub-enduser-service/Dockerfile
+    image: bayanihub-enduser-service:latest
+    container_name: bayanihub-enduser-service
+    restart: unless-stopped
+    ports:
+      - '${BAYANIHUB_ENDUSER_PORT:-3302}:3302'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      BAYANIHUB_ENDUSER_PORT: 3302
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3302/api/v1/bayanihub/enduser/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  bayanihub-sitemanager-service:
+    build:
+      context: .
+      dockerfile: apps/bayanihub-sitemanager-service/Dockerfile
+    image: bayanihub-sitemanager-service:latest
+    container_name: bayanihub-sitemanager-service
+    restart: unless-stopped
+    ports:
+      - '${BAYANIHUB_SITEMANAGER_PORT:-3303}:3303'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      BAYANIHUB_SITEMANAGER_PORT: 3303
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      DAMAYAN_SUPABASE_URL: ${DAMAYAN_SUPABASE_URL}
+      DAMAYAN_SUPABASE_SERVICE_ROLE_KEY: ${DAMAYAN_SUPABASE_SERVICE_ROLE_KEY}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3303/api/v1/bayanihub/site-manager/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

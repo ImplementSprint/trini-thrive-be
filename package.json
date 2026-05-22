@@ -9,6 +9,9 @@
     "build": "nest build --all",
     "build:api": "nest build api",
     "build:location-service": "nest build location-service",
+    "build:bayanihub-admin-service": "nest build bayanihub-admin-service",
+    "build:bayanihub-enduser-service": "nest build bayanihub-enduser-service",
+    "build:bayanihub-sitemanager-service": "nest build bayanihub-sitemanager-service",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\" \"tests/**/*.ts\"",
     "start": "nest start api",
@@ -20,6 +23,15 @@
     "start:location-service:dev": "nest start location-service --watch",
     "start:prod:api": "node dist/apps/api/main",
     "start:prod:location-service": "node dist/apps/location-service/main",
+    "start:bayanihub-admin-service": "nest start bayanihub-admin-service",
+    "start:bayanihub-admin-service:dev": "nest start bayanihub-admin-service --watch",
+    "start:prod:bayanihub-admin-service": "node dist/apps/bayanihub-admin-service/main",
+    "start:bayanihub-enduser-service": "nest start bayanihub-enduser-service",
+    "start:bayanihub-enduser-service:dev": "nest start bayanihub-enduser-service --watch",
+    "start:prod:bayanihub-enduser-service": "node dist/apps/bayanihub-enduser-service/main",
+    "start:bayanihub-sitemanager-service": "nest start bayanihub-sitemanager-service",
+    "start:bayanihub-sitemanager-service:dev": "nest start bayanihub-sitemanager-service --watch",
+    "start:prod:bayanihub-sitemanager-service": "node dist/apps/bayanihub-sitemanager-service/main",
     "lint": "eslint \"{apps,libs,tests}/**/*.ts\"",
     "lint:fix": "eslint \"{apps,libs,tests}/**/*.ts\" --fix",
     "test": "jest",
@@ -27,6 +39,9 @@
     "test:cov": "jest --coverage",
     "test:api": "jest --selectProjects api",
     "test:location-service": "jest --selectProjects location-service",
+    "test:bayanihub-admin-service": "jest --selectProjects bayanihub-admin-service",
+    "test:bayanihub-enduser-service": "jest --selectProjects bayanihub-enduser-service",
+    "test:bayanihub-sitemanager-service": "jest --selectProjects bayanihub-sitemanager-service",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./tests/e2e/jest-e2e.json",
     "dummy:show": "node ./scripts/show-dummy-account.cjs"
@@ -44,6 +59,10 @@
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
     "helmet": "^8.1.0",
+    "jose": "^5.9.6",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^8.0.5",
+    "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -56,7 +75,10 @@
     "@types/express": "^5.0.0",
     "@types/helmet": "^0.0.48",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^1.4.12",
     "@types/node": "^22.10.7",
+    "@types/nodemailer": "^6.4.17",
+    "@types/qrcode": "^1.5.6",
     "@types/supertest": "^6.0.2",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.0.1",
@@ -149,6 +171,117 @@
           "\\.module\\.ts$",
           "index\\.ts$"
         ],
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "bayanihub-admin-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "apps/bayanihub-admin-service/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/bayanihub-admin-service/src/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/bayanihub-admin-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
+        "coverageThreshold": {
+          "global": {
+            "lines": 80
+          }
+        },
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "bayanihub-enduser-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "apps/bayanihub-enduser-service/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/bayanihub-enduser-service/src/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/bayanihub-enduser-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
+        "coverageThreshold": {
+          "global": {
+            "lines": 80
+          }
+        },
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "bayanihub-sitemanager-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "apps/bayanihub-sitemanager-service/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/bayanihub-sitemanager-service/src/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/bayanihub-sitemanager-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
+        "coverageThreshold": {
+          "global": {
+            "lines": 80
+          }
+        },
         "testEnvironment": "node"
       }
     ],
