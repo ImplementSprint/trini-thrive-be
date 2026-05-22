@@ -53,3 +53,47 @@ services:
     environment:
       HOPECARD_NOTIFICATION_PORT: "3105"
       PORT: "3105"
+
+  damayan-admin-service:
+    build:
+      context: .
+      dockerfile: apps/damayan-admin-service/Dockerfile
+    ports:
+      - "3201:3201"
+    env_file: .env
+    environment:
+      DAMAYAN_ADMIN_PORT: "3201"
+      PORT: "3201"
+
+  damayan-site-manager-service:
+    build:
+      context: .
+      dockerfile: apps/damayan-site-manager-service/Dockerfile
+    ports:
+      - "3202:3202"
+    env_file: .env
+    environment:
+      DAMAYAN_SM_PORT: "3202"
+      PORT: "3202"
+
+  damayan-dispatcher-service:
+    build:
+      context: .
+      dockerfile: apps/damayan-dispatcher-service/Dockerfile
+    ports:
+      - "3203:3203"
+    env_file: .env
+    environment:
+      DAMAYAN_DISPATCHER_PORT: "3203"
+      PORT: "3203"
+
+  damayan-citizen-service:
+    build:
+      context: .
+      dockerfile: apps/damayan-citizen-service/Dockerfile
+    ports:
+      - "3204:3204"
+    env_file: .env
+    environment:
+      DAMAYAN_CITIZEN_PORT: "3204"
+      PORT: "3204"
