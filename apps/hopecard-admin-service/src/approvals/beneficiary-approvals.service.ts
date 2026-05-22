@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
+import { ProcedureEventService } from '@app/api-center';
 
 export interface BeneficiaryApproval {
   id: string;
@@ -16,7 +17,10 @@ export interface BeneficiaryApproval {
 
 @Injectable()
 export class BeneficiaryApprovalsService {
-  constructor(private readonly activityService: ActivityLogger) {}
+  constructor(
+    private readonly activityService: ActivityLogger,
+    private readonly events: ProcedureEventService,
+  ) {}
 
   /**
    * Get all beneficiary approvals from beneficiary_profiles table
@@ -126,6 +130,12 @@ export class BeneficiaryApprovalsService {
         console.warn('Failed to log activity, but approval succeeded:', activityError);
       }
 
+      this.events.emit(
+        'hopecard.beneficiary.approved',
+        { beneficiaryId, adminId, name: `${beneficiaryData?.first_name} ${beneficiaryData?.last_name}` },
+        { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
+      );
+
       console.log('✅ Beneficiary approved:', beneficiaryId);
       return {
         success: true,
@@ -183,6 +193,12 @@ export class BeneficiaryApprovalsService {
       } catch (activityError) {
         console.warn('Failed to log activity, but rejection succeeded:', activityError);
       }
+
+      this.events.emit(
+        'hopecard.beneficiary.rejected',
+        { beneficiaryId, adminId, name: `${beneficiaryData?.first_name} ${beneficiaryData?.last_name}`, reason: reason ?? null },
+        { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
+      );
 
       console.log('✅ Beneficiary rejected:', beneficiaryId);
       return {
@@ -281,6 +297,12 @@ export class BeneficiaryApprovalsService {
         console.warn('Failed to log activity, but donation was recorded:', activityError);
       }
 
+      this.events.emit(
+        'hopecard.beneficiary.donation.sent',
+        { beneficiaryId, adminId, amount: donationData.amount, campaign: donationData.campaign ?? 'General Aid' },
+        { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
+      );
+
       console.log('✅ Donation recorded for beneficiary:', beneficiaryId);
       return {
         success: true,
@@ -333,6 +355,12 @@ export class BeneficiaryApprovalsService {
         resource_type: 'beneficiary_document',
         resource_id: beneficiaryId,
       });
+
+      this.events.emit(
+        'hopecard.beneficiary.document.approved',
+        { beneficiaryId, adminId, name: `${beneficiaryData?.first_name} ${beneficiaryData?.last_name}` },
+        { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
+      );
 
       console.log('✅ Beneficiary documents approved in beneficiary_identity_documents:', beneficiaryId);
       return {
@@ -389,6 +417,12 @@ export class BeneficiaryApprovalsService {
         resource_id: beneficiaryId,
       });
 
+      this.events.emit(
+        'hopecard.beneficiary.document.rejected',
+        { beneficiaryId, adminId, name: `${beneficiaryData?.first_name} ${beneficiaryData?.last_name}`, reason: reason ?? null },
+        { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
+      );
+
       console.log('✅ Beneficiary documents rejected in beneficiary_identity_documents:', beneficiaryId);
       return {
         success: true,
@@ -439,6 +473,12 @@ export class BeneficiaryApprovalsService {
         resource_type: 'beneficiary_bank',
         resource_id: beneficiaryId,
       });
+
+      this.events.emit(
+        'hopecard.beneficiary.bank.approved',
+        { beneficiaryId, adminId, name: `${beneficiaryData?.first_name} ${beneficiaryData?.last_name}` },
+        { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
+      );
 
       console.log('✅ Beneficiary bank details approved in beneficiary_bank_accounts:', beneficiaryId);
       return {
@@ -491,6 +531,12 @@ export class BeneficiaryApprovalsService {
         resource_type: 'beneficiary_bank',
         resource_id: beneficiaryId,
       });
+
+      this.events.emit(
+        'hopecard.beneficiary.bank.rejected',
+        { beneficiaryId, adminId, name: `${beneficiaryData?.first_name} ${beneficiaryData?.last_name}`, reason: reason ?? null },
+        { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
+      );
 
       console.log('✅ Beneficiary bank details rejected in beneficiary_bank_accounts:', beneficiaryId);
       return {

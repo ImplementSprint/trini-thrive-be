@@ -8,9 +8,11 @@ import {
 import { createClient } from '@supabase/supabase-js';
 import { SignJWT } from 'jose';
 import * as nodemailer from 'nodemailer';
+import { ProcedureEventService } from '@app/api-center';
 
 @Injectable()
 export class AuthService {
+  constructor(private readonly events: ProcedureEventService) {}
   private get admin() {
     return createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -206,6 +208,12 @@ export class AuthService {
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
       .sign(new TextEncoder().encode(secret));
+
+    this.events.emit(
+      'hopecard.beneficiary.login',
+      { authUserId: data.user.id, email: data.user.email ?? email },
+      { partitionKey: data.user.id, sourceServiceId: 'hopecard-beneficiary-service' },
+    );
 
     return { success: true, token };
   }

@@ -3,6 +3,7 @@ import { supabaseRequest } from '@app/common/supabase-helpers';
 import { getStorageUrl } from '@app/common/storage';
 import { DbProfile } from '@app/common/types';
 import { getRecordId, getRecordTitle } from '@app/common/supabase-helpers';
+import { ProcedureEventService } from '@app/api-center';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -23,6 +24,8 @@ interface DbImpactPurchase {
 
 @Injectable()
 export class ProfileService {
+  constructor(private readonly events: ProcedureEventService) {}
+
   async getProfile(authUserId: string, email?: string) {
     if (!authUserId || !UUID_RE.test(authUserId)) throw new HttpException('Invalid authUserId', 400);
 
@@ -62,6 +65,11 @@ export class ProfileService {
     await supabaseRequest(`digital_donor_profiles?auth_user_id=eq.${authUserId}`, {
       method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch),
     });
+    this.events.emit(
+      'hopecard.donor.profile_updated',
+      { authUserId, fields: Object.keys(patch).filter((k) => k !== 'updated_at') },
+      { partitionKey: authUserId, sourceServiceId: 'hopecard-donor-service' },
+    );
     return { success: true };
   }
 

@@ -2,6 +2,7 @@ import { Injectable, HttpException } from '@nestjs/common';
 import { supabaseRequest } from '@app/common/supabase-helpers';
 import { getStorageUrl } from '@app/common/storage';
 import { DbCart, DbCartItem } from '@app/common/types';
+import { ProcedureEventService } from '@app/api-center';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -11,6 +12,7 @@ function isUuid(v: string | null | undefined): v is string {
 
 @Injectable()
 export class CartService {
+  constructor(private readonly events: ProcedureEventService) {}
   private async upsertActiveCart(authUserId: string): Promise<string> {
     const existing = await supabaseRequest<DbCart[]>(`carts?auth_user_id=eq.${authUserId}&status=eq.active&limit=1`);
     const activeCart = existing[0];
@@ -87,6 +89,11 @@ export class CartService {
         body: JSON.stringify({ cart_id: cartId, campaign_id, face_value, quantity: quantity ?? 1 }),
       });
     }
+    this.events.emit(
+      'hopecard.cart.item_added',
+      { authUserId, cartId, campaignId: campaign_id, faceValue: face_value, quantity: quantity ?? 1 },
+      { partitionKey: authUserId, sourceServiceId: 'hopecard-donor-service' },
+    );
     return this.formatCart(cartId, await this.fetchItemsWithCampaigns(cartId));
   }
 
@@ -103,6 +110,11 @@ export class CartService {
         body: JSON.stringify({ quantity }),
       });
     }
+    this.events.emit(
+      'hopecard.cart.item_updated',
+      { authUserId, cartId, cartItemId: cart_item_id, quantity },
+      { partitionKey: authUserId, sourceServiceId: 'hopecard-donor-service' },
+    );
     return this.formatCart(cartId, await this.fetchItemsWithCampaigns(cartId));
   }
 
@@ -112,6 +124,11 @@ export class CartService {
     }
     const cartId = await this.upsertActiveCart(authUserId);
     await supabaseRequest(`cart_items?id=eq.${cart_item_id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    this.events.emit(
+      'hopecard.cart.item_removed',
+      { authUserId, cartId, cartItemId: cart_item_id },
+      { partitionKey: authUserId, sourceServiceId: 'hopecard-donor-service' },
+    );
     return this.formatCart(cartId, await this.fetchItemsWithCampaigns(cartId));
   }
 }

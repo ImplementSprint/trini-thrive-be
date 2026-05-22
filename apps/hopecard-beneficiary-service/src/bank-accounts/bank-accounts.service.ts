@@ -4,9 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
+import { ProcedureEventService } from '@app/api-center';
 
 @Injectable()
 export class BankAccountsService {
+  constructor(private readonly events: ProcedureEventService) {}
   private get admin() {
     return createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -83,6 +85,12 @@ export class BankAccountsService {
       details: `${bank_name} account ending in ${String(account_number).slice(-4)} added.`,
     });
 
+    this.events.emit(
+      'hopecard.bank_account.submitted',
+      { authUserId, beneficiaryProfileId: profile.id, accountId: newAccount.id, bankName: bank_name },
+      { partitionKey: profile.id, sourceServiceId: 'hopecard-beneficiary-service' },
+    );
+
     return { account: newAccount };
   }
 
@@ -105,6 +113,11 @@ export class BankAccountsService {
       .select()
       .single();
     if (error) throw new BadRequestException(error.message);
+    this.events.emit(
+      'hopecard.bank_account.updated',
+      { authUserId, beneficiaryProfileId: profile.id, accountId, updates: body },
+      { partitionKey: profile.id, sourceServiceId: 'hopecard-beneficiary-service' },
+    );
     return { account: data };
   }
 
@@ -116,6 +129,11 @@ export class BankAccountsService {
       .eq('id', accountId)
       .eq('beneficiary_profile_id', profile.id);
     if (error) throw new BadRequestException(error.message);
+    this.events.emit(
+      'hopecard.bank_account.deleted',
+      { authUserId, beneficiaryProfileId: profile.id, accountId },
+      { partitionKey: profile.id, sourceServiceId: 'hopecard-beneficiary-service' },
+    );
     return { success: true };
   }
 }
