@@ -77,7 +77,7 @@
     "test:damayan-citizen-service": "jest --selectProjects damayan-citizen-service"
   },
   "dependencies": {
-    "@implementsprint/sdk": "^1.2.0",
+    "@implementsprint/sdk": "^1.2.1",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",

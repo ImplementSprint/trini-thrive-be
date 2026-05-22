@@ -5,9 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
+import { ProcedureEventService } from '@app/api-center';
 
 @Injectable()
 export class CampaignsService {
+  constructor(private readonly events: ProcedureEventService) {}
   private get admin() {
     return createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -191,6 +193,12 @@ export class CampaignsService {
       .update({ status: 'accepted', responded_at: new Date().toISOString() })
       .eq('id', invitationId);
 
+    this.events.emit(
+      'hopecard.beneficiary.invitation_accepted',
+      { authUserId, beneficiaryProfileId: profile.id, invitationId, campaignId: invitation.campaign_id },
+      { partitionKey: profile.id, sourceServiceId: 'hopecard-beneficiary-service' },
+    );
+
     return { success: true };
   }
 
@@ -210,6 +218,12 @@ export class CampaignsService {
       .from('campaign_invitations')
       .update({ status: 'declined', responded_at: new Date().toISOString() })
       .eq('id', invitationId);
+
+    this.events.emit(
+      'hopecard.beneficiary.invitation_declined',
+      { authUserId, beneficiaryProfileId: profile.id, invitationId },
+      { partitionKey: profile.id, sourceServiceId: 'hopecard-beneficiary-service' },
+    );
 
     return { success: true };
   }

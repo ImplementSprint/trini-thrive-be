@@ -5,12 +5,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
+import { ProcedureEventService } from '@app/api-center';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'pdf']);
 
 @Injectable()
 export class IdentityDocumentsService {
+  constructor(private readonly events: ProcedureEventService) {}
   private get admin() {
     return createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -70,6 +72,11 @@ export class IdentityDocumentsService {
       .select('id')
       .single();
 
+    this.events.emit(
+      'hopecard.document.submitted',
+      { authUserId, beneficiaryProfileId: profile.id, documentId: inserted?.id ?? null, label: docLabel, path: data.path },
+      { partitionKey: profile.id, sourceServiceId: 'hopecard-beneficiary-service' },
+    );
     return {
       success: true,
       path: data.path,
@@ -113,6 +120,11 @@ export class IdentityDocumentsService {
       .from('beneficiary_identity_documents')
       .delete()
       .eq('id', documentId);
+    this.events.emit(
+      'hopecard.document.deleted',
+      { authUserId, beneficiaryProfileId: profile.id, documentId },
+      { partitionKey: profile.id, sourceServiceId: 'hopecard-beneficiary-service' },
+    );
     return { success: true };
   }
 

@@ -2,12 +2,16 @@ import { Injectable, InternalServerErrorException, OnModuleInit, UnauthorizedExc
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SignJWT } from 'jose';
+import { ProcedureEventService } from '@app/api-center';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
   private supabase!: SupabaseClient;
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private readonly events: ProcedureEventService,
+  ) {}
 
   onModuleInit() {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
@@ -52,6 +56,12 @@ export class AuthService implements OnModuleInit {
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
       .sign(new TextEncoder().encode(secret));
+
+    this.events.emit(
+      'hopecard.campaign_manager.login',
+      { authUserId: data.user.id, email: data.user.email ?? '' },
+      { partitionKey: data.user.id, sourceServiceId: 'hopecard-campaign-manager-service' },
+    );
 
     return { success: true, token };
   }

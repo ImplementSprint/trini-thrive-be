@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
+import { ProcedureEventService } from '@app/api-center';
 
 function generateWdRef(): string {
   const ts = Date.now().toString(36).toUpperCase();
@@ -13,6 +14,8 @@ function generateWdRef(): string {
 
 @Injectable()
 export class WithdrawalsService {
+  constructor(private readonly events: ProcedureEventService) {}
+
   private get admin() {
     return createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -90,6 +93,12 @@ export class WithdrawalsService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
+
+    this.events.emit(
+      'hopecard.withdrawal.requested',
+      { beneficiaryId: beneficiary.id, authUserId, amount, referenceNumber, bankAccountId: bank_account_id ?? null },
+      { partitionKey: beneficiary.id, sourceServiceId: 'hopecard-beneficiary-service' },
+    );
 
     await this.admin.from('beneficiary_banking_activity').insert({
       beneficiary_profile_id: profile.id,

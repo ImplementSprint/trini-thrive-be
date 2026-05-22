@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
+import { ProcedureEventService } from '@app/api-center';
 
 export interface DigitalDonorApproval {
   id: string;
@@ -15,7 +16,10 @@ export interface DigitalDonorApproval {
 
 @Injectable()
 export class DigitalDonorApprovalsService {
-  constructor(private readonly activityService: ActivityLogger) {}
+  constructor(
+    private readonly activityService: ActivityLogger,
+    private readonly events: ProcedureEventService,
+  ) {}
 
   /**
    * Get all digital donor approvals from digital_donor_profiles table
@@ -121,6 +125,12 @@ export class DigitalDonorApprovalsService {
         console.log('📋 Final check - Status after update:', finalCheck);
       }
 
+      this.events.emit(
+        'hopecard.donor.approved',
+        { donorId, adminId, name: existingDonor?.name ?? '' },
+        { partitionKey: donorId, sourceServiceId: 'hopecard-admin-service' },
+      );
+
       console.log('✅ Digital donor approved:', donorId, 'New data:', data?.[0]);
       return {
         success: true,
@@ -189,6 +199,12 @@ export class DigitalDonorApprovalsService {
           .single();
         console.log('📋 Final check - Status after update:', finalCheck);
       }
+
+      this.events.emit(
+        'hopecard.donor.rejected',
+        { donorId, adminId, name: existingDonor?.name ?? '', reason: reason ?? null },
+        { partitionKey: donorId, sourceServiceId: 'hopecard-admin-service' },
+      );
 
       console.log('✅ Digital donor rejected:', donorId, 'New data:', data?.[0]);
       return {

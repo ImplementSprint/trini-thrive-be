@@ -64,8 +64,7 @@
       "Bash(npx nx *)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d.get\\('scripts',{}\\).keys\\(\\)\\)\\)\")",
       "Bash(Select-Object Name)",
-      "Bash(git reset *)",
-      "Bash(npm test *)"
+      "Bash(git *)"
     ]
   }
 }
