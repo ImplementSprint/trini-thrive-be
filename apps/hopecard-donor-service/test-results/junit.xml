@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="58" failures="0" errors="0" time="3.005">
+  <testsuite name="AuthService (donor)" errors="0" failures="0" skipped="0" timestamp="2026-05-21T11:15:18" time="1.491" tests="56">
+    <testcase classname="AuthService (donor) login returns token with persona:donor and system:hopecard on successful login" name="AuthService (donor) login returns token with persona:donor and system:hopecard on successful login" time="0.008">
+    </testcase>
+    <testcase classname="AuthService (donor) login throws 401 when Supabase signIn fails" name="AuthService (donor) login throws 401 when Supabase signIn fails" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) login throws 403 when donor profile not found" name="AuthService (donor) login throws 403 when donor profile not found" time="0.002">
+    </testcase>
+    <testcase classname="AuthService (donor) login throws 403 when donor account is not approved" name="AuthService (donor) login throws 403 when donor account is not approved" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) login throws 500 when JWT_SECRET is not configured" name="AuthService (donor) login throws 500 when JWT_SECRET is not configured" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) signup throws 400 when required fields are missing" name="AuthService (donor) signup throws 400 when required fields are missing" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) signup throws 400 when supabase signUp fails" name="AuthService (donor) signup throws 400 when supabase signUp fails" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) signup creates new profile via insert and returns success" name="AuthService (donor) signup creates new profile via insert and returns success" time="0.002">
+    </testcase>
+    <testcase classname="AuthService (donor) signup updates existing profile when email already in digital_donor_profiles" name="AuthService (donor) signup updates existing profile when email already in digital_donor_profiles" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) signup returns warning when profile creation fails" name="AuthService (donor) signup returns warning when profile creation fails" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) sendOtp throws 400 when email is missing" name="AuthService (donor) sendOtp throws 400 when email is missing" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) sendOtp throws 400 when supabase signInWithOtp fails" name="AuthService (donor) sendOtp throws 400 when supabase signInWithOtp fails" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) sendOtp returns success on valid email" name="AuthService (donor) sendOtp returns success on valid email" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) verifyOtp throws 400 when email or token missing" name="AuthService (donor) verifyOtp throws 400 when email or token missing" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) verifyOtp throws 401 when supabase verifyOtp fails" name="AuthService (donor) verifyOtp throws 401 when supabase verifyOtp fails" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) verifyOtp returns session on success" name="AuthService (donor) verifyOtp returns session on success" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) generateOtp throws 400 when email is missing" name="AuthService (donor) generateOtp throws 400 when email is missing" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) generateOtp sends OTP email and returns success" name="AuthService (donor) generateOtp sends OTP email and returns success" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) generateOtp throws 500 when email send fails with SMTP error" name="AuthService (donor) generateOtp throws 500 when email send fails with SMTP error" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) generateOtp throws 500 when email send fails with generic error" name="AuthService (donor) generateOtp throws 500 when email send fails with generic error" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) verifyNumericOtp throws 400 when email or code missing" name="AuthService (donor) verifyNumericOtp throws 400 when email or code missing" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) verifyNumericOtp throws 404 when no active OTP session found" name="AuthService (donor) verifyNumericOtp throws 404 when no active OTP session found" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) verifyNumericOtp throws 410 when OTP is expired" name="AuthService (donor) verifyNumericOtp throws 410 when OTP is expired" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) verifyNumericOtp throws 401 when OTP code is wrong" name="AuthService (donor) verifyNumericOtp throws 401 when OTP code is wrong" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) verifyNumericOtp returns sessionToken on valid OTP" name="AuthService (donor) verifyNumericOtp returns sessionToken on valid OTP" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) checkEmail throws 400 when email is missing" name="AuthService (donor) checkEmail throws 400 when email is missing" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) checkEmail throws 500 when listUsers fails" name="AuthService (donor) checkEmail throws 500 when listUsers fails" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) checkEmail throws 404 when email not found" name="AuthService (donor) checkEmail throws 404 when email not found" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) checkEmail returns exists:true when email found" name="AuthService (donor) checkEmail returns exists:true when email found" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) resetPasswordWithOtp throws 400 when email missing" name="AuthService (donor) resetPasswordWithOtp throws 400 when email missing" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) resetPasswordWithOtp throws 400 when password missing" name="AuthService (donor) resetPasswordWithOtp throws 400 when password missing" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) resetPasswordWithOtp throws 400 when sessionToken missing" name="AuthService (donor) resetPasswordWithOtp throws 400 when sessionToken missing" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) resetPasswordWithOtp throws 401 when sessionToken is invalid base64" name="AuthService (donor) resetPasswordWithOtp throws 401 when sessionToken is invalid base64" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) resetPasswordWithOtp throws 401 when sessionToken email does not match" name="AuthService (donor) resetPasswordWithOtp throws 401 when sessionToken email does not match" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) resetPasswordWithOtp resets password via admin API when service key present" name="AuthService (donor) resetPasswordWithOtp resets password via admin API when service key present" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) resetPasswordWithOtp throws 500 when listUsers fails during reset" name="AuthService (donor) resetPasswordWithOtp throws 500 when listUsers fails during reset" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) updatePassword throws 400 when password or accessToken missing" name="AuthService (donor) updatePassword throws 400 when password or accessToken missing" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) updatePassword throws 400 when supabase updateUser fails" name="AuthService (donor) updatePassword throws 400 when supabase updateUser fails" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) updatePassword returns success on valid update" name="AuthService (donor) updatePassword returns success on valid update" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) uploadId throws 400 when no file provided" name="AuthService (donor) uploadId throws 400 when no file provided" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) uploadId throws 400 when userId missing" name="AuthService (donor) uploadId throws 400 when userId missing" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) uploadId throws 400 when file type is invalid" name="AuthService (donor) uploadId throws 400 when file type is invalid" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) uploadId throws 400 when file is too large" name="AuthService (donor) uploadId throws 400 when file is too large" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) uploadId returns url on successful upload" name="AuthService (donor) uploadId returns url on successful upload" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) uploadId throws 503 when storage bucket not found" name="AuthService (donor) uploadId throws 503 when storage bucket not found" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) uploadId throws 400 on other storage upload errors" name="AuthService (donor) uploadId throws 400 on other storage upload errors" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) googleGetAuthUrl returns the authorization URL from the SDK" name="AuthService (donor) googleGetAuthUrl returns the authorization URL from the SDK" time="0.002">
+    </testcase>
+    <testcase classname="AuthService (donor) googleGetAuthUrl throws HttpException 502 when SDK call fails" name="AuthService (donor) googleGetAuthUrl throws HttpException 502 when SDK call fails" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) googleCallback creates a new Supabase user and profile, returns pending_approval redirect" name="AuthService (donor) googleCallback creates a new Supabase user and profile, returns pending_approval redirect" time="0.002">
+    </testcase>
+    <testcase classname="AuthService (donor) googleCallback links existing unlinked profile and returns pending_approval redirect" name="AuthService (donor) googleCallback links existing unlinked profile and returns pending_approval redirect" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) googleCallback returns pending_approval redirect when existing linked profile is pending" name="AuthService (donor) googleCallback returns pending_approval redirect when existing linked profile is pending" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) googleCallback returns success redirect when existing linked profile is approved" name="AuthService (donor) googleCallback returns success redirect when existing linked profile is approved" time="0.004">
+    </testcase>
+    <testcase classname="AuthService (donor) googleCallback returns code_exchange_failed redirect when SDK exchange throws" name="AuthService (donor) googleCallback returns code_exchange_failed redirect when SDK exchange throws" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) googleCallback returns no_email redirect when idToken has no email claim" name="AuthService (donor) googleCallback returns no_email redirect when idToken has no email claim" time="0">
+    </testcase>
+    <testcase classname="AuthService (donor) googleCallback returns account_creation_failed redirect when Supabase createUser fails" name="AuthService (donor) googleCallback returns account_creation_failed redirect when Supabase createUser fails" time="0.001">
+    </testcase>
+    <testcase classname="AuthService (donor) googleCallback returns profile_creation_failed redirect when insert fails" name="AuthService (donor) googleCallback returns profile_creation_failed redirect when insert fails" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="AuthController (donor)" errors="0" failures="0" skipped="0" timestamp="2026-05-21T11:15:18" time="1.952" tests="2">
+    <testcase classname="AuthController (donor) googleUrl calls googleGetAuthUrl with the derived callback URL and returns the result" name="AuthController (donor) googleUrl calls googleGetAuthUrl with the derived callback URL and returns the result" time="0.017">
+    </testcase>
+    <testcase classname="AuthController (donor) googleCallback calls googleCallback with code and callback URL, then redirects 302" name="AuthController (donor) googleCallback calls googleCallback with code and callback URL, then redirects 302" time="0.003">
+    </testcase>
+  </testsuite>
+</testsuites>

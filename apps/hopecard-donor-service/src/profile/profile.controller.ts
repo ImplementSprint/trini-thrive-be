@@ -3,7 +3,7 @@ import { ProfileService } from './profile.service';
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('donor')
-@Controller()
+@Controller('hopecard/donor')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 

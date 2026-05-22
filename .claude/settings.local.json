@@ -40,7 +40,30 @@
       "PowerShell(head *)",
       "Bash(Select-Object -First 50)",
       "Bash(xargs grep -l \"fetch\\(\")",
-      "Bash(Find-Item *)"
+      "Bash(Find-Item *)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "Bash(xargs sed -i 's/} LogOut, from \"lucide-react\"/} from \"lucide-react\"/g')",
+      "Bash(xargs grep -l 'from \"lucide-react\"')",
+      "Bash(xargs sed -i 's/} from \"lucide-react\"/  LogOut,\\\\n} from \"lucide-react\"/')",
+      "Bash(sed -i '/HelpCircle, Plus, Edit, Trash2, CheckCircle$/{s/CheckCircle$/CheckCircle,/}' 'C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Frontend\\\\trini-thrive-fe\\\\hope-card\\\\src\\\\app\\\\\\(beneficiary\\)\\\\beneficiary\\\\banking-details\\\\page.tsx')",
+      "Bash(sed -i '/Landmark, IdCard, User, ShieldCheck, HelpCircle$/{s/HelpCircle$/HelpCircle,/}' 'C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Frontend\\\\trini-thrive-fe\\\\hope-card\\\\src\\\\app\\\\\\(beneficiary\\)\\\\beneficiary\\\\campaigns\\\\invitation-accepted\\\\page.tsx')",
+      "Bash(sed -i '/Landmark, IdCard, User, ShieldCheck, HelpCircle$/{s/HelpCircle$/HelpCircle,/}' 'C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Frontend\\\\trini-thrive-fe\\\\hope-card\\\\src\\\\app\\\\\\(beneficiary\\)\\\\beneficiary\\\\campaigns\\\\invitations\\\\page.tsx')",
+      "Bash(sed -i '/Landmark, IdCard, User, ShieldCheck, HelpCircle$/{s/HelpCircle$/HelpCircle,/}' 'C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Frontend\\\\trini-thrive-fe\\\\hope-card\\\\src\\\\app\\\\\\(beneficiary\\)\\\\beneficiary\\\\campaigns\\\\[id]\\\\page.tsx')",
+      "Bash(sed -i '/Landmark, IdCard, User, ShieldCheck, HelpCircle$/{s/HelpCircle$/HelpCircle,/}' 'C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Frontend\\\\trini-thrive-fe\\\\hope-card\\\\src\\\\app\\\\\\(beneficiary\\)\\\\beneficiary\\\\fund-management\\\\page.tsx')",
+      "Bash(grep -n 'LogOut\\\\|HelpCircle\\\\|CheckCircle\\\\|Info$' '/c/Users/arjel/Downloads/TriniThrive_Hopecard/Frontend/trini-thrive-fe/hope-card/src/app/\\(beneficiary\\)/beneficiary/banking-details/page.tsx' '/c/Users/arjel/Downloads/TriniThrive_Hopecard/Frontend/trini-thrive-fe/hope-card/src/app/\\(beneficiary\\)/beneficiary/campaigns/invitation-accepted/page.tsx' '/c/Users/arjel/Downloads/TriniThrive_Hopecard/Frontend/trini-thrive-fe/hope-card/src/app/\\(beneficiary\\)/beneficiary/campaigns/invitations/page.tsx' '/c/Users/arjel/Downloads/TriniThrive_Hopecard/Frontend/trini-thrive-fe/hope-card/src/app/\\(beneficiary\\)/beneficiary/campaigns/[id]/page.tsx' '/c/Users/arjel/Downloads/TriniThrive_Hopecard/Frontend/trini-thrive-fe/hope-card/src/app/\\(beneficiary\\)/beneficiary/fund-management/page.tsx' '/c/Users/arjel/Downloads/TriniThrive_Hopecard/Frontend/trini-thrive-fe/hope-card/src/app/\\(beneficiary\\)/beneficiary/request-withdrawal/page.tsx')",
+      "Bash(python3 *)",
+      "PowerShell(python3 -c \"import os; print\\(os.path.exists\\('C:/Users/arjel/Downloads/TriniThrive_Hopecard/Frontend/trini-thrive-fe/hope-card/src/app/\\(beneficiary\\)/beneficiary/banking-details/page.tsx'\\)\\)\")",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Frontend\\\\trini-thrive-fe\\\\hope-card\\\\src\" -Recurse -Filter \"route.ts\" | Select-Object -ExpandProperty FullName | Where-Object { $_ -match \"campaign-manager\" })",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Frontend\\\\trini-thrive-fe\\\\hope-card\\\\src\" -Recurse -Directory | Where-Object { $_.Name -match \"campaign-manager-utils\" } | Select-Object -ExpandProperty FullName)",
+      "PowerShell(New-Item *)",
+      "Read(//mnt/c/Users/arjel/Downloads/TriniThrive_Hopecard/Backend/trini-thrive-be/**)",
+      "Read(//mnt/c/Users/arjel/Downloads/TriniThrive_Hopecard/Backend/trini-thrive-be/node_modules/**)",
+      "PowerShell(node -e \"const jose = require\\('C:/Users/arjel/Downloads/TriniThrive_Hopecard/Backend/trini-thrive-be/node_modules/jose'\\); console.log\\(Object.keys\\(jose\\).filter\\(k => k.toLowerCase\\(\\).includes\\('decode'\\)\\)\\)\")",
+      "Bash(npx nx *)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d.get\\('scripts',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(Select-Object Name)"
     ]
   }
 }

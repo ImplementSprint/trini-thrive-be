@@ -4,7 +4,7 @@ import { sendOTPEmail } from "@app/common/email";
 import { Protected } from "@app/common/decorators/protected.decorator";
 import { supabase } from "@app/common/supabase-client";
 
-@Controller("auth")
+@Controller('hopecard/admin/auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 

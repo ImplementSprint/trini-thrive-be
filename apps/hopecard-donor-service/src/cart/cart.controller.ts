@@ -3,7 +3,7 @@ import { CartService } from './cart.service';
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('donor')
-@Controller('cart')
+@Controller('hopecard/donor/cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 

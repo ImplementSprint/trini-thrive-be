@@ -1,0 +1,99 @@
+services:
+  hopecard-admin-service:
+    build:
+      context: .
+      dockerfile: apps/hopecard-admin-service/Dockerfile
+    ports:
+      - "3101:3101"
+    env_file: .env
+    environment:
+      HOPECARD_ADMIN_PORT: "3101"
+      PORT: "3101"
+
+  hopecard-beneficiary-service:
+    build:
+      context: .
+      dockerfile: apps/hopecard-beneficiary-service/Dockerfile
+    ports:
+      - "3102:3102"
+    env_file: .env
+    environment:
+      HOPECARD_BENE_PORT: "3102"
+      PORT: "3102"
+
+  hopecard-campaign-manager-service:
+    build:
+      context: .
+      dockerfile: apps/hopecard-campaign-manager-service/Dockerfile
+    ports:
+      - "3103:3103"
+    env_file: .env
+    environment:
+      HOPECARD_CM_PORT: "3103"
+      PORT: "3103"
+
+  hopecard-donor-service:
+    build:
+      context: .
+      dockerfile: apps/hopecard-donor-service/Dockerfile
+    ports:
+      - "3104:3104"
+    env_file: .env
+    environment:
+      HOPECARD_DONOR_PORT: "3104"
+      PORT: "3104"
+
+  hopecard-notification-service:
+    build:
+      context: .
+      dockerfile: apps/hopecard-notification-service/Dockerfile
+    ports:
+      - "3105:3105"
+    env_file: .env
+    environment:
+      HOPECARD_NOTIFICATION_PORT: "3105"
+      PORT: "3105"
+
+  damayan-admin-service:
+    build:
+      context: .
+      dockerfile: apps/damayan-admin-service/Dockerfile
+    ports:
+      - "3201:3201"
+    env_file: .env
+    environment:
+      DAMAYAN_ADMIN_PORT: "3201"
+      PORT: "3201"
+
+  damayan-site-manager-service:
+    build:
+      context: .
+      dockerfile: apps/damayan-site-manager-service/Dockerfile
+    ports:
+      - "3202:3202"
+    env_file: .env
+    environment:
+      DAMAYAN_SM_PORT: "3202"
+      PORT: "3202"
+
+  damayan-dispatcher-service:
+    build:
+      context: .
+      dockerfile: apps/damayan-dispatcher-service/Dockerfile
+    ports:
+      - "3203:3203"
+    env_file: .env
+    environment:
+      DAMAYAN_DISPATCHER_PORT: "3203"
+      PORT: "3203"
+
+  damayan-citizen-service:
+    build:
+      context: .
+      dockerfile: apps/damayan-citizen-service/Dockerfile
+    ports:
+      - "3204:3204"
+    env_file: .env
+    environment:
+      DAMAYAN_CITIZEN_PORT: "3204"
+      PORT: "3204"

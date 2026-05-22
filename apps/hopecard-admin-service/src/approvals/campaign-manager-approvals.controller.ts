@@ -3,7 +3,7 @@ import { CampaignManagerApprovalsService } from './campaign-manager-approvals.se
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('admin')
-@Controller('approvals/campaign-managers')
+@Controller('hopecard/admin/approvals/campaign-managers')
 export class CampaignManagerApprovalsController {
   constructor(private readonly approvalsService: CampaignManagerApprovalsService) {}
 

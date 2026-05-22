@@ -42,8 +42,14 @@ import { TribeRegistrationService } from './tribe-registration.service';
           secret,
         });
 
-        // Authenticate immediately to ensure connectivity
-        await client.authenticate();
+        try {
+          await client.authenticate();
+        } catch (err) {
+          console.warn(
+            `ApiCenter authentication failed (${(err as Error).message}) — TribeClient will be unavailable`,
+          );
+          return null;
+        }
 
         return client;
       },

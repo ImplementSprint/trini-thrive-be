@@ -14,7 +14,9 @@ import {
 import { SupabaseModule } from '@app/supabase';
 import { AuthModule } from './auth/auth.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
+import { GlobalStatsModule } from './global-stats/global-stats.module';
 import { CartModule } from './cart/cart.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { ProfileModule } from './profile/profile.module';
 import { PurchasesModule } from './purchases/purchases.module';
 
@@ -34,7 +36,9 @@ const shouldValidateEnv = process.env.NODE_ENV === 'production';
     HealthModule,
     AuthModule,
     CampaignsModule,
+    GlobalStatsModule,
     CartModule,
+    NotificationsModule,
     ProfileModule,
     PurchasesModule,
   ],
