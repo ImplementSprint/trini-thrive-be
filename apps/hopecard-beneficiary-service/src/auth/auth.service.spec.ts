@@ -5,7 +5,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ProcedureEventService } from '@app/api-center';
 import { AuthService } from './auth.service';
+
+// ── ProcedureEventService mock ────────────────────────────────────────────────
+const mockEmit = jest.fn();
 
 // ── jose mock (ESM-only) ─────────────────────────────────────────────────────
 const mockJoseSign = jest.fn().mockResolvedValue('beneficiary.jwt.token');
@@ -98,7 +102,10 @@ describe('AuthService (Beneficiary)', () => {
     mockJoseSign.mockResolvedValue('beneficiary.jwt.token');
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService],
+      providers: [
+        AuthService,
+        { provide: ProcedureEventService, useValue: { emit: mockEmit } },
+      ],
     }).compile();
     service = module.get<AuthService>(AuthService);
   });
