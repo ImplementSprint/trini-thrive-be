@@ -32,6 +32,8 @@ describe('WithdrawalsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockSingle.mockReset();
+    mockOrder.mockReset();
     mockSupabase.from.mockImplementation(() => mockChain);
     mockChain.select.mockReturnThis();
     mockChain.eq.mockReturnThis();
