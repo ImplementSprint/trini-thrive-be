@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
+import { ProcedureEventService } from '@app/api-center';
 
 export interface Beneficiary {
   id: string;
@@ -16,7 +17,10 @@ export interface Beneficiary {
 
 @Injectable()
 export class BeneficiariesService {
-  constructor(private readonly activityService: ActivityLogger) {}
+  constructor(
+    private readonly activityService: ActivityLogger,
+    private readonly events: ProcedureEventService,
+  ) {}
   async getAllBeneficiaries(
     page: number = 1,
     limit: number = 10,
@@ -286,6 +290,12 @@ export class BeneficiariesService {
 
       console.log(`✅ Created beneficiary: ${data.first_name} ${data.last_name}`);
 
+      this.events.emit(
+        'hopecard.beneficiary.created_by_admin',
+        { beneficiaryId: data.id, email: data.email, firstName: data.first_name, lastName: data.last_name, status: data.status },
+        { partitionKey: data.id, sourceServiceId: 'hopecard-admin-service' },
+      );
+
       // Log activity when beneficiary applies (status is pending)
       if (data.verification_status === 'pending' || data.status === 'pending') {
         try {
@@ -331,6 +341,11 @@ export class BeneficiariesService {
       }
 
       console.log(`✅ Updated beneficiary: ${data.first_name} ${data.last_name}`);
+      this.events.emit(
+        'hopecard.beneficiary.updated',
+        { beneficiaryId: id, updates },
+        { partitionKey: id, sourceServiceId: 'hopecard-admin-service' },
+      );
       return data;
     } catch (error) {
       console.error('❌ Exception in updateBeneficiary:', error);
@@ -351,6 +366,11 @@ export class BeneficiariesService {
       }
 
       console.log(`✅ Deleted beneficiary: ${id}`);
+      this.events.emit(
+        'hopecard.beneficiary.deleted',
+        { beneficiaryId: id },
+        { partitionKey: id, sourceServiceId: 'hopecard-admin-service' },
+      );
       return { success: true, message: 'Beneficiary deleted successfully' };
     } catch (error) {
       console.error('❌ Exception in deleteBeneficiary:', error);

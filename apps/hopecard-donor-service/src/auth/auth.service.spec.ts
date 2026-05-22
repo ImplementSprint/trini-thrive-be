@@ -128,7 +128,8 @@ describe('AuthService (donor)', () => {
     const nodemailerMod = require('nodemailer') as { default: { createTransport: jest.Mock } };
     nodemailerMod.default.createTransport.mockImplementation(() => ({ sendMail: mockSendMail }));
 
-    service = new AuthService();
+    const mockEvents = { emit: jest.fn() } as any;
+    service = new AuthService(mockEvents);
   });
 
   // ── login ──────────────────────────────────────────────────────────────────

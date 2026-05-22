@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
 import { SignJWT, decodeJwt } from 'jose';
 import { TribeClient } from '@implementsprint/sdk';
+import { ProcedureEventService } from '@app/api-center';
 
 const getJwtSecret = () => {
   const secret = process.env['JWT_SECRET'];
@@ -12,6 +13,7 @@ const getJwtSecret = () => {
 
 @Injectable()
 export class AuthService {
+  constructor(private readonly events: ProcedureEventService) {}
   private getClients() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -129,6 +131,11 @@ export class AuthService {
       if (insertErr) {
         return { redirectUrl: `${errorBase}?reason=profile_creation_failed` };
       }
+      this.events.emit(
+        'hopecard.donor.google_registered',
+        { authUserId: supabaseUserId, email, firstName, lastName },
+        { partitionKey: supabaseUserId, sourceServiceId: 'hopecard-donor-service' },
+      );
       return { redirectUrl: `${errorBase}?reason=pending_approval` };
     }
 
@@ -142,6 +149,12 @@ export class AuthService {
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
       .sign(getJwtSecret());
+
+    this.events.emit(
+      'hopecard.donor.google_login',
+      { authUserId: supabaseUserId, email },
+      { partitionKey: supabaseUserId, sourceServiceId: 'hopecard-donor-service' },
+    );
 
     return { redirectUrl: `${successBase}?token=${token}` };
   }
@@ -192,6 +205,12 @@ export class AuthService {
       .setExpirationTime('24h')
       .sign(getJwtSecret());
 
+    this.events.emit(
+      'hopecard.donor.login',
+      { authUserId: userId, email: userEmail },
+      { partitionKey: userId, sourceServiceId: 'hopecard-donor-service' },
+    );
+
     return { success: true, token, user: data.user, session: data.session };
   }
 
@@ -235,6 +254,11 @@ export class AuthService {
     if (!profileCreated) {
       return { success: true, user: authData.user, profileCreated: false, error: `Account created, but profile setup failed: ${profileError?.message}. Please contact support with code ${profileError?.code}.`, warning: 'Profile creation failed.' };
     }
+    this.events.emit(
+      'hopecard.donor.registered',
+      { authUserId: authData.user.id, email, firstName, lastName },
+      { partitionKey: authData.user.id, sourceServiceId: 'hopecard-donor-service' },
+    );
     return { success: true, user: authData.user, profileCreated: true, message: 'Donor profile created successfully' };
   }
 
@@ -373,6 +397,11 @@ export class AuthService {
     }
 
     const { data: { publicUrl } } = admin.storage.from('donor-ids').getPublicUrl(filename);
+    this.events.emit(
+      'hopecard.donor.id_uploaded',
+      { authUserId: userId, path: data.path, mimeType: file.mimetype },
+      { partitionKey: userId, sourceServiceId: 'hopecard-donor-service' },
+    );
     return { success: true, path: data.path, url: publicUrl, message: 'ID uploaded successfully' };
   }
 }

@@ -3,12 +3,16 @@ import { TribeClient } from '@implementsprint/sdk';
 import { supabaseRequest, findHopecardRecordByTitle, getRecordId, getRecordTitle } from '@app/common/supabase-helpers';
 import { DbPurchase } from '@app/common/types';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ProcedureEventService } from '@app/api-center';
 
 type HopecardRecord = Record<string, unknown>;
 
 @Injectable()
 export class PurchasesService {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly events: ProcedureEventService,
+  ) {}
 
   private getSdkClient() {
     return new TribeClient({
@@ -96,6 +100,18 @@ export class PurchasesService {
     } catch (err) {
       console.error('Failed to clear cart:', err);
     }
+
+    this.events.emit(
+      'hopecard.donation.completed',
+      {
+        buyerAuthId,
+        totalAmount: items.reduce((sum, i) => sum + i.amount * i.quantity, 0),
+        campaignIds: items.map((i) => i.campaignId),
+        referenceId: paymentReference,
+        purchaseIds: inserted.map((p) => p.id),
+      },
+      { partitionKey: buyerAuthId, sourceServiceId: 'hopecard-donor-service' },
+    );
 
     return { purchases: inserted };
   }

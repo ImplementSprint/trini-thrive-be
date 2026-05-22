@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { ProcedureEventService } from '@app/api-center';
 
 @Injectable()
 export class CampaignsService implements OnModuleInit {
@@ -15,6 +16,7 @@ export class CampaignsService implements OnModuleInit {
   constructor(
     private configService: ConfigService,
     private httpService: HttpService,
+    private readonly events: ProcedureEventService,
   ) {}
 
   onModuleInit() {
@@ -75,6 +77,12 @@ export class CampaignsService implements OnModuleInit {
         'Failed to create campaign record.',
       );
     }
+
+    this.events.emit(
+      'hopecard.campaign.created',
+      { campaignId: campaign.id, title, category, targetAmount: target_amount, createdBy: created_by },
+      { partitionKey: campaign.id, sourceServiceId: 'hopecard-campaign-manager-service' },
+    );
 
     if (beneficiaryIds && beneficiaryIds.length > 0) {
       const joinRows = beneficiaryIds.map((id: string) => ({

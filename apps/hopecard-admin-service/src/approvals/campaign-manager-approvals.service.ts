@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
+import { ProcedureEventService } from '@app/api-center';
 
 export interface CampaignManagerApproval {
   id: string;
@@ -15,7 +16,10 @@ export interface CampaignManagerApproval {
 
 @Injectable()
 export class CampaignManagerApprovalsService {
-  constructor(private readonly activityService: ActivityLogger) {}
+  constructor(
+    private readonly activityService: ActivityLogger,
+    private readonly events: ProcedureEventService,
+  ) {}
 
   /**
    * Get all campaign manager approvals from campaign_manager_profiles table
@@ -113,6 +117,12 @@ export class CampaignManagerApprovalsService {
         return { success: false, message: 'Failed to approve campaign manager' };
       }
 
+      this.events.emit(
+        'hopecard.campaign_manager.approved',
+        { campaignManagerId, adminId },
+        { partitionKey: campaignManagerId, sourceServiceId: 'hopecard-admin-service' },
+      );
+
       console.log('✅ Campaign manager approved:', campaignManagerId);
       return {
         success: true,
@@ -148,6 +158,12 @@ export class CampaignManagerApprovalsService {
         console.error('Supabase error rejecting campaign manager:', error);
         return { success: false, message: 'Failed to reject campaign manager' };
       }
+
+      this.events.emit(
+        'hopecard.campaign_manager.rejected',
+        { campaignManagerId, adminId, reason: reason ?? null },
+        { partitionKey: campaignManagerId, sourceServiceId: 'hopecard-admin-service' },
+      );
 
       console.log('✅ Campaign manager rejected:', campaignManagerId);
       return {
