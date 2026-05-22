@@ -5,9 +5,10 @@ import { DbCampaign } from '@app/common/types';
 
 @Injectable()
 export class CampaignsService {
-  async getCampaigns(category?: string) {
+  async getCampaigns(category?: string, search?: string) {
     let query = 'hc_campaigns?status=eq.active&select=id,title,description,category,target_amount,collected_amount,cover_image_key,status,end_date&order=created_at.desc';
     if (category) query += `&category=eq.${encodeURIComponent(category)}`;
+    if (search) query += `&title=ilike.${encodeURIComponent(`*${search}*`)}`;
 
     const rows = await supabaseRequest<DbCampaign[]>(query);
 

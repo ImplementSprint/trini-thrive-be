@@ -3,7 +3,7 @@ import { PurchasesService } from './purchases.service';
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('donor')
-@Controller('purchases')
+@Controller('hopecard/donor/purchases')
 export class PurchasesController {
   constructor(private readonly purchasesService: PurchasesService) {}
 
@@ -12,8 +12,15 @@ export class PurchasesController {
     return this.purchasesService.getPurchases(buyerAuthId);
   }
 
-  @Post()
-  createPurchases(@Body() body: { buyerAuthId: string; paymentMethod: string; checkoutItems: any[] }) {
-    return this.purchasesService.createPurchases(body.buyerAuthId, body.paymentMethod, body.checkoutItems);
+  @Post('checkout')
+  createCheckoutSession(
+    @Body() body: { buyerAuthId: string; checkoutItems: { cardId: string; title: string; amount: number; quantity: number }[] },
+  ) {
+    return this.purchasesService.createCheckoutSession(body.buyerAuthId, body.checkoutItems);
+  }
+
+  @Post('confirm')
+  confirmPurchase(@Body() body: { referenceId: string; buyerAuthId: string }) {
+    return this.purchasesService.confirmPurchase(body.referenceId, body.buyerAuthId);
   }
 }

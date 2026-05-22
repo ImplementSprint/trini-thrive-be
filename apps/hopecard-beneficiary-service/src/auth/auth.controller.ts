@@ -4,7 +4,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyResetOtpDto } from './dto/verify-reset-otp.dto';
 
-@Controller('auth')
+@Controller('hopecard/beneficiary/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

@@ -5,6 +5,7 @@ const mockSign = jest.fn().mockResolvedValue('donor.jwt.token');
 const mockSetExpirationTime = jest.fn().mockReturnThis();
 const mockSetProtectedHeader = jest.fn().mockReturnThis();
 let capturedPayload: Record<string, unknown> = {};
+let mockDecodeJwt: jest.Mock;
 
 jest.mock('jose', () => ({
   SignJWT: jest.fn().mockImplementation((payload: Record<string, unknown>) => {
@@ -15,6 +16,7 @@ jest.mock('jose', () => ({
       sign: mockSign,
     };
   }),
+  decodeJwt: jest.fn(),
 }));
 
 // ── Supabase mock ─────────────────────────────────────────────────────────────
@@ -27,6 +29,7 @@ const mockUpdateUser = jest.fn();
 const mockResetPasswordForEmail = jest.fn();
 const mockListUsers = jest.fn();
 const mockUpdateUserById = jest.fn();
+const mockCreateUser = jest.fn();
 const mockFrom = jest.fn();
 const mockStorageUpload = jest.fn();
 const mockStorageGetPublicUrl = jest.fn().mockReturnValue({ data: { publicUrl: 'https://storage/test.jpg' } });
@@ -42,7 +45,7 @@ jest.mock('@supabase/supabase-js', () => ({
       setSession: mockSetSession,
       updateUser: mockUpdateUser,
       resetPasswordForEmail: mockResetPasswordForEmail,
-      admin: { listUsers: mockListUsers, updateUserById: mockUpdateUserById },
+      admin: { listUsers: mockListUsers, updateUserById: mockUpdateUserById, createUser: mockCreateUser },
     },
     from: mockFrom,
     storage: { from: jest.fn().mockReturnValue(mockStorageBucket) },
@@ -55,6 +58,17 @@ jest.mock('nodemailer', () => {
   const mockCreate = jest.fn();
   return { __esModule: true, default: { createTransport: mockCreate } };
 });
+
+// ── SDK mock ──────────────────────────────────────────────────────────────────
+const mockGauthGetAuthorizationUrl = jest.fn();
+const mockGauthExchangeCode = jest.fn();
+
+jest.mock('@implementsprint/sdk', () => ({
+  TribeClient: jest.fn().mockImplementation(() => ({
+    gauthGetAuthorizationUrl: mockGauthGetAuthorizationUrl,
+    gauthExchangeCode: mockGauthExchangeCode,
+  })),
+}));
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const makeChain = (overrides: Record<string, any> = {}) => ({
@@ -86,6 +100,8 @@ describe('AuthService (donor)', () => {
     process.env.SMTP_FROM = 'Hopecard';
     capturedPayload = {};
     jest.clearAllMocks();
+    mockGauthGetAuthorizationUrl.mockReset();
+    mockGauthExchangeCode.mockReset();
 
     const { SignJWT } = require('jose') as { SignJWT: jest.Mock };
     SignJWT.mockImplementation((payload: Record<string, unknown>) => {
@@ -97,6 +113,17 @@ describe('AuthService (donor)', () => {
     mockSign.mockResolvedValue('donor.jwt.token');
     mockSendMail.mockResolvedValue({ messageId: 'msg-1' });
     mockStorageGetPublicUrl.mockReturnValue({ data: { publicUrl: 'https://storage/test.jpg' } });
+
+    const joseMod = require('jose') as { decodeJwt: jest.Mock };
+    mockDecodeJwt = joseMod.decodeJwt;
+    mockDecodeJwt.mockReturnValue({
+      sub: 'google-sub-123',
+      email: 'donor@gmail.com',
+      given_name: 'John',
+      family_name: 'Doe',
+      name: 'John Doe',
+    });
+    mockCreateUser.mockReset();
 
     const nodemailerMod = require('nodemailer') as { default: { createTransport: jest.Mock } };
     nodemailerMod.default.createTransport.mockImplementation(() => ({ sendMail: mockSendMail }));
@@ -458,6 +485,142 @@ describe('AuthService (donor)', () => {
     it('throws 400 on other storage upload errors', async () => {
       mockStorageUpload.mockResolvedValue({ data: null, error: { message: 'Permission denied' } });
       await expect(service.uploadId(makeFile(), 'uid-1')).rejects.toMatchObject({ status: 400 });
+    });
+  });
+
+  // ── googleGetAuthUrl ──────────────────────────────────────────────────────
+  describe('googleGetAuthUrl', () => {
+    it('returns the authorization URL from the SDK', async () => {
+      mockGauthGetAuthorizationUrl.mockResolvedValue({ authorizationUrl: 'https://accounts.google.com/o/oauth2/auth?foo=bar' });
+
+      const result = await service.googleGetAuthUrl('https://api.example.com/hopecard/donor/auth/google/callback');
+
+      expect(result).toEqual({ url: 'https://accounts.google.com/o/oauth2/auth?foo=bar' });
+      expect(mockGauthGetAuthorizationUrl).toHaveBeenCalledWith({
+        redirectUri: 'https://api.example.com/hopecard/donor/auth/google/callback',
+        scopes: ['openid', 'email', 'profile'],
+        accessType: 'offline',
+      });
+    });
+
+    it('throws HttpException 502 when SDK call fails', async () => {
+      mockGauthGetAuthorizationUrl.mockRejectedValue(new Error('APICenter unreachable'));
+
+      await expect(
+        service.googleGetAuthUrl('https://api.example.com/hopecard/donor/auth/google/callback'),
+      ).rejects.toMatchObject({ status: 502 });
+    });
+  });
+
+  // ── googleCallback ────────────────────────────────────────────────────────────
+  describe('googleCallback', () => {
+    const callbackUrl = 'https://api.example.com/hopecard/donor/auth/google/callback';
+
+    const setupExchange = () => {
+      mockGauthExchangeCode.mockResolvedValue({
+        accessToken: 'goog-access-tok',
+        expiresIn: 3600,
+        idToken: 'google.id.token',
+      });
+    };
+
+    it('creates a new Supabase user and profile, returns pending_approval redirect', async () => {
+      setupExchange();
+
+      mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
+      mockCreateUser.mockResolvedValue({ data: { user: { id: 'new-supa-uid' } }, error: null });
+
+      mockFrom.mockReturnValueOnce(makeChain({
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+      }));
+      mockFrom.mockReturnValueOnce(makeChain({
+        insert: jest.fn().mockResolvedValue({ error: null }),
+      }));
+
+      const result = await service.googleCallback('auth-code-abc', callbackUrl);
+      expect(result.redirectUrl).toContain('pending_approval');
+    });
+
+    it('links existing unlinked profile and returns pending_approval redirect', async () => {
+      setupExchange();
+
+      mockListUsers.mockResolvedValue({ data: { users: [{ id: 'existing-supa-uid', email: 'donor@gmail.com' }] }, error: null });
+
+      mockFrom.mockReturnValueOnce(makeChain({
+        maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'profile-1', auth_user_id: null, status: 'pending' }, error: null }),
+      }));
+      const updateChain: any = { update: jest.fn().mockReturnThis(), eq: jest.fn().mockResolvedValue({ error: null }) };
+      mockFrom.mockReturnValueOnce(updateChain);
+
+      const result = await service.googleCallback('auth-code-abc', callbackUrl);
+      expect(result.redirectUrl).toContain('pending_approval');
+    });
+
+    it('returns pending_approval redirect when existing linked profile is pending', async () => {
+      setupExchange();
+
+      mockListUsers.mockResolvedValue({ data: { users: [{ id: 'uid-99', email: 'donor@gmail.com' }] }, error: null });
+
+      mockFrom.mockReturnValueOnce(makeChain({
+        maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'profile-2', auth_user_id: 'uid-99', status: 'pending' }, error: null }),
+      }));
+
+      const result = await service.googleCallback('auth-code-abc', callbackUrl);
+      expect(result.redirectUrl).toContain('pending_approval');
+    });
+
+    it('returns success redirect when existing linked profile is approved', async () => {
+      setupExchange();
+
+      mockListUsers.mockResolvedValue({ data: { users: [{ id: 'uid-99', email: 'donor@gmail.com' }] }, error: null });
+
+      mockFrom.mockReturnValueOnce(makeChain({
+        maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'profile-3', auth_user_id: 'uid-99', status: 'approved' }, error: null }),
+      }));
+
+      const result = await service.googleCallback('auth-code-abc', callbackUrl);
+      expect(result.redirectUrl).toContain('/donor/auth/google/success');
+      expect(result.redirectUrl).toContain('token=donor.jwt.token');
+    });
+
+    it('returns code_exchange_failed redirect when SDK exchange throws', async () => {
+      mockGauthExchangeCode.mockRejectedValue(new Error('invalid_grant'));
+
+      const result = await service.googleCallback('bad-code', callbackUrl);
+      expect(result.redirectUrl).toContain('code_exchange_failed');
+    });
+
+    it('returns no_email redirect when idToken has no email claim', async () => {
+      mockGauthExchangeCode.mockResolvedValue({ accessToken: 'tok', expiresIn: 3600, idToken: 'id.tok' });
+      mockDecodeJwt.mockReturnValue({ sub: 'sub-123' });
+
+      const result = await service.googleCallback('code-abc', callbackUrl);
+      expect(result.redirectUrl).toContain('no_email');
+    });
+
+    it('returns account_creation_failed redirect when Supabase createUser fails', async () => {
+      setupExchange();
+      mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
+      mockCreateUser.mockResolvedValue({ data: null, error: { message: 'DB error' } });
+
+      const result = await service.googleCallback('code-abc', callbackUrl);
+      expect(result.redirectUrl).toContain('account_creation_failed');
+    });
+
+    it('returns profile_creation_failed redirect when insert fails', async () => {
+      setupExchange();
+      mockListUsers.mockResolvedValue({ data: { users: [] }, error: null });
+      mockCreateUser.mockResolvedValue({ data: { user: { id: 'new-uid' } }, error: null });
+
+      mockFrom.mockReturnValueOnce(makeChain({
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+      }));
+      mockFrom.mockReturnValueOnce(makeChain({
+        insert: jest.fn().mockResolvedValue({ error: { message: 'unique violation' } }),
+      }));
+
+      const result = await service.googleCallback('code-abc', callbackUrl);
+      expect(result.redirectUrl).toContain('profile_creation_failed');
     });
   });
 });

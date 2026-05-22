@@ -2,6 +2,7 @@ import { Injectable, HttpException } from '@nestjs/common';
 import { supabaseRequest } from '@app/common/supabase-helpers';
 import { getStorageUrl } from '@app/common/storage';
 import { DbProfile } from '@app/common/types';
+import { getRecordId, getRecordTitle } from '@app/common/supabase-helpers';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -13,11 +14,11 @@ interface DbImpactProfile {
 
 interface DbImpactPurchase {
   id: string;
+  hopecard_id: string;
   amount_paid: number;
   payment_method: string;
   status: string;
   purchased_at: string;
-  hopecards: { hc_campaigns: { title: string } | null } | null;
 }
 
 @Injectable()
@@ -67,21 +68,33 @@ export class ProfileService {
   async getImpact(authUserId: string) {
     if (!authUserId || !UUID_RE.test(authUserId)) throw new HttpException('Invalid authUserId', 400);
 
-    const [profiles, purchases] = await Promise.all([
+    const [profiles, purchases, hcCampaigns, hopecards] = await Promise.all([
       supabaseRequest<DbImpactProfile[]>(
         `digital_donor_profiles?auth_user_id=eq.${authUserId}&select=total_donations_amount,total_donations_count,first_name&limit=1`
       ),
       supabaseRequest<DbImpactPurchase[]>(
-        `hopecard_purchases?buyer_auth_id=eq.${authUserId}&select=id,amount_paid,payment_method,status,purchased_at,hopecards(hc_campaigns(title))&order=purchased_at.desc&limit=20`
+        `hopecard_purchases?buyer_auth_id=eq.${authUserId}&select=id,hopecard_id,amount_paid,payment_method,status,purchased_at&order=purchased_at.desc&limit=50`
       ),
+      supabaseRequest<Record<string, unknown>[]>('hc_campaigns?select=id,title').catch(() => []),
+      supabaseRequest<Record<string, unknown>[]>('hopecards?select=id,title,name').catch(() => []),
     ]);
 
     const profile = profiles[0] ?? { total_donations_amount: 0, total_donations_count: 0, first_name: 'Donor' };
     const totalAmount = Number(profile.total_donations_amount);
 
+    const allCampaignRecords = [...hcCampaigns, ...hopecards];
+    const titleById = new Map<string, string>();
+    allCampaignRecords.forEach((r) => {
+      const id = getRecordId(r);
+      const title = getRecordTitle(r);
+      if (id && title) titleById.set(id, title);
+    });
+
+    const distinctCampaigns = new Set(purchases.map((p) => p.hopecard_id)).size;
+
     const donationHistory = purchases.map((p) => ({
       id: p.id,
-      campaign_title: p.hopecards?.hc_campaigns?.title ?? 'Donation',
+      campaign_title: titleById.get(p.hopecard_id) ?? 'Donation',
       amount_paid: Number(p.amount_paid),
       payment_method: p.payment_method,
       status: p.status,
@@ -93,7 +106,7 @@ export class ProfileService {
       stats: {
         total_donations_amount: totalAmount,
         total_donations_count: Number(profile.total_donations_count),
-        lives_touched: Math.floor(totalAmount / 500),
+        hopecards_donated: distinctCampaigns,
       },
       donation_history: donationHistory,
     };
