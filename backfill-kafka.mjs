@@ -42,20 +42,23 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 }
 
 // ── Table definitions ─────────────────────────────────────────────────────────
+// All rows publish to the governed events topic; eventType differentiates the table.
+const EVENTS_TOPIC = `tribe.${process.env.APICENTER_TRIBE_ID}.events`;
+
 const TABLES = [
-  { table: 'activity_logs',            topic: 'hopecard.activity-logs',              eventType: 'hopecard.backfill.activity_log',              orderBy: 'created_at' },
-  { table: 'beneficiaries',            topic: 'hopecard.beneficiaries',              eventType: 'hopecard.backfill.beneficiary',               orderBy: 'id' },
-  { table: 'beneficiary_profiles',     topic: 'hopecard.beneficiary-profiles',       eventType: 'hopecard.backfill.beneficiary_profile',       orderBy: 'created_at' },
-  { table: 'beneficiary_transactions', topic: 'hopecard.beneficiary-transactions',   eventType: 'hopecard.backfill.beneficiary_transaction',   orderBy: 'created_at' },
-  { table: 'beneficiary_withdrawals',  topic: 'hopecard.beneficiary-withdrawals',    eventType: 'hopecard.backfill.beneficiary_withdrawal',    orderBy: 'created_at' },
-  { table: 'campaign_manager_profiles',topic: 'hopecard.campaign-manager-profiles',  eventType: 'hopecard.backfill.campaign_manager_profile',  orderBy: 'created_at' },
-  { table: 'cart_items',               topic: 'hopecard.cart-items',                 eventType: 'hopecard.backfill.cart_item',                 orderBy: 'id' },
-  { table: 'carts',                    topic: 'hopecard.carts',                      eventType: 'hopecard.backfill.cart',                      orderBy: 'id' },
-  { table: 'digital_donor_profiles',   topic: 'hopecard.digital-donor-profiles',     eventType: 'hopecard.backfill.digital_donor_profile',     orderBy: 'created_at' },
-  { table: 'hc_campaigns',             topic: 'hopecard.campaigns',                  eventType: 'hopecard.backfill.campaign',                  orderBy: 'created_at' },
-  { table: 'hopecard_purchases',       topic: 'hopecard.purchases',                  eventType: 'hopecard.backfill.purchase',                  orderBy: 'purchased_at' },
-  { table: 'hopecard_redemptions',     topic: 'hopecard.redemptions',                eventType: 'hopecard.backfill.redemption',                orderBy: 'created_at' },
-  { table: 'hopecards',                topic: 'hopecard.hopecards',                  eventType: 'hopecard.backfill.hopecard',                  orderBy: 'id' },
+  { table: 'activity_logs',            eventType: 'hopecard.backfill.activity_log',              orderBy: 'created_at' },
+  { table: 'beneficiaries',            eventType: 'hopecard.backfill.beneficiary',               orderBy: 'id' },
+  { table: 'beneficiary_profiles',     eventType: 'hopecard.backfill.beneficiary_profile',       orderBy: 'created_at' },
+  { table: 'beneficiary_transactions', eventType: 'hopecard.backfill.beneficiary_transaction',   orderBy: 'created_at' },
+  { table: 'beneficiary_withdrawals',  eventType: 'hopecard.backfill.beneficiary_withdrawal',    orderBy: 'created_at' },
+  { table: 'campaign_manager_profiles',eventType: 'hopecard.backfill.campaign_manager_profile',  orderBy: 'created_at' },
+  { table: 'cart_items',               eventType: 'hopecard.backfill.cart_item',                 orderBy: 'id' },
+  { table: 'carts',                    eventType: 'hopecard.backfill.cart',                      orderBy: 'id' },
+  { table: 'digital_donor_profiles',   eventType: 'hopecard.backfill.digital_donor_profile',     orderBy: 'created_at' },
+  { table: 'hc_campaigns',             eventType: 'hopecard.backfill.campaign',                  orderBy: 'created_at' },
+  { table: 'hopecard_purchases',       eventType: 'hopecard.backfill.purchase',                  orderBy: 'purchased_at' },
+  { table: 'hopecard_redemptions',     eventType: 'hopecard.backfill.redemption',                orderBy: 'id' },
+  { table: 'hopecards',                eventType: 'hopecard.backfill.hopecard',                  orderBy: 'id' },
 ];
 
 // ── Supabase fetch helper ─────────────────────────────────────────────────────
@@ -88,10 +91,9 @@ async function run() {
   const summary = [];
 
   for (const config of TABLES) {
-    const topic = TribeClient.buildTenantTopic(TRIBE_ID, config.topic);
     let published = 0, failed = 0, offset = 0;
 
-    process.stdout.write(`  ${config.table.padEnd(30)} → ${topic}\n`);
+    process.stdout.write(`  ${config.table.padEnd(30)} → ${EVENTS_TOPIC} [${config.eventType}]\n`);
 
     while (true) {
       let rows;
@@ -114,7 +116,7 @@ async function run() {
 
         try {
           await client.kafkaPublish({
-            topic,
+            topic: EVENTS_TOPIC,
             key: rowId,
             eventType: config.eventType,
             payload: row,
