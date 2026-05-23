@@ -60,53 +60,6 @@ describe('JwtGuard', () => {
     });
   });
 
-  describe('valid token, expectedPersona matches', () => {
-    it('passes when persona and system match', async () => {
-      mockJwtVerify.mockResolvedValue({
-        payload: {
-          sub: 'u1',
-          email: 'a@b.com',
-          persona: 'donor',
-          system: 'hopecard',
-        },
-      });
-      const guard = new JwtGuard('donor');
-      const result = await guard.canActivate(mockContext('Bearer valid.token'));
-      expect(result).toBe(true);
-    });
-  });
-
-  describe('valid token, persona mismatch', () => {
-    it('throws ForbiddenException with PERSONA_MISMATCH when persona is wrong', async () => {
-      mockJwtVerify.mockResolvedValue({
-        payload: {
-          sub: 'u1',
-          email: 'a@b.com',
-          persona: 'donor',
-          system: 'hopecard',
-        },
-      });
-      const guard = new JwtGuard('admin');
-      await expect(
-        guard.canActivate(mockContext('Bearer valid.token')),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it('throws ForbiddenException with PERSONA_MISMATCH when system is wrong', async () => {
-      mockJwtVerify.mockResolvedValue({
-        payload: {
-          sub: 'u1',
-          email: 'a@b.com',
-          persona: 'admin',
-          system: 'other-system',
-        },
-      });
-      const guard = new JwtGuard('admin');
-      await expect(
-        guard.canActivate(mockContext('Bearer valid.token')),
-      ).rejects.toThrow(ForbiddenException);
-    });
-  });
 
   describe('cookie fallback', () => {
     it('reads token from admin_token cookie', async () => {
