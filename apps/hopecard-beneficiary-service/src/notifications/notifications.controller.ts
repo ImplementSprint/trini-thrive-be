@@ -2,6 +2,10 @@ import { Controller, Get, Req } from '@nestjs/common';
 import { RequirePersona } from '@app/common';
 import { BeneficiaryNotificationsService } from './notifications.service';
 
+interface AuthenticatedRequest {
+  user: { sub: string };
+}
+
 @RequirePersona('beneficiary')
 @Controller('hopecard/beneficiary/notifications')
 export class BeneficiaryNotificationsController {
@@ -10,7 +14,7 @@ export class BeneficiaryNotificationsController {
   ) {}
 
   @Get()
-  getNotifications(@Req() req: any) {
+  getNotifications(@Req() req: AuthenticatedRequest) {
     return this.notificationsService.getNotifications(req.user.sub);
   }
 }

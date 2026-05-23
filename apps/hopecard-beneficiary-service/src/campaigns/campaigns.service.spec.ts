@@ -3,7 +3,8 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { ProcedureEventService } from '@app/api-center';
 import { CampaignsService } from './campaigns.service';
 
@@ -11,7 +12,19 @@ import { CampaignsService } from './campaigns.service';
 const mockSingle = jest.fn();
 const mockMaybeSingle = jest.fn();
 
-const mockChain: any = {
+interface MockChain {
+  select: jest.Mock;
+  eq: jest.Mock;
+  in: jest.Mock;
+  order: jest.Mock;
+  limit: jest.Mock;
+  update: jest.Mock;
+  insert: jest.Mock;
+  single: jest.Mock;
+  maybeSingle: jest.Mock;
+}
+
+const mockChain: MockChain = {
   select: jest.fn(),
   eq: jest.fn(),
   in: jest.fn(),
@@ -99,7 +112,17 @@ describe('CampaignsService', () => {
 
       // in() for hc_campaigns query
       mockChain.in.mockResolvedValueOnce({
-        data: [{ id: 'c-1', title: 'Camp', description: 'Help', category: 'health', status: 'active', target_amount: '10000', collected_amount: '5000' }],
+        data: [
+          {
+            id: 'c-1',
+            title: 'Camp',
+            description: 'Help',
+            category: 'health',
+            status: 'active',
+            target_amount: '10000',
+            collected_amount: '5000',
+          },
+        ],
         error: null,
       });
 
@@ -115,14 +138,24 @@ describe('CampaignsService', () => {
       mockChain.eq
         .mockReturnValueOnce(mockChain)
         .mockResolvedValueOnce({ data: [{ campaign_id: 'c-1' }], error: null });
-      mockChain.in.mockResolvedValueOnce({ data: null, error: { message: 'db error' } });
+      mockChain.in.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'db error' },
+      });
 
-      await expect(service.getCampaigns('uid-1')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.getCampaigns('uid-1')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
 
     it('throws NotFoundException when profile not found', async () => {
-      mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'not found' } });
-      await expect(service.getCampaigns('uid-x')).rejects.toBeInstanceOf(NotFoundException);
+      mockSingle.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'not found' },
+      });
+      await expect(service.getCampaigns('uid-x')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 
@@ -132,9 +165,23 @@ describe('CampaignsService', () => {
       mockSingle
         .mockResolvedValueOnce({ data: { id: 'p-1' }, error: null })
         .mockResolvedValueOnce({ data: { campaign_id: 'c-1' }, error: null })
-        .mockResolvedValueOnce({ data: { id: 'c-1', title: 'Camp', created_by: 'mgr-uid', collected_amount: '5000' }, error: null });
+        .mockResolvedValueOnce({
+          data: {
+            id: 'c-1',
+            title: 'Camp',
+            created_by: 'mgr-uid',
+            collected_amount: '5000',
+          },
+          error: null,
+        });
       mockMaybeSingle.mockResolvedValueOnce({
-        data: { first_name: 'Alice', last_name: 'Smith', organization_name: 'Org', email: 'a@b.com', phone: '123' },
+        data: {
+          first_name: 'Alice',
+          last_name: 'Smith',
+          organization_name: 'Org',
+          email: 'a@b.com',
+          phone: '123',
+        },
         error: null,
       });
 
@@ -148,7 +195,15 @@ describe('CampaignsService', () => {
       mockSingle
         .mockResolvedValueOnce({ data: { id: 'p-1' }, error: null })
         .mockResolvedValueOnce({ data: { campaign_id: 'c-1' }, error: null })
-        .mockResolvedValueOnce({ data: { id: 'c-1', title: 'Camp', created_by: null, collected_amount: '0' }, error: null });
+        .mockResolvedValueOnce({
+          data: {
+            id: 'c-1',
+            title: 'Camp',
+            created_by: null,
+            collected_amount: '0',
+          },
+          error: null,
+        });
 
       const result = await service.getCampaign('uid-1', 'c-1');
       expect(result.manager).toBeNull();
@@ -158,7 +213,15 @@ describe('CampaignsService', () => {
       mockSingle
         .mockResolvedValueOnce({ data: { id: 'p-1' }, error: null })
         .mockResolvedValueOnce({ data: { campaign_id: 'c-1' }, error: null })
-        .mockResolvedValueOnce({ data: { id: 'c-1', title: 'Camp', created_by: 'mgr-uid', collected_amount: '0' }, error: null });
+        .mockResolvedValueOnce({
+          data: {
+            id: 'c-1',
+            title: 'Camp',
+            created_by: 'mgr-uid',
+            collected_amount: '0',
+          },
+          error: null,
+        });
       mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
       const result = await service.getCampaign('uid-1', 'c-1');
@@ -170,7 +233,9 @@ describe('CampaignsService', () => {
         .mockResolvedValueOnce({ data: { id: 'p-1' }, error: null })
         .mockResolvedValueOnce({ data: null, error: null }); // no enrollment
 
-      await expect(service.getCampaign('uid-1', 'c-x')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getCampaign('uid-1', 'c-x')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('throws NotFoundException when campaign not found in hc_campaigns', async () => {
@@ -179,12 +244,19 @@ describe('CampaignsService', () => {
         .mockResolvedValueOnce({ data: { campaign_id: 'c-1' }, error: null })
         .mockResolvedValueOnce({ data: null, error: { message: 'not found' } });
 
-      await expect(service.getCampaign('uid-1', 'c-1')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getCampaign('uid-1', 'c-1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('throws NotFoundException when profile not found', async () => {
-      mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'err' } });
-      await expect(service.getCampaign('uid-x', 'c-1')).rejects.toBeInstanceOf(NotFoundException);
+      mockSingle.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'err' },
+      });
+      await expect(service.getCampaign('uid-x', 'c-1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 
@@ -193,14 +265,23 @@ describe('CampaignsService', () => {
     it('returns mapped invitations', async () => {
       mockSingle.mockResolvedValueOnce({ data: { id: 'p-1' }, error: null });
       mockChain.order.mockResolvedValueOnce({
-        data: [{
-          id: 'inv-1',
-          campaign_id: 'c-1',
-          status: 'pending',
-          invited_at: '2024-01-01T00:00:00Z',
-          responded_at: null,
-          hc_campaigns: { title: 'Camp', description: 'Help', category: 'health', status: 'active', target_amount: '10000', collected_amount: '5000' },
-        }],
+        data: [
+          {
+            id: 'inv-1',
+            campaign_id: 'c-1',
+            status: 'pending',
+            invited_at: '2024-01-01T00:00:00Z',
+            responded_at: null,
+            hc_campaigns: {
+              title: 'Camp',
+              description: 'Help',
+              category: 'health',
+              status: 'active',
+              target_amount: '10000',
+              collected_amount: '5000',
+            },
+          },
+        ],
         error: null,
       });
 
@@ -219,14 +300,24 @@ describe('CampaignsService', () => {
 
     it('throws BadRequestException on invitations DB error', async () => {
       mockSingle.mockResolvedValueOnce({ data: { id: 'p-1' }, error: null });
-      mockChain.order.mockResolvedValueOnce({ data: null, error: { message: 'db error' } });
+      mockChain.order.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'db error' },
+      });
 
-      await expect(service.getInvitations('uid-1')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.getInvitations('uid-1')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
 
     it('throws NotFoundException when profile not found', async () => {
-      mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'err' } });
-      await expect(service.getInvitations('uid-x')).rejects.toBeInstanceOf(NotFoundException);
+      mockSingle.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'err' },
+      });
+      await expect(service.getInvitations('uid-x')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 
@@ -235,7 +326,10 @@ describe('CampaignsService', () => {
     it('accepts pending invitation and emits event', async () => {
       mockSingle
         .mockResolvedValueOnce({ data: { id: 'p-1' }, error: null })
-        .mockResolvedValueOnce({ data: { id: 'inv-1', campaign_id: 'c-1', status: 'pending' }, error: null });
+        .mockResolvedValueOnce({
+          data: { id: 'inv-1', campaign_id: 'c-1', status: 'pending' },
+          error: null,
+        });
 
       const result = await service.acceptInvitation('uid-1', 'inv-1');
       expect(result.success).toBe(true);
@@ -247,8 +341,13 @@ describe('CampaignsService', () => {
     });
 
     it('throws NotFoundException when profile not found', async () => {
-      mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'err' } });
-      await expect(service.acceptInvitation('uid-x', 'inv-1')).rejects.toBeInstanceOf(NotFoundException);
+      mockSingle.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'err' },
+      });
+      await expect(
+        service.acceptInvitation('uid-x', 'inv-1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws NotFoundException when invitation not found', async () => {
@@ -256,15 +355,22 @@ describe('CampaignsService', () => {
         .mockResolvedValueOnce({ data: { id: 'p-1' }, error: null })
         .mockResolvedValueOnce({ data: null, error: null });
 
-      await expect(service.acceptInvitation('uid-1', 'inv-x')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.acceptInvitation('uid-1', 'inv-x'),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws ConflictException when invitation already responded', async () => {
       mockSingle
         .mockResolvedValueOnce({ data: { id: 'p-1' }, error: null })
-        .mockResolvedValueOnce({ data: { id: 'inv-1', campaign_id: 'c-1', status: 'accepted' }, error: null });
+        .mockResolvedValueOnce({
+          data: { id: 'inv-1', campaign_id: 'c-1', status: 'accepted' },
+          error: null,
+        });
 
-      await expect(service.acceptInvitation('uid-1', 'inv-1')).rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        service.acceptInvitation('uid-1', 'inv-1'),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
   });
 
@@ -273,7 +379,10 @@ describe('CampaignsService', () => {
     it('declines pending invitation and emits event', async () => {
       mockSingle
         .mockResolvedValueOnce({ data: { id: 'p-1' }, error: null })
-        .mockResolvedValueOnce({ data: { id: 'inv-1', status: 'pending' }, error: null });
+        .mockResolvedValueOnce({
+          data: { id: 'inv-1', status: 'pending' },
+          error: null,
+        });
 
       const result = await service.declineInvitation('uid-1', 'inv-1');
       expect(result.success).toBe(true);
@@ -289,20 +398,32 @@ describe('CampaignsService', () => {
         .mockResolvedValueOnce({ data: { id: 'p-1' }, error: null })
         .mockResolvedValueOnce({ data: null, error: null });
 
-      await expect(service.declineInvitation('uid-1', 'inv-x')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.declineInvitation('uid-1', 'inv-x'),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws ConflictException when invitation already responded', async () => {
       mockSingle
         .mockResolvedValueOnce({ data: { id: 'p-1' }, error: null })
-        .mockResolvedValueOnce({ data: { id: 'inv-1', status: 'declined' }, error: null });
+        .mockResolvedValueOnce({
+          data: { id: 'inv-1', status: 'declined' },
+          error: null,
+        });
 
-      await expect(service.declineInvitation('uid-1', 'inv-1')).rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        service.declineInvitation('uid-1', 'inv-1'),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('throws NotFoundException when profile not found', async () => {
-      mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'err' } });
-      await expect(service.declineInvitation('uid-x', 'inv-1')).rejects.toBeInstanceOf(NotFoundException);
+      mockSingle.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'err' },
+      });
+      await expect(
+        service.declineInvitation('uid-x', 'inv-1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

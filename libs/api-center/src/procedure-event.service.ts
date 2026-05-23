@@ -50,7 +50,9 @@ export type ProcedureEventType =
   | 'hopecard.donor.profile_updated'
   | 'hopecard.cart.item_added'
   | 'hopecard.cart.item_updated'
-  | 'hopecard.cart.item_removed';
+  | 'hopecard.cart.item_removed'
+  // Backfill
+  | 'hopecard.donor.payment_customer_synced';
 
 export interface EmitOptions {
   // Kafka partition key — use the primary entity ID so events for the

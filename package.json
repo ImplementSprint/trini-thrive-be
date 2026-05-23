@@ -136,7 +136,11 @@
           "/node_modules/",
           "apps/api/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -171,7 +175,11 @@
           "/node_modules/",
           "apps/location-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -317,7 +325,11 @@
           "/node_modules/",
           "apps/hopecard-admin-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -352,7 +364,11 @@
           "/node_modules/",
           "apps/hopecard-beneficiary-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -387,7 +403,11 @@
           "/node_modules/",
           "apps/hopecard-campaign-manager-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -422,7 +442,11 @@
           "/node_modules/",
           "apps/hopecard-notification-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -457,7 +481,11 @@
           "/node_modules/",
           "apps/hopecard-donor-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       }

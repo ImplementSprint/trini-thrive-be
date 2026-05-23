@@ -1,5 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { ProcedureEventService } from '@app/api-center';
 import { WithdrawalsService } from './withdrawals.service';
 
@@ -7,7 +8,20 @@ import { WithdrawalsService } from './withdrawals.service';
 const mockSingle = jest.fn();
 const mockOrder = jest.fn();
 
-const mockChain: any = {
+interface MockChain {
+  select: jest.Mock;
+  eq: jest.Mock;
+  in: jest.Mock;
+  order: jest.Mock;
+  limit: jest.Mock;
+  update: jest.Mock;
+  delete: jest.Mock;
+  insert: jest.Mock;
+  single: jest.Mock;
+  maybeSingle: jest.Mock;
+}
+
+const mockChain: MockChain = {
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
   in: jest.fn().mockReturnThis(),
@@ -34,7 +48,9 @@ describe('WithdrawalsService', () => {
     jest.clearAllMocks();
     mockSingle.mockReset();
     mockOrder.mockReset();
-    mockSupabase.from.mockImplementation(() => mockChain);
+    mockSupabase.from.mockImplementation(
+      () => mockChain as unknown as MockChain,
+    );
     mockChain.select.mockReturnThis();
     mockChain.eq.mockReturnThis();
     mockChain.order.mockReturnThis();
@@ -54,15 +70,22 @@ describe('WithdrawalsService', () => {
   // ── requestWithdrawal ────────────────────────────────────────────────────────
   describe('requestWithdrawal', () => {
     it('throws BadRequestException for zero amount', async () => {
-      await expect(service.requestWithdrawal('uid-1', { amount: 0 })).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.requestWithdrawal('uid-1', { amount: 0 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws BadRequestException for negative amount', async () => {
-      await expect(service.requestWithdrawal('uid-1', { amount: -100 })).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.requestWithdrawal('uid-1', { amount: -100 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws BadRequestException for non-number amount', async () => {
-      await expect(service.requestWithdrawal('uid-1', { amount: 'abc' as any })).rejects.toBeInstanceOf(BadRequestException);
+      const badBody = { amount: 'abc' as unknown as number };
+      await expect(
+        service.requestWithdrawal('uid-1', badBody),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws NotFoundException when profile or beneficiary not found', async () => {
@@ -73,7 +96,9 @@ describe('WithdrawalsService', () => {
         .mockResolvedValueOnce({ data: null }) // profile — null
         .mockResolvedValueOnce({ data: null }); // beneficiary — null
 
-      await expect(service.requestWithdrawal('uid-1', { amount: 100 })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.requestWithdrawal('uid-1', { amount: 100 }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws BadRequestException for insufficient balance', async () => {
@@ -86,21 +111,19 @@ describe('WithdrawalsService', () => {
       // Both are awaited chain objects → data is undefined → reduce gives 0
       // available = 0 - 0 = 0, amount = 500 > 0 → BadRequestException
 
-      await expect(service.requestWithdrawal('uid-1', { amount: 500 })).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.requestWithdrawal('uid-1', { amount: 500 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('creates withdrawal and emits event when balance is sufficient', async () => {
       mockSingle
         .mockResolvedValueOnce({ data: { id: 'p-1' } }) // profile
         .mockResolvedValueOnce({ data: { id: 'b-1' } }) // beneficiary
-        .mockResolvedValueOnce({ data: { id: 'wd-1', amount: 100, status: 'pending' }, error: null }); // insert withdrawal
-
-      // txRows and wdRows are awaited chains that resolve to undefined
-      // We need txRows to show available balance
-      // Let's override with a thenable chain for the tx/wd queries
-      // Since they use the same mockChain and chain.eq returns this,
-      // await chain = chain object, { data: undefined } → reduce([], 0) = 0
-      // So available = 0, amount = 100 > 0 → would throw
+        .mockResolvedValueOnce({
+          data: { id: 'wd-1', amount: 100, status: 'pending' },
+          error: null,
+        }); // insert withdrawal
 
       // To test success, we need to provide actual balance data.
       // Override the from() to return specific results for each table:
@@ -109,21 +132,48 @@ describe('WithdrawalsService', () => {
         fromCallCount++;
         switch (fromCallCount) {
           case 1: // beneficiary_profiles
-            return { ...mockChain, single: () => Promise.resolve({ data: { id: 'p-1' } }) };
+            return {
+              ...mockChain,
+              single: () => Promise.resolve({ data: { id: 'p-1' } }),
+            } as unknown as MockChain;
           case 2: // beneficiaries
-            return { ...mockChain, single: () => Promise.resolve({ data: { id: 'b-1' } }) };
-          case 3: { // beneficiary_transactions (txRows)
-            const c: any = { ...mockChain };
-            Object.defineProperty(c, 'then', { get: () => (res: any) => Promise.resolve({ data: [{ amount: '1000' }] }).then(res) });
-            return c;
+            return {
+              ...mockChain,
+              single: () => Promise.resolve({ data: { id: 'b-1' } }),
+            } as unknown as MockChain;
+          case 3: {
+            // beneficiary_transactions (txRows) — needs to be thenable
+            const thenableTx = {
+              ...mockChain,
+              then: (
+                resolve: (value: { data: { amount: string }[] }) => unknown,
+              ) =>
+                Promise.resolve({ data: [{ amount: '1000' }] }).then(resolve),
+            };
+            return thenableTx as unknown as MockChain;
           }
-          case 4: { // beneficiary_withdrawals (wdRows)
-            const c: any = { ...mockChain };
-            Object.defineProperty(c, 'then', { get: () => (res: any) => Promise.resolve({ data: [{ amount: '200' }] }).then(res) });
-            return c;
+          case 4: {
+            // beneficiary_withdrawals (wdRows) — needs to be thenable
+            const thenableWd = {
+              ...mockChain,
+              then: (
+                resolve: (value: { data: { amount: string }[] }) => unknown,
+              ) => Promise.resolve({ data: [{ amount: '200' }] }).then(resolve),
+            };
+            return thenableWd as unknown as MockChain;
           }
           case 5: // insert withdrawal
-            return { ...mockChain, insert: jest.fn(() => ({ ...mockChain, single: () => Promise.resolve({ data: { id: 'wd-1', amount: 100 }, error: null }) })) };
+            return {
+              ...mockChain,
+              insert: jest.fn(() => ({
+                ...mockChain,
+                single: () =>
+                  Promise.resolve({
+                    data: { id: 'wd-1', amount: 100 },
+                    error: null,
+                  }),
+              })),
+            } as unknown as MockChain;
           case 6: // beneficiary_banking_activity insert
             return mockChain;
           default:
@@ -131,7 +181,10 @@ describe('WithdrawalsService', () => {
         }
       });
 
-      const result = await service.requestWithdrawal('uid-1', { amount: 500, bank_account_id: 'acc-1' });
+      const result = await service.requestWithdrawal('uid-1', {
+        amount: 500,
+        bank_account_id: 'acc-1',
+      });
       expect(result.withdrawal).toBeDefined();
       expect(mockEmit).toHaveBeenCalledWith(
         'hopecard.withdrawal.requested',
@@ -146,25 +199,51 @@ describe('WithdrawalsService', () => {
         fromCallCount++;
         switch (fromCallCount) {
           case 1:
-            return { ...mockChain, single: () => Promise.resolve({ data: { id: 'p-1' } }) };
+            return {
+              ...mockChain,
+              single: () => Promise.resolve({ data: { id: 'p-1' } }),
+            } as unknown as MockChain;
           case 2:
-            return { ...mockChain, single: () => Promise.resolve({ data: { id: 'b-1' } }) };
+            return {
+              ...mockChain,
+              single: () => Promise.resolve({ data: { id: 'b-1' } }),
+            } as unknown as MockChain;
           case 3: {
-            const c: any = { ...mockChain };
-            Object.defineProperty(c, 'then', { get: () => (res: any) => Promise.resolve({ data: [{ amount: '1000' }] }).then(res) });
-            return c;
+            const thenableTx = {
+              ...mockChain,
+              then: (
+                resolve: (value: { data: { amount: string }[] }) => unknown,
+              ) =>
+                Promise.resolve({ data: [{ amount: '1000' }] }).then(resolve),
+            };
+            return thenableTx as unknown as MockChain;
           }
           case 4: {
-            const c: any = { ...mockChain };
-            Object.defineProperty(c, 'then', { get: () => (res: any) => Promise.resolve({ data: [] }).then(res) });
-            return c;
+            const thenableWd = {
+              ...mockChain,
+              then: (resolve: (value: { data: never[] }) => unknown) =>
+                Promise.resolve({ data: [] }).then(resolve),
+            };
+            return thenableWd as unknown as MockChain;
           }
           default:
-            return { ...mockChain, insert: jest.fn(() => ({ ...mockChain, single: () => Promise.resolve({ data: null, error: { message: 'insert error' } }) })) };
+            return {
+              ...mockChain,
+              insert: jest.fn(() => ({
+                ...mockChain,
+                single: () =>
+                  Promise.resolve({
+                    data: null,
+                    error: { message: 'insert error' },
+                  }),
+              })),
+            } as unknown as MockChain;
         }
       });
 
-      await expect(service.requestWithdrawal('uid-1', { amount: 500 })).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.requestWithdrawal('uid-1', { amount: 500 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 
@@ -172,7 +251,10 @@ describe('WithdrawalsService', () => {
   describe('getWithdrawals', () => {
     it('returns withdrawals list', async () => {
       mockSingle.mockResolvedValueOnce({ data: { id: 'b-1' }, error: null });
-      mockOrder.mockResolvedValueOnce({ data: [{ id: 'wd-1', amount: 100 }], error: null });
+      mockOrder.mockResolvedValueOnce({
+        data: [{ id: 'wd-1', amount: 100 }],
+        error: null,
+      });
 
       const result = await service.getWithdrawals('uid-1');
       expect(result.withdrawals).toHaveLength(1);
@@ -188,14 +270,21 @@ describe('WithdrawalsService', () => {
 
     it('throws NotFoundException when beneficiary not found', async () => {
       mockSingle.mockResolvedValueOnce({ data: null, error: null });
-      await expect(service.getWithdrawals('uid-x')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getWithdrawals('uid-x')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('throws BadRequestException on DB error', async () => {
       mockSingle.mockResolvedValueOnce({ data: { id: 'b-1' }, error: null });
-      mockOrder.mockResolvedValueOnce({ data: null, error: { message: 'db error' } });
+      mockOrder.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'db error' },
+      });
 
-      await expect(service.getWithdrawals('uid-1')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.getWithdrawals('uid-1')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
   });
 });

@@ -23,7 +23,7 @@ const shouldValidateEnv = process.env.NODE_ENV === 'production';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ['.env'],
       cache: true,
       ...(shouldValidateEnv ? { validate: validateEnv } : {}),
     }),

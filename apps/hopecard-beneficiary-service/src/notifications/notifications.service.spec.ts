@@ -1,11 +1,24 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { BeneficiaryNotificationsService } from './notifications.service';
 
 // ── Supabase mock ────────────────────────────────────────────────────────────
 const mockMaybeSingle = jest.fn();
 const mockOrder = jest.fn();
 
-const mockChain: any = {
+interface MockChain {
+  select: jest.Mock;
+  eq: jest.Mock;
+  in: jest.Mock;
+  order: jest.Mock;
+  limit: jest.Mock;
+  update: jest.Mock;
+  insert: jest.Mock;
+  single: jest.Mock;
+  maybeSingle: jest.Mock;
+}
+
+const mockChain: MockChain = {
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
   in: jest.fn().mockReturnThis(),
@@ -37,7 +50,9 @@ describe('BeneficiaryNotificationsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [BeneficiaryNotificationsService],
     }).compile();
-    service = module.get<BeneficiaryNotificationsService>(BeneficiaryNotificationsService);
+    service = module.get<BeneficiaryNotificationsService>(
+      BeneficiaryNotificationsService,
+    );
   });
 
   // ── getNotifications ─────────────────────────────────────────────────────────
@@ -64,7 +79,11 @@ describe('BeneficiaryNotificationsService', () => {
       // Override using thenable on limit
       mockChain.limit.mockResolvedValueOnce({
         data: [
-          { id: 'inv-1', invited_at: '2024-06-01T10:00:00Z', hc_campaigns: { title: 'Help Camp' } },
+          {
+            id: 'inv-1',
+            invited_at: '2024-06-01T10:00:00Z',
+            hc_campaigns: { title: 'Help Camp' },
+          },
         ],
         error: null,
       });
@@ -83,7 +102,12 @@ describe('BeneficiaryNotificationsService', () => {
 
       mockChain.limit.mockResolvedValueOnce({
         data: [
-          { id: 'tx-1', amount: '1000', created_at: '2024-05-15T08:00:00Z', notes: 'Monthly support' },
+          {
+            id: 'tx-1',
+            amount: '1000',
+            created_at: '2024-05-15T08:00:00Z',
+            notes: 'Monthly support',
+          },
         ],
         error: null,
       });
@@ -101,12 +125,27 @@ describe('BeneficiaryNotificationsService', () => {
         .mockResolvedValueOnce({ data: { id: 'b-1' } }); // beneficiary
 
       mockChain.limit
-        .mockResolvedValueOnce({ // invitations
-          data: [{ id: 'inv-1', invited_at: '2024-06-01T10:00:00Z', hc_campaigns: { title: 'Camp A' } }],
+        .mockResolvedValueOnce({
+          // invitations
+          data: [
+            {
+              id: 'inv-1',
+              invited_at: '2024-06-01T10:00:00Z',
+              hc_campaigns: { title: 'Camp A' },
+            },
+          ],
           error: null,
         })
-        .mockResolvedValueOnce({ // transactions
-          data: [{ id: 'tx-1', amount: '500', created_at: '2024-06-02T08:00:00Z', notes: null }],
+        .mockResolvedValueOnce({
+          // transactions
+          data: [
+            {
+              id: 'tx-1',
+              amount: '500',
+              created_at: '2024-06-02T08:00:00Z',
+              notes: null,
+            },
+          ],
           error: null,
         });
 
@@ -124,7 +163,13 @@ describe('BeneficiaryNotificationsService', () => {
         .mockResolvedValueOnce({ data: null });
 
       mockChain.limit.mockResolvedValueOnce({
-        data: [{ id: 'inv-2', invited_at: '2024-06-01T10:00:00Z', hc_campaigns: null }],
+        data: [
+          {
+            id: 'inv-2',
+            invited_at: '2024-06-01T10:00:00Z',
+            hc_campaigns: null,
+          },
+        ],
         error: null,
       });
 
@@ -138,7 +183,14 @@ describe('BeneficiaryNotificationsService', () => {
         .mockResolvedValueOnce({ data: { id: 'b-1' } });
 
       mockChain.limit.mockResolvedValueOnce({
-        data: [{ id: 'tx-2', amount: '200', created_at: '2024-06-01T10:00:00Z', notes: null }],
+        data: [
+          {
+            id: 'tx-2',
+            amount: '200',
+            created_at: '2024-06-01T10:00:00Z',
+            notes: null,
+          },
+        ],
         error: null,
       });
 
