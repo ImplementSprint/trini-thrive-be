@@ -83,7 +83,7 @@ export class FormsService {
       if (roleErr) throw new Error(`Role Creation Error: ${roleErr.message}`);
       roleId = newRole.id;
     } else {
-      roleId = roles[0].id;
+      roleId = roles[0]?.id;
     }
 
     if (validCampaignId) {

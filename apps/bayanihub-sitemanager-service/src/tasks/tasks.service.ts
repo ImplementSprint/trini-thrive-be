@@ -68,7 +68,7 @@ export class TasksService {
     if (deploymentLookupError) throw new BadRequestException(deploymentLookupError.message);
 
     if (existingDeployments && existingDeployments.length > 0) {
-      deploymentId = existingDeployments[0].id;
+      deploymentId = existingDeployments[0]?.id;
     } else {
       const { data: newDeployment, error: deployErr } = await this.db
         .from('volunteer_deployments')

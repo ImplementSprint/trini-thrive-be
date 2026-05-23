@@ -18,7 +18,10 @@ export class ShiftsController {
     @Query('volunteer_name') volunteerName?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.shiftsService.getShiftHistory({ status, volunteerName, limit: limit ? parseInt(limit, 10) : 100 });
+    const payload: { status?: string; volunteerName?: string; limit?: number } = { limit: limit ? parseInt(limit, 10) : 100 };
+    if (status !== undefined) payload.status = status;
+    if (volunteerName !== undefined) payload.volunteerName = volunteerName;
+    return this.shiftsService.getShiftHistory(payload);
   }
 
   @Post(':id/approve')

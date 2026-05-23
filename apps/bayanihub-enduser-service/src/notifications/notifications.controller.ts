@@ -1,5 +1,5 @@
 import { Controller, Get, Patch, Delete, Param, Req } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { RequirePersona } from '@app/common';
 import { JwtPayload } from '@app/common';
 import { NotificationsService } from './notifications.service';
