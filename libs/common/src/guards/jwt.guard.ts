@@ -1,66 +1,55 @@
 import {
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { jwtVerify } from 'jose';
+import type { Request } from 'express';
 
 export interface JwtPayload {
   sub: string;
   email: string;
-  name?: string;
   persona: string;
   system: string;
   iat?: number;
   exp?: number;
+  [key: string]: unknown;
 }
 
 @Injectable()
 export class JwtGuard implements CanActivate {
-  constructor(private readonly expectedPersona?: string) {}
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    const request = ctx.switchToHttp().getRequest<Request>();
+    const token = this.extractToken(request);
 
     if (!token) {
-      throw new UnauthorizedException({
-        message: 'No JWT token provided',
-        error: 'MISSING_TOKEN',
-        code: 'MISSING_AUTH_TOKEN',
-      });
+      throw new UnauthorizedException({ code: 'MISSING_TOKEN' });
     }
 
-    const JWT_SECRET = new TextEncoder().encode(process.env['JWT_SECRET'] ?? '');
-    let payload: JwtPayload;
+    const secret = process.env['JWT_SECRET'];
+    if (!secret) {
+      throw new UnauthorizedException({ code: 'MISSING_TOKEN' });
+    }
+
     try {
-      const verified = await jwtVerify(token, JWT_SECRET);
-      payload = verified.payload as unknown as JwtPayload;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      let detail = 'Invalid or expired JWT token';
-      if (msg.includes('signature')) detail = 'Invalid token signature';
-      else if (msg.includes('exp')) detail = 'Token has expired';
-      else if (msg.includes('malformed')) detail = 'Malformed token format';
-      throw new UnauthorizedException({ message: detail, error: 'INVALID_TOKEN', code: 'INVALID_JWT' });
+      const { payload } = await jwtVerify(
+        token,
+        new TextEncoder().encode(secret),
+      );
+      (request as Request & { user: JwtPayload }).user =
+        payload as unknown as JwtPayload;
+    } catch {
+      throw new UnauthorizedException({ code: 'INVALID_TOKEN' });
     }
 
-    if (this.expectedPersona) {
-      if (payload.persona !== this.expectedPersona || payload.system !== 'hopecard') {
-        throw new ForbiddenException({ message: 'Persona mismatch', code: 'PERSONA_MISMATCH' });
-      }
-    }
-
-    request.user = payload;
     return true;
   }
 
-  private extractTokenFromHeader(request: any): string | undefined {
-    const authHeader = request.headers.authorization;
-    if (authHeader?.startsWith('Bearer ')) return authHeader.substring(7);
-    if (request.cookies?.admin_token) return request.cookies.admin_token;
-    return undefined;
+  private extractToken(request: Request): string | null {
+    const header = request.headers.authorization;
+    if (!header) return null;
+    const [scheme, token] = header.split(' ');
+    return scheme === 'Bearer' && token ? token : null;
   }
 }

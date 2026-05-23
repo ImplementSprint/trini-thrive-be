@@ -195,4 +195,44 @@ describe('AuthService (CM)', () => {
       spy.mockRestore();
     });
   });
+
+  describe('onModuleInit — partial env vars', () => {
+    it('skips client creation when only URL is missing', async () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      await Test.createTestingModule({
+        providers: [
+          AuthService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn().mockImplementation((k: string) =>
+                k === 'SUPABASE_SERVICE_ROLE_KEY' ? 'key' : undefined,
+              ),
+            },
+          },
+          { provide: ProcedureEventService, useValue: { emit: jest.fn() } },
+        ],
+      }).compile();
+      spy.mockRestore();
+    });
+
+    it('skips client creation when only KEY is missing', async () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      await Test.createTestingModule({
+        providers: [
+          AuthService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn().mockImplementation((k: string) =>
+                k === 'SUPABASE_URL' ? 'https://test.supabase.co' : undefined,
+              ),
+            },
+          },
+          { provide: ProcedureEventService, useValue: { emit: jest.fn() } },
+        ],
+      }).compile();
+      spy.mockRestore();
+    });
+  });
 });

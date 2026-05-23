@@ -1,407 +1,341 @@
-import { Injectable, HttpException } from '@nestjs/common';
-import { createClient } from '@supabase/supabase-js';
-import nodemailer from 'nodemailer';
-import { SignJWT, decodeJwt } from 'jose';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  HttpException,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+  Inject,
+  Optional,
+} from '@nestjs/common';
 import { TribeClient } from '@implementsprint/sdk';
+import { createClient } from '@supabase/supabase-js';
+import { decodeJwt, SignJWT } from 'jose';
+import * as nodemailer from 'nodemailer';
+import { supabase } from '@app/common/supabase-client';
+import { supabaseRequest } from '@app/common/supabase-helpers';
 import { ProcedureEventService } from '@app/api-center';
+import type { SignupDto } from './dto/signup.dto';
 
-const getJwtSecret = () => {
-  const secret = process.env['JWT_SECRET'];
-  if (!secret) throw new HttpException('JWT_SECRET not configured', 500);
-  return new TextEncoder().encode(secret);
-};
+const getJwtSecret = () => new TextEncoder().encode(process.env['JWT_SECRET'] ?? '');
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly events: ProcedureEventService) {}
-  private getClients() {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !anonKey) throw new HttpException('Missing Supabase configuration', 500);
-    const supabase = createClient(url, anonKey);
-    const admin = createClient(url, serviceKey || anonKey);
-    return { url, anonKey, serviceKey, supabase, admin };
+  constructor(
+    @Optional() @Inject(TribeClient) private readonly client: TribeClient | null,
+    private readonly events: ProcedureEventService,
+  ) {}
+
+  private get admin() {
+    return createClient(
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['SUPABASE_SERVICE_ROLE_KEY']!,
+    );
   }
 
-  private getSdkClient() {
-    return new TribeClient({
-      gatewayUrl: process.env['APICENTER_URL']!,
-      tribeId: process.env['APICENTER_TRIBE_ID']!,
-      secret: process.env['APICENTER_TRIBE_SECRET']!,
+  private get mailer() {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT ?? 587),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
+      },
     });
   }
 
-  async googleGetAuthUrl(callbackUrl: string) {
-    const client = this.getSdkClient();
-    try {
-      const { authorizationUrl } = await client.gauthGetAuthorizationUrl({
-        redirectUri: callbackUrl,
-        scopes: ['openid', 'email', 'profile'],
-        accessType: 'offline',
-      });
-      return { url: authorizationUrl };
-    } catch (err) {
-      console.error('[googleGetAuthUrl] gauth error:', err);
-      throw new HttpException('Failed to get Google authorization URL', 502);
-    }
-  }
+  // ── Email / password auth ────────────────────────────────────────────────
 
-  async googleCallback(code: string, callbackUrl: string): Promise<{ redirectUrl: string }> {
-    const successBase = `${process.env['NEXT_PUBLIC_APP_URL']}/donor/auth/google/success`;
-    const errorBase = `${process.env['NEXT_PUBLIC_APP_URL']}/donor/auth/google/error`;
+  async signup(dto: SignupDto): Promise<{ success: boolean; message: string }> {
+    const admin = this.admin;
 
-    // Exchange code for tokens
-    let idToken: string;
-    try {
-      const tokens = await this.getSdkClient().gauthExchangeCode({ code, redirectUri: callbackUrl });
-      if (!tokens.idToken) throw new Error('no idToken');
-      idToken = tokens.idToken;
-    } catch {
-      return { redirectUrl: `${errorBase}?reason=code_exchange_failed` };
+    const { data: created, error } = await admin.auth.admin.createUser({
+      email: dto.email,
+      password: dto.password,
+      email_confirm: true,
+      user_metadata: { name: `${dto.first_name} ${dto.last_name}`.trim() },
+    });
+
+    if (error || !created.user) {
+      throw new BadRequestException(error?.message ?? 'Failed to create user account');
     }
 
-    // Decode idToken to get profile
-    let email: string;
-    let firstName: string;
-    let lastName: string;
-    try {
-      const claims = decodeJwt(idToken) as Record<string, string>;
-      if (!claims.email) throw new Error('no email');
-      email = claims.email;
-      firstName = claims.given_name || (claims.name?.split(' ')[0] ?? '');
-      lastName = claims.family_name || (claims.name?.split(' ').slice(1).join(' ') ?? '');
-    } catch {
-      return { redirectUrl: `${errorBase}?reason=no_email` };
+    const { error: profileError } = await admin.from('digital_donor_profiles').insert({
+      auth_user_id: created.user.id,
+      email: dto.email,
+      first_name: dto.first_name,
+      last_name: dto.last_name,
+      phone: dto.phone ?? null,
+      address: dto.address ?? null,
+      id_verification_key: dto.id_verification_key ?? null,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    if (profileError) {
+      await admin.auth.admin.deleteUser(created.user.id);
+      throw new InternalServerErrorException('Failed to create donor profile');
     }
-
-    const { admin } = this.getClients();
-
-    // Find or create Supabase auth user
-    let supabaseUserId: string;
-    const { data: listData } = await admin.auth.admin.listUsers();
-    const existingAuthUser = (listData?.users as any[] ?? []).find((u) => u.email === email);
-
-    if (existingAuthUser) {
-      supabaseUserId = existingAuthUser.id;
-    } else {
-      const { data: created, error: createErr } = await admin.auth.admin.createUser({
-        email,
-        email_confirm: true,
-      });
-      if (createErr || !created?.user?.id) {
-        return { redirectUrl: `${errorBase}?reason=account_creation_failed` };
-      }
-      supabaseUserId = created.user.id;
-    }
-
-    // Look up existing donor profile
-    const { data: existingProfile } = await admin
-      .from('digital_donor_profiles')
-      .select('id, auth_user_id, status')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (existingProfile) {
-      // Link auth_user_id if not yet linked
-      if (!existingProfile.auth_user_id) {
-        await admin
-          .from('digital_donor_profiles')
-          .update({ auth_user_id: supabaseUserId })
-          .eq('email', email);
-      }
-
-      if (existingProfile.status !== 'approved') {
-        return { redirectUrl: `${errorBase}?reason=${existingProfile.status === 'rejected' ? 'rejected' : 'pending_approval'}` };
-      }
-    } else {
-      // Insert new profile
-      const { error: insertErr } = await admin.from('digital_donor_profiles').insert({
-        auth_user_id: supabaseUserId,
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        barangay: null,
-        municipality: null,
-        province: null,
-        id_verification_key: null,
-        status: 'pending',
-        role: 'buyer',
-      });
-      if (insertErr) {
-        return { redirectUrl: `${errorBase}?reason=profile_creation_failed` };
-      }
-      this.events.emit(
-        'hopecard.donor.google_registered',
-        { authUserId: supabaseUserId, email, firstName, lastName },
-        { partitionKey: supabaseUserId, sourceServiceId: 'hopecard-donor-service' },
-      );
-      return { redirectUrl: `${errorBase}?reason=pending_approval` };
-    }
-
-    // Issue JWT
-    const token = await new SignJWT({
-      sub: supabaseUserId,
-      email,
-      persona: 'donor',
-      system: 'hopecard',
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('24h')
-      .sign(getJwtSecret());
 
     this.events.emit(
-      'hopecard.donor.google_login',
-      { authUserId: supabaseUserId, email },
-      { partitionKey: supabaseUserId, sourceServiceId: 'hopecard-donor-service' },
+      'hopecard.donor.registered',
+      { authUserId: created.user.id, email: dto.email },
+      { partitionKey: created.user.id, sourceServiceId: 'hopecard-donor-service' },
     );
 
-    return { redirectUrl: `${successBase}?token=${token}` };
+    return { success: true, message: 'Account created successfully. Awaiting admin approval.' };
   }
 
-  async login(email: string, password: string) {
-    const { supabase, admin } = this.getClients();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new HttpException(error.message, 401);
+  async login(email: string, password: string): Promise<{ success: boolean; token: string; session: unknown; status: string }> {
+    const admin = this.admin;
 
-    const userId = data.user?.id;
-    const userEmail = data.user?.email || email;
+    const { data, error } = await admin.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
 
-    let { data: profileData, error: profileError } = await admin
+    const { data: profile, error: profileError } = await admin
       .from('digital_donor_profiles')
-      .select('status, role')
-      .eq('auth_user_id', userId)
-      .single();
+      .select('id, status')
+      .eq('auth_user_id', data.user.id)
+      .maybeSingle();
 
-    if (profileError || !profileData) {
-      const { data: emailProfile, error: emailError } = await admin
-        .from('digital_donor_profiles')
-        .select('status, role, auth_user_id')
-        .eq('email', userEmail)
-        .single();
+    if (profileError) throw new InternalServerErrorException('Database error');
+    if (!profile) throw new UnauthorizedException('No donor account found for this email');
 
-      if (!emailError && emailProfile) {
-        profileData = emailProfile;
-        profileError = null;
-        await admin.from('digital_donor_profiles').update({ auth_user_id: userId }).eq('email', userEmail);
-      }
+    const status = (profile as any).status as string;
+    if (status !== 'approved') {
+      throw new ForbiddenException({ reason: 'pending_approval', status });
     }
 
-    if (profileError || !profileData) {
-      throw new HttpException('Donor profile not found. Please ensure you have completed the signup process or contact support.', 403);
-    }
-
-    if (profileData?.status !== 'approved') {
-      throw new HttpException({ error: 'Your account is not yet approved', reason: 'pending_approval', status: profileData?.status || 'unknown' }, 403);
-    }
+    const secret = process.env['JWT_SECRET'];
+    if (!secret) throw new InternalServerErrorException('JWT_SECRET not configured');
 
     const token = await new SignJWT({
-      sub: userId,
-      email: userEmail,
+      sub: data.user.id,
+      email: data.user.email,
       persona: 'donor',
       system: 'hopecard',
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
-      .sign(getJwtSecret());
+      .sign(new TextEncoder().encode(secret));
 
     this.events.emit(
       'hopecard.donor.login',
-      { authUserId: userId, email: userEmail },
-      { partitionKey: userId, sourceServiceId: 'hopecard-donor-service' },
+      { authUserId: data.user.id, email: data.user.email ?? email },
+      { partitionKey: data.user.id, sourceServiceId: 'hopecard-donor-service' },
     );
 
-    return { success: true, token, user: data.user, session: data.session };
+    return { success: true, token, session: data.session, status };
   }
 
-  async signup(body: {
-    email: string; password: string; firstName: string; lastName: string;
-    barangay?: string; municipality?: string; province?: string; validIdUrl?: string;
-    origin?: string;
-  }) {
-    const { email, password, firstName, lastName, barangay, municipality, province, validIdUrl, origin } = body;
-    if (!email || !password || !firstName || !lastName) {
-      throw new HttpException('Missing required fields: email, password, firstName, lastName', 400);
-    }
-    const { supabase, admin } = this.getClients();
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email, password,
-      options: { emailRedirectTo: `${origin || 'http://localhost:3001'}/auth/callback` },
-    });
-    if (authError) throw new HttpException(authError.message, 400);
-    if (!authData.user?.id) throw new HttpException('Failed to create user account', 400);
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+    const admin = this.admin;
 
-    const profileData = {
-      auth_user_id: authData.user.id, email, first_name: firstName, last_name: lastName,
-      barangay: barangay || null, municipality: municipality || null, province: province || null,
-      id_verification_key: validIdUrl || null, status: 'pending', role: 'buyer',
-    };
+    const { data: profile } = await admin
+      .from('digital_donor_profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
 
-    const { data: existingProfile } = await admin.from('digital_donor_profiles').select('id').eq('email', email).maybeSingle();
-    let profileCreated = false;
-    let profileError: any = null;
-
-    if (existingProfile) {
-      const r = await admin.from('digital_donor_profiles').update(profileData).eq('email', email);
-      profileError = r.error;
-      if (!r.error) profileCreated = true;
-    } else {
-      const r = await admin.from('digital_donor_profiles').insert(profileData);
-      profileError = r.error;
-      if (!r.error) profileCreated = true;
+    if (!profile) {
+      throw new NotFoundException('No account found with that email address');
     }
 
-    if (!profileCreated) {
-      return { success: true, user: authData.user, profileCreated: false, error: `Account created, but profile setup failed: ${profileError?.message}. Please contact support with code ${profileError?.code}.`, warning: 'Profile creation failed.' };
-    }
-    this.events.emit(
-      'hopecard.donor.registered',
-      { authUserId: authData.user.id, email, firstName, lastName },
-      { partitionKey: authData.user.id, sourceServiceId: 'hopecard-donor-service' },
-    );
-    return { success: true, user: authData.user, profileCreated: true, message: 'Donor profile created successfully' };
-  }
+    await admin.from('otp_sessions').delete().eq('email', email).eq('used', false);
 
-  async sendOtp(email: string) {
-    if (!email) throw new HttpException('Email is required', 400);
-    const { supabase } = this.getClients();
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) throw new HttpException(error.message, 400);
-    return { success: true, message: 'OTP sent successfully' };
-  }
-
-  async verifyOtp(email: string, token: string, type = 'email') {
-    if (!email || !token) throw new HttpException('Email and OTP token are required', 400);
-    const { supabase } = this.getClients();
-    const { data, error } = await supabase.auth.verifyOtp({ email, token, type: type as any });
-    if (error) throw new HttpException(error.message, 401);
-    return { success: true, message: 'OTP verified successfully', session: data.session, user: data.user };
-  }
-
-  async generateOtp(email: string) {
-    if (!email) throw new HttpException('Email is required', 400);
-    const { supabase } = this.getClients();
-
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const now = Date.now();
-    const expiresAtMs = now + 10 * 60 * 1000;
 
-    await supabase.from('otp_sessions').delete().eq('email', email).eq('used', false);
-    await supabase.from('otp_sessions').insert({ email, otp: otpCode, created_at_ms: now, expires_at_ms: expiresAtMs, used: false });
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD?.replace(/\s/g, '') },
+    const { error: insertError } = await admin.from('otp_sessions').insert({
+      email,
+      otp,
+      expires_at_ms: now + 10 * 60 * 1000,
+      created_at_ms: now,
+      used: false,
     });
 
+    if (insertError) {
+      throw new InternalServerErrorException('Failed to create OTP session');
+    }
+
     try {
-      await transporter.sendMail({
-        from: `${process.env.SMTP_FROM || 'Hopecard'} <${process.env.SMTP_USER}>`,
+      await this.mailer.sendMail({
+        from: process.env.SMTP_FROM,
         to: email,
-        subject: 'Your OTP Code - Hopecard',
-        html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto"><h2 style="color:#6A1B1B">Password Reset Request</h2><p>Your OTP code is:</p><div style="background:#f5f5f5;padding:20px;border-radius:8px;text-align:center;margin:20px 0"><h1 style="color:#6A1B1B;letter-spacing:5px;margin:0">${otpCode}</h1></div><p style="color:#666">This code will expire in 10 minutes.</p></div>`,
+        subject: 'Your HOPECARD Password Reset Code',
+        html: `
+          <div style="font-family: 'Plus Jakarta Sans', sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #fff8f7; border-radius: 16px;">
+            <h2 style="color: #97453e; margin: 0 0 8px;">Password Reset</h2>
+            <p style="color: #554240; margin: 0 0 24px;">Use the code below to reset your HOPECARD password. It expires in 10 minutes.</p>
+            <div style="background: #fff; border: 1px solid #dac1be4d; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
+              <span style="font-size: 2.5rem; font-weight: 800; letter-spacing: 0.3em; color: #241918;">${otp}</span>
+            </div>
+            <p style="color: #554240; font-size: 0.875rem; margin: 0;">If you did not request a password reset, you can safely ignore this email.</p>
+          </div>
+        `,
       });
-    } catch (emailError: any) {
-      const detail = emailError?.responseCode === 535 ? 'SMTP authentication failed.' : emailError?.message || 'Unknown error';
-      throw new HttpException(`Failed to send OTP email: ${detail}`, 500);
-    }
-
-    return { success: true, message: 'OTP sent successfully' };
-  }
-
-  async verifyNumericOtp(email: string, code: string) {
-    if (!email || !code) throw new HttpException('Email and OTP code are required', 400);
-    const { supabase } = this.getClients();
-    const { data, error } = await supabase.from('otp_sessions').select('*').eq('email', email).eq('used', false).single();
-    if (error || !data) throw new HttpException('No active OTP request found for this email', 404);
-    if (Date.now() > data.expires_at_ms) throw new HttpException('OTP has expired. Please request a new one.', 410);
-    if (data.otp !== code) throw new HttpException('Invalid OTP code', 401);
-
-    await supabase.from('otp_sessions').update({ used: true }).eq('id', data.id);
-    const sessionToken = Buffer.from(JSON.stringify({ email, verified: true, timestamp: Date.now() })).toString('base64');
-    return { success: true, message: 'OTP verified successfully', sessionToken, email };
-  }
-
-  async checkEmail(email: string) {
-    if (!email) throw new HttpException('Email is required', 400);
-    const { admin } = this.getClients();
-    const { data: users, error } = await admin.auth.admin.listUsers();
-    if (error) throw new HttpException('Failed to verify email', 500);
-    const userExists = (users.users as any[]).some((u) => u.email === email);
-    if (!userExists) throw new HttpException('Email not found. Please sign up first.', 404);
-    return { success: true, exists: true };
-  }
-
-  async resetPasswordWithOtp(email: string, password: string, sessionToken: string) {
-    if (!email) throw new HttpException('Email is required', 400);
-    if (!password) throw new HttpException('New password is required', 400);
-    if (!sessionToken) throw new HttpException('Session expired or invalid. Please request a new OTP.', 400);
-
-    let tokenData: any;
-    try {
-      tokenData = JSON.parse(Buffer.from(sessionToken, 'base64').toString('utf-8'));
-      if (tokenData.email !== email || !tokenData.verified) throw new Error('invalid');
     } catch {
-      throw new HttpException('Invalid session token', 401);
+      throw new InternalServerErrorException('Failed to send OTP email');
     }
 
-    const { admin, supabase } = this.getClients();
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (serviceKey) {
-      const { data: users, error } = await admin.auth.admin.listUsers();
-      if (error) throw new HttpException('Failed to find user', 500);
-      const user = (users.users as any[]).find((u) => u.email === email);
-      if (!user) throw new HttpException('User not found', 404);
-      const { error: updateError } = await admin.auth.admin.updateUserById(user.id, { password });
-      if (updateError) throw new HttpException(updateError.message, 400);
-    } else {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/auth/callback`,
-      });
-      if (error) throw new HttpException(error.message, 400);
-    }
-
-    return { success: true, message: 'Password updated successfully' };
+    return { success: true, message: 'A verification code has been sent to your email address.' };
   }
 
-  async updatePassword(password: string, accessToken: string) {
-    if (!password || !accessToken) throw new HttpException('Password and access token are required', 400);
-    const { supabase } = this.getClients();
-    await supabase.auth.setSession({ access_token: accessToken, refresh_token: '' } as any);
-    const { data, error } = await supabase.auth.updateUser({ password });
-    if (error) throw new HttpException(error.message, 400);
-    return { success: true, message: 'Password updated successfully', user: data.user };
+  async verifyOtp(email: string, otp: string): Promise<{ reset_token: string }> {
+    const admin = this.admin;
+    const now = Date.now();
+
+    const { data: session, error } = await admin
+      .from('otp_sessions')
+      .select('id, expires_at_ms')
+      .eq('email', email)
+      .eq('otp', otp)
+      .eq('used', false)
+      .maybeSingle();
+
+    if (error) throw new InternalServerErrorException('Database error');
+    if (!session) throw new BadRequestException('Invalid or already-used verification code');
+    if (now > (session as any).expires_at_ms) throw new BadRequestException('Verification code has expired');
+
+    await admin.from('otp_sessions').update({ used: true }).eq('id', (session as any).id);
+
+    const reset_token = Buffer.from(
+      JSON.stringify({ email, verified: true, timestamp: Date.now() }),
+    ).toString('base64');
+
+    return { reset_token };
   }
 
-  async uploadId(file: Express.Multer.File, userId: string) {
-    if (!file) throw new HttpException('No file provided', 400);
-    if (!userId) throw new HttpException('User ID is required', 400);
-
-    const allowedMimes = ['image/jpeg', 'image/png', 'application/pdf'];
-    if (!allowedMimes.includes(file.mimetype)) throw new HttpException('Invalid file type. Only JPG, PNG, and PDF are allowed.', 400);
-    if (file.size > 5 * 1024 * 1024) throw new HttpException('File size must not exceed 5MB', 400);
-
-    const { admin } = this.getClients();
-    const ext = file.originalname.split('.').pop();
-    const filename = `${userId}/${Date.now()}-valid-id.${ext}`;
-
-    const { data, error } = await admin.storage.from('donor-ids').upload(filename, file.buffer, { contentType: file.mimetype, upsert: false });
-    if (error) {
-      if (error.message.includes('not found') || error.message.includes('does not exist')) {
-        throw new HttpException({ success: false, warning: 'Storage bucket not configured.', error: error.message }, 503);
-      }
-      throw new HttpException(`Failed to upload file: ${error.message}`, 400);
+  async resetPassword(resetToken: string, newPassword: string): Promise<{ success: boolean }> {
+    let tokenData: { email: string; verified: boolean; timestamp: number };
+    try {
+      tokenData = JSON.parse(Buffer.from(resetToken, 'base64').toString('utf-8'));
+      if (!tokenData.email || !tokenData.verified) throw new Error('invalid');
+    } catch {
+      throw new UnauthorizedException('Invalid or expired reset token');
     }
 
-    const { data: { publicUrl } } = admin.storage.from('donor-ids').getPublicUrl(filename);
-    this.events.emit(
-      'hopecard.donor.id_uploaded',
-      { authUserId: userId, path: data.path, mimeType: file.mimetype },
-      { partitionKey: userId, sourceServiceId: 'hopecard-donor-service' },
+    if (Date.now() - tokenData.timestamp > 15 * 60 * 1000) {
+      throw new UnauthorizedException('Reset token has expired');
+    }
+
+    const admin = this.admin;
+
+    const { data: profile, error: profileError } = await admin
+      .from('digital_donor_profiles')
+      .select('auth_user_id')
+      .eq('email', tokenData.email)
+      .maybeSingle();
+
+    if (profileError || !profile) throw new NotFoundException('User not found');
+
+    const { error: updateError } = await admin.auth.admin.updateUserById(
+      (profile as any).auth_user_id,
+      { password: newPassword },
     );
-    return { success: true, path: data.path, url: publicUrl, message: 'ID uploaded successfully' };
+
+    if (updateError) throw new InternalServerErrorException('Failed to update password');
+
+    return { success: true };
+  }
+
+  // ── Google OAuth ─────────────────────────────────────────────────────────
+
+  async googleGetAuthUrl() {
+    if (!this.client) throw new HttpException('Auth service unavailable', 503);
+    const redirectUri = `${process.env['NEXT_PUBLIC_APP_URL']}/auth/google/callback`;
+    const result = await this.client.gauthGetAuthorizationUrl({
+      redirectUri,
+      scopes: ['openid', 'email', 'profile'],
+      accessType: 'offline',
+    });
+    return { url: (result as any).authorizationUrl ?? (result as any).url };
+  }
+
+  async googleCallback(code: string) {
+    if (!this.client) throw new HttpException('Auth service unavailable', 503);
+    if (!code) throw new HttpException('Missing authorization code', 400);
+
+    const redirectUri = `${process.env['NEXT_PUBLIC_APP_URL']}/auth/google/callback`;
+    const tokens = await this.client.gauthExchangeCode({ code, redirectUri });
+
+    const idToken = (tokens as any).idToken ?? (tokens as any).id_token;
+    if (!idToken) throw new HttpException('No ID token returned from Google', 400);
+
+    let email: string, firstName: string, lastName: string, googleSub: string;
+    try {
+      const claims = decodeJwt(idToken as string);
+      email = claims['email'] as string;
+      googleSub = claims['sub'] as string;
+      const fullName = ((claims['name'] as string) ?? '').trim();
+      const parts = fullName.split(' ');
+      firstName = parts[0] ?? '';
+      lastName = parts.slice(1).join(' ');
+    } catch {
+      throw new HttpException('Failed to decode Google ID token', 400);
+    }
+
+    if (!email) throw new HttpException('No email in Google token', 400);
+
+    const { data: listData } = await supabase.auth.admin.listUsers();
+    let authUserId: string;
+    const existing = listData?.users?.find((u) => u.email === email);
+
+    if (existing) {
+      authUserId = existing.id;
+    } else {
+      const { data: created, error } = await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { name: `${firstName} ${lastName}`.trim(), google_sub: googleSub },
+      });
+      if (error || !created.user) throw new HttpException('Failed to create user account', 500);
+      authUserId = created.user.id;
+    }
+
+    const profiles = await supabaseRequest<{ id: string; first_name: string; status: string }[]>(
+      `digital_donor_profiles?auth_user_id=eq.${authUserId}&select=id,first_name,status&limit=1`,
+    );
+
+    let isNew = false;
+    if (profiles.length === 0) {
+      await supabaseRequest('digital_donor_profiles', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          auth_user_id: authUserId,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+        }),
+      });
+      isNew = true;
+    }
+
+    this.events.emit(
+      isNew ? 'hopecard.donor.google_registered' : 'hopecard.donor.google_login',
+      { authUserId, email },
+      { partitionKey: authUserId, sourceServiceId: 'hopecard-donor-service' },
+    );
+
+    const token = await new SignJWT({
+      sub: authUserId,
+      email,
+      name: `${firstName} ${lastName}`.trim(),
+      persona: 'donor',
+      system: 'hopecard',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('7d')
+      .sign(getJwtSecret());
+
+    return { token, isNew, authUserId };
   }
 }

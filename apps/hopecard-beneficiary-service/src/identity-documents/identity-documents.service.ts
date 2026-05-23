@@ -7,6 +7,23 @@ import {
 import { createClient } from '@supabase/supabase-js';
 import { ProcedureEventService } from '@app/api-center';
 
+type SbError = { message: string } | null;
+
+interface ProfileRow {
+  id: string;
+}
+
+interface DocumentRow {
+  id: string;
+  document_key: string | null;
+  status: string;
+  beneficiary_profile_id: string;
+}
+
+interface InsertedDocRow {
+  id: string;
+}
+
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'pdf']);
 
@@ -21,11 +38,11 @@ export class IdentityDocumentsService {
   }
 
   private async getProfile(authUserId: string) {
-    const { data, error } = await this.admin
+    const { data, error } = (await this.admin
       .from('beneficiary_profiles')
       .select('id')
       .eq('auth_user_id', authUserId)
-      .single();
+      .single()) as { data: ProfileRow | null; error: SbError };
     if (error || !data)
       throw new NotFoundException('Beneficiary profile not found');
     return data;
@@ -46,42 +63,56 @@ export class IdentityDocumentsService {
     const profile = await this.getProfile(authUserId);
     const filename = `${profile.id}/${Date.now()}-${label ?? 'document'}.${ext}`;
 
-    const { data, error } = await this.admin.storage
+    const { data, error } = (await this.admin.storage
       .from('beneficiary-documents')
       .upload(filename, file.buffer, {
         contentType: file.mimetype,
         upsert: false,
-      });
+      })) as { data: { path: string } | null; error: SbError };
 
-    if (error) throw new BadRequestException(`Upload failed: ${error.message}`);
+    if (error || !data)
+      throw new BadRequestException(
+        `Upload failed: ${error?.message ?? 'unknown'}`,
+      );
+
+    const uploadedPath = data.path;
 
     const {
       data: { publicUrl },
     } = this.admin.storage.from('beneficiary-documents').getPublicUrl(filename);
 
     const docLabel = label ?? 'Identity Document';
-    const { data: inserted } = await this.admin
+    const { data: inserted } = (await this.admin
       .from('beneficiary_identity_documents')
       .insert({
         beneficiary_profile_id: profile.id,
-        document_key: data.path,
+        document_key: uploadedPath,
         document_url: publicUrl,
         label: docLabel,
         status: 'pending',
       })
       .select('id')
-      .single();
+      .single()) as { data: InsertedDocRow | null; error: SbError };
 
     this.events.emit(
       'hopecard.document.submitted',
-      { authUserId, beneficiaryProfileId: profile.id, documentId: inserted?.id ?? null, label: docLabel, path: data.path },
-      { partitionKey: profile.id, sourceServiceId: 'hopecard-beneficiary-service' },
+      {
+        authUserId,
+        beneficiaryProfileId: profile.id,
+        documentId: inserted?.id ?? null,
+        label: docLabel,
+        path: uploadedPath,
+      },
+      {
+        partitionKey: profile.id,
+        sourceServiceId: 'hopecard-beneficiary-service',
+      },
     );
     return {
       success: true,
-      path: data.path,
+      path: uploadedPath,
       url: publicUrl,
-      documentKey: data.path,
+      documentKey: uploadedPath,
       documentId: inserted?.id ?? null,
       documentLabel: docLabel,
     };
@@ -89,22 +120,25 @@ export class IdentityDocumentsService {
 
   async getDocuments(authUserId: string) {
     const profile = await this.getProfile(authUserId);
-    const { data, error } = await this.admin
+    const { data, error } = (await this.admin
       .from('beneficiary_identity_documents')
       .select('*')
       .eq('beneficiary_profile_id', profile.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })) as {
+      data: Record<string, unknown>[] | null;
+      error: SbError;
+    };
     if (error) throw new BadRequestException(error.message);
     return { documents: data ?? [] };
   }
 
   async deleteDocument(authUserId: string, documentId: string) {
     const profile = await this.getProfile(authUserId);
-    const { data: doc, error } = await this.admin
+    const { data: doc, error } = (await this.admin
       .from('beneficiary_identity_documents')
       .select('id, document_key, status, beneficiary_profile_id')
       .eq('id', documentId)
-      .single();
+      .single()) as { data: DocumentRow | null; error: SbError };
     if (error || !doc) throw new NotFoundException('Document not found');
     if (doc.beneficiary_profile_id !== profile.id)
       throw new ForbiddenException('Not your document');
@@ -112,28 +146,37 @@ export class IdentityDocumentsService {
       throw new ForbiddenException('Only pending documents can be deleted');
 
     if (doc.document_key) {
-      await this.admin.storage
+      void (await this.admin.storage
         .from('beneficiary-documents')
-        .remove([doc.document_key]);
+        .remove([doc.document_key]));
     }
-    await this.admin
+    void (await this.admin
       .from('beneficiary_identity_documents')
       .delete()
-      .eq('id', documentId);
+      .eq('id', documentId));
     this.events.emit(
       'hopecard.document.deleted',
       { authUserId, beneficiaryProfileId: profile.id, documentId },
-      { partitionKey: profile.id, sourceServiceId: 'hopecard-beneficiary-service' },
+      {
+        partitionKey: profile.id,
+        sourceServiceId: 'hopecard-beneficiary-service',
+      },
     );
     return { success: true };
   }
 
   async getSignedUrl(authUserId: string, documentKey: string) {
     await this.getProfile(authUserId);
-    const { data, error } = await this.admin.storage
+    const { data, error } = (await this.admin.storage
       .from('beneficiary-documents')
-      .createSignedUrl(documentKey, 60 * 60);
-    if (error) throw new BadRequestException(error.message);
+      .createSignedUrl(documentKey, 60 * 60)) as {
+      data: { signedUrl: string } | null;
+      error: SbError;
+    };
+    if (error || !data)
+      throw new BadRequestException(
+        error?.message ?? 'Failed to create signed URL',
+      );
     return { signedUrl: data.signedUrl };
   }
 }
