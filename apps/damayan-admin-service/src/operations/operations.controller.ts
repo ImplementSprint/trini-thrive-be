@@ -11,7 +11,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { JwtGuard, PersonaGuard } from '@app/common';
+import { RequirePersona } from '@app/common';
 import { OperationsService } from './operations.service';
 import { CreateItemDto, UpdateItemDto, AdjustQuantityDto } from './dto/inventory.dto';
 import { CreateOrganizationDto, UpdateOrganizationDto } from './dto/organization.dto';
@@ -29,7 +29,7 @@ import {
 } from './dto/uploads.dto';
 
 @Controller('api/v1/damayan/admin')
-@UseGuards(new JwtGuard(), new PersonaGuard('admin', 'damayan'))
+@RequirePersona('admin', 'damayan')
 export class OperationsController {
   constructor(private readonly operationsService: OperationsService) {}
 
@@ -134,8 +134,8 @@ export class OperationsController {
   // ─── Disaster Events ──────────────────────────────────────────────────────
 
   @Get('disaster-events')
-  findDisasterEvents(@Query('search') search?: string, @Query('status') status?: string) {
-    return this.operationsService.findDisasterEvents(search, status);
+  findDisasterEvents(@Query('search') search?: string) {
+    return this.operationsService.findDisasterEvents(search);
   }
 
   @Get('disaster-events/stats')

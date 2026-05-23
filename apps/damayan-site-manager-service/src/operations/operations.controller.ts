@@ -12,13 +12,13 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { JwtGuard, PersonaGuard } from '@app/common';
+import { RequirePersona } from '@app/common';
 import { OperationsService } from './operations.service';
 import { UpsertAfterActionAssessmentDto } from './dto/after-action.dto';
 import { CreateCheckInDto, ScanQrDto } from './dto/check-in.dto';
 
 @Controller('api/v1/damayan/site-manager')
-@UseGuards(new JwtGuard(), new PersonaGuard('site_manager', 'damayan'))
+@RequirePersona('site-manager', 'damayan')
 export class OperationsController {
   constructor(private readonly operationsService: OperationsService) {}
 

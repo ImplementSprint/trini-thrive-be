@@ -9,7 +9,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { JwtGuard, PersonaGuard } from '@app/common';
+import { RequirePersona } from '@app/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -27,13 +27,13 @@ export class AuthController {
   }
 
   @Get('me')
-  @UseGuards(new JwtGuard(), new PersonaGuard('site_manager', 'damayan'))
+  @RequirePersona('site-manager', 'damayan')
   getProfile(@Request() req: any) {
     return this.authService.getProfile(req.user.sub as string);
   }
 
   @Patch('me')
-  @UseGuards(new JwtGuard(), new PersonaGuard('site_manager', 'damayan'))
+  @RequirePersona('site-manager', 'damayan')
   updateProfile(@Request() req: any, @Body() dto: UpdateProfileDto) {
     return this.authService.updateProfile(req.user.sub as string, dto);
   }

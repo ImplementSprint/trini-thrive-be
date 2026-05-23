@@ -14,7 +14,7 @@ import type { Activity } from './activity.service';
 import { RequirePersona } from '@app/common';
 import { supabase } from '@app/common/supabase-client';
 
-@RequirePersona('admin')
+@RequirePersona('admin', 'hopecard')
 @Controller('hopecard/admin/activity')
 export class ActivityController {
   constructor(private activityService: ActivityService) {}

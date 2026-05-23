@@ -6,7 +6,7 @@ interface AuthenticatedRequest {
   user: { sub: string };
 }
 
-@RequirePersona('beneficiary')
+@RequirePersona('beneficiary', 'hopecard')
 @Controller('hopecard/beneficiary/withdrawals')
 export class WithdrawalsController {
   constructor(private readonly withdrawalsService: WithdrawalsService) {}

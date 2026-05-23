@@ -8,7 +8,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { JwtGuard, PersonaGuard } from '@app/common';
+import { RequirePersona } from '@app/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 
@@ -23,7 +23,7 @@ export class AuthController {
   }
 
   @Get('me')
-  @UseGuards(new JwtGuard(), new PersonaGuard('dispatcher', 'damayan'))
+  @RequirePersona('dispatcher', 'damayan')
   getProfile(@Request() req: any) {
     return this.authService.getProfile(req.user.sub as string);
   }

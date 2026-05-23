@@ -12,13 +12,13 @@ export class AuthController {
     return this.authService.login(body.email, body.password);
   }
 
-  @RequirePersona('cm')
+  @RequirePersona('cm', 'hopecard')
   @Get('manager/:authUserId')
   async getManagerProfile(@Param('authUserId') authUserId: string) {
     return this.authService.getManagerProfile(authUserId);
   }
 
-  @RequirePersona('cm')
+  @RequirePersona('cm', 'hopecard')
   @Get('beneficiaries')
   async getBeneficiaryProfiles(@Query('status') status: string) {
     return this.authService.getBeneficiaryProfiles(status);

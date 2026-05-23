@@ -2,7 +2,7 @@ import { Controller, Get, Post, Param, Body, Query, Req } from '@nestjs/common';
 import { BeneficiaryApprovalsService } from './beneficiary-approvals.service';
 import { RequirePersona } from '@app/common';
 
-@RequirePersona('admin')
+@RequirePersona('admin', 'hopecard')
 @Controller('hopecard/admin/approvals/beneficiaries')
 export class BeneficiaryApprovalsController {
   constructor(private readonly approvalsService: BeneficiaryApprovalsService) {}

@@ -9,11 +9,11 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { JwtGuard, PersonaGuard } from '@app/common';
+import { RequirePersona } from '@app/common';
 import { OperationsService } from './operations.service';
 
 @Controller('api/v1/damayan/dispatcher')
-@UseGuards(new JwtGuard(), new PersonaGuard('dispatcher', 'damayan'))
+@RequirePersona('dispatcher', 'damayan')
 export class OperationsController {
   constructor(private readonly operationsService: OperationsService) {}
 
