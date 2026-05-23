@@ -364,4 +364,72 @@ describe('CampaignsService', () => {
       spy.mockRestore();
     });
   });
+
+  describe('onModuleInit — partial env vars', () => {
+    it('skips client when only URL is missing', async () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      await Test.createTestingModule({
+        providers: [
+          CampaignsService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn().mockImplementation((k: string) =>
+                k === 'SUPABASE_SERVICE_ROLE_KEY' ? 'key' : undefined,
+              ),
+            },
+          },
+          { provide: HttpService, useValue: { post: jest.fn() } },
+          { provide: ProcedureEventService, useValue: { emit: jest.fn() } },
+        ],
+      }).compile();
+      spy.mockRestore();
+    });
+
+    it('skips client when only KEY is missing', async () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      await Test.createTestingModule({
+        providers: [
+          CampaignsService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn().mockImplementation((k: string) =>
+                k === 'SUPABASE_URL' ? 'https://test.supabase.co' : undefined,
+              ),
+            },
+          },
+          { provide: HttpService, useValue: { post: jest.fn() } },
+          { provide: ProcedureEventService, useValue: { emit: jest.fn() } },
+        ],
+      }).compile();
+      spy.mockRestore();
+    });
+
+    it('logs warning when NOTIFICATION_SERVICE_URL is absent', async () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const mod = await Test.createTestingModule({
+        providers: [
+          CampaignsService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn().mockImplementation((k: string) => {
+                if (k === 'SUPABASE_URL') return 'https://test.supabase.co';
+                if (k === 'SUPABASE_SERVICE_ROLE_KEY') return 'key';
+                return undefined;
+              }),
+            },
+          },
+          { provide: HttpService, useValue: { post: jest.fn() } },
+          { provide: ProcedureEventService, useValue: { emit: jest.fn() } },
+        ],
+      }).compile();
+      await mod.init();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('NOTIFICATION_SERVICE_URL'),
+      );
+      warnSpy.mockRestore();
+    });
+  });
 });

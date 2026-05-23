@@ -6,6 +6,26 @@ import {
 import { createClient } from '@supabase/supabase-js';
 import { ProcedureEventService } from '@app/api-center';
 
+interface BeneficiaryProfileRow {
+  id: string;
+}
+interface BeneficiaryRow {
+  id: string;
+}
+interface TransactionRow {
+  amount: number | string;
+}
+interface WithdrawalRow {
+  id: string;
+  amount: number | string;
+  status: string;
+  reference_number: string;
+  bank_account_id: string | null;
+  notes: string | null;
+  created_at: string;
+}
+type SupabaseError = { message: string } | null;
+
 function generateWdRef(): string {
   const ts = Date.now().toString(36).toUpperCase();
   const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -32,7 +52,7 @@ export class WithdrawalsService {
       throw new BadRequestException('Invalid amount');
     }
 
-    const [{ data: profile }, { data: beneficiary }] = await Promise.all([
+    const [{ data: profile }, { data: beneficiary }] = (await Promise.all([
       this.admin
         .from('beneficiary_profiles')
         .select('id')
@@ -43,12 +63,15 @@ export class WithdrawalsService {
         .select('id')
         .eq('auth_user_id', authUserId)
         .single(),
-    ]);
+    ])) as [
+      { data: BeneficiaryProfileRow | null; error: SupabaseError },
+      { data: BeneficiaryRow | null; error: SupabaseError },
+    ];
 
     if (!beneficiary || !profile)
       throw new NotFoundException('Beneficiary not found');
 
-    const [{ data: txRows }, { data: wdRows }] = await Promise.all([
+    const [{ data: txRows }, { data: wdRows }] = (await Promise.all([
       this.admin
         .from('beneficiary_transactions')
         .select('amount')
@@ -59,7 +82,10 @@ export class WithdrawalsService {
         .select('amount')
         .eq('beneficiary_id', beneficiary.id)
         .eq('status', 'approved'),
-    ]);
+    ])) as [
+      { data: TransactionRow[] | null; error: SupabaseError },
+      { data: TransactionRow[] | null; error: SupabaseError },
+    ];
 
     const totalReceived = (txRows ?? []).reduce(
       (sum, r) => sum + Number(r.amount),
@@ -79,7 +105,7 @@ export class WithdrawalsService {
 
     const referenceNumber = generateWdRef();
 
-    const { data: withdrawal, error } = await this.admin
+    const { data: withdrawal, error } = (await this.admin
       .from('beneficiary_withdrawals')
       .insert({
         beneficiary_id: beneficiary.id,
@@ -90,40 +116,52 @@ export class WithdrawalsService {
         notes: notes ?? null,
       })
       .select()
-      .single();
+      .single()) as { data: WithdrawalRow | null; error: SupabaseError };
 
     if (error) throw new BadRequestException(error.message);
 
     this.events.emit(
       'hopecard.withdrawal.requested',
-      { beneficiaryId: beneficiary.id, authUserId, amount, referenceNumber, bankAccountId: bank_account_id ?? null },
-      { partitionKey: beneficiary.id, sourceServiceId: 'hopecard-beneficiary-service' },
+      {
+        beneficiaryId: beneficiary.id,
+        authUserId,
+        amount,
+        referenceNumber,
+        bankAccountId: bank_account_id ?? null,
+      } as Record<string, unknown>,
+      {
+        partitionKey: beneficiary.id,
+        sourceServiceId: 'hopecard-beneficiary-service',
+      } as Record<string, unknown>,
     );
 
-    await this.admin.from('beneficiary_banking_activity').insert({
+    void (await this.admin.from('beneficiary_banking_activity').insert({
       beneficiary_profile_id: profile.id,
       bank_account_id: bank_account_id ?? null,
       event_type: 'withdrawal_requested',
       status: 'pending',
       details: `Withdrawal of ₱${amount.toLocaleString('en-PH')} requested. Ref: ${referenceNumber}`,
-    });
+    }));
 
     return { withdrawal };
   }
 
   async getWithdrawals(authUserId: string) {
-    const { data: beneficiary } = await this.admin
+    const { data: beneficiary } = (await this.admin
       .from('beneficiaries')
       .select('id')
       .eq('auth_user_id', authUserId)
-      .single();
+      .single()) as { data: BeneficiaryRow | null; error: SupabaseError };
     if (!beneficiary) throw new NotFoundException('Beneficiary not found');
 
-    const { data, error } = await this.admin
+    const { data, error } = (await this.admin
       .from('beneficiary_withdrawals')
       .select('*')
       .eq('beneficiary_id', beneficiary.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })) as {
+      data: WithdrawalRow[] | null;
+      error: SupabaseError;
+    };
     if (error) throw new BadRequestException(error.message);
     return { withdrawals: data ?? [] };
   }

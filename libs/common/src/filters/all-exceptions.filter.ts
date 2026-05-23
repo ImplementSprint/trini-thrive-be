@@ -8,15 +8,6 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-interface ErrorEnvelope {
-  statusCode: number;
-  message: string;
-  error: string;
-  correlationId: string | null;
-  timestamp: string;
-  path: string;
-}
-
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -88,8 +79,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-        const { message: _m, error: _e, statusCode: _s, ...extra } = exceptionResponse as Record<string, unknown>;
-        extraFields = extra;
+        const resp = exceptionResponse as Record<string, unknown>;
+        // Extract known fields and keep the rest
+        const knownKeys = ['message', 'error', 'statusCode'];
+        extraFields = Object.fromEntries(
+          Object.entries(resp).filter(([key]) => !knownKeys.includes(key)),
+        );
       }
     }
 

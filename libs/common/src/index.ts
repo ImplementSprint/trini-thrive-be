@@ -8,4 +8,5 @@ export * from './health/health.service';
 export * from './middleware/correlation-id.middleware';
 export * from './decorators/require-persona.decorator';
 export * from './guards/jwt.guard';
+export type { JwtPayload } from './guards/jwt.guard';
 export * from './guards/persona.guard';

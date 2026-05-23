@@ -13,6 +13,10 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { RequirePersona } from '@app/common';
 import { IdentityDocumentsService } from './identity-documents.service';
 
+interface AuthenticatedRequest {
+  user: { sub: string };
+}
+
 @RequirePersona('beneficiary')
 @Controller('hopecard/beneficiary/identity-documents')
 export class IdentityDocumentsController {
@@ -21,14 +25,14 @@ export class IdentityDocumentsController {
   ) {}
 
   @Get()
-  getDocuments(@Req() req: any) {
+  getDocuments(@Req() req: AuthenticatedRequest) {
     return this.identityDocumentsService.getDocuments(req.user.sub);
   }
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   uploadDocument(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @UploadedFile() file: Express.Multer.File,
     @Body('label') label?: string,
   ) {
@@ -40,12 +44,15 @@ export class IdentityDocumentsController {
   }
 
   @Delete(':id')
-  deleteDocument(@Req() req: any, @Param('id') id: string) {
+  deleteDocument(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.identityDocumentsService.deleteDocument(req.user.sub, id);
   }
 
   @Post('signed-url')
-  getSignedUrl(@Req() req: any, @Body('documentKey') documentKey: string) {
+  getSignedUrl(
+    @Req() req: AuthenticatedRequest,
+    @Body('documentKey') documentKey: string,
+  ) {
     return this.identityDocumentsService.getSignedUrl(
       req.user.sub,
       documentKey,

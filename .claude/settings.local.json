@@ -73,7 +73,19 @@
       "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\\\\apps\\\\hopecard-donor-service\\\\src\\\\purchases\")",
       "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\\\\apps\\\\hopecard-admin-service\\\\src\\\\backfill\")",
       "Bash(Remove-Item -Force \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\\\\supabase\\\\migrations\\\\20260522_add_payment_customer_id.sql\")",
-      "Bash(Remove-Item -Force \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\\\\docs\\\\superpowers\\\\specs\\\\2026-05-21-google-auth-design.md\")"
+      "Bash(Remove-Item -Force \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\\\\docs\\\\superpowers\\\\specs\\\\2026-05-21-google-auth-design.md\")",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\" -Recurse -Directory | Where-Object { $_.Name -match \"^\\(apps|libs\\)$\" } | Select-Object -ExpandProperty FullName | Sort-Object)",
+      "Bash(npx eslint *)",
+      "Bash(npx npm *)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('package.json'\\)\\); jest=d.get\\('jest',{}\\); print\\(json.dumps\\({k:v for k,v in jest.items\\(\\) if 'cover' in k.lower\\(\\) or 'collect' in k.lower\\(\\) or 'ignore' in k.lower\\(\\) or 'threshold' in k.lower\\(\\) or 'project' in k.lower\\(\\)}, indent=2\\)\\)\")",
+      "Bash(awk '{print $1, $3, $5, $7, $9}')",
+      "Bash(Select-String \"^All files\")",
+      "Bash(awk '-F  ' '{print $NF}')",
+      "Bash(npx prettier *)",
+      "Bash(npm list *)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(ls apps/hopecard-beneficiary-service/src/bank-accounts/*.spec.ts)",
+      "Bash(ls apps/hopecard-beneficiary-service/src/campaigns/*.spec.ts)"
     ]
   }
 }
