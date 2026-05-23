@@ -8,15 +8,6 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-interface ErrorEnvelope {
-  statusCode: number;
-  message: string;
-  error: string;
-  correlationId: string | null;
-  timestamp: string;
-  path: string;
-}
-
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -84,13 +75,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? request.headers['x-correlation-id']
         : null);
 
-    const body: ErrorEnvelope = {
+    let extraFields: Record<string, unknown> = {};
+    if (exception instanceof HttpException) {
+      const exceptionResponse = exception.getResponse();
+      if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+        const resp = exceptionResponse as Record<string, unknown>;
+        // Extract known fields and keep the rest
+        const knownKeys = ['message', 'error', 'statusCode'];
+        extraFields = Object.fromEntries(
+          Object.entries(resp).filter(([key]) => !knownKeys.includes(key)),
+        );
+      }
+    }
+
+    const body = {
       statusCode,
       message,
       error,
       correlationId,
       timestamp: new Date().toISOString(),
       path: request.url,
+      ...extraFields,
     };
 
     response.status(statusCode).json(body);

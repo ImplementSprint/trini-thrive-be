@@ -1,242 +1,220 @@
-import { Injectable, HttpException } from '@nestjs/common';
+import { Injectable, HttpException, Inject, Optional } from '@nestjs/common';
 import { TribeClient } from '@implementsprint/sdk';
-import { supabaseRequest, findHopecardRecordByTitle, getRecordId, getRecordTitle } from '@app/common/supabase-helpers';
-import { DbPurchase } from '@app/common/types';
-import { NotificationsService } from '../notifications/notifications.service';
+import { supabaseRequest } from '@app/common/supabase-helpers';
 import { ProcedureEventService } from '@app/api-center';
 
-type HopecardRecord = Record<string, unknown>;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const PAID_STATUSES = new Set(['paid', 'succeeded', 'completed', 'active']);
 
 @Injectable()
 export class PurchasesService {
   constructor(
-    private readonly notificationsService: NotificationsService,
+    @Optional() @Inject(TribeClient) private readonly client: TribeClient | null,
     private readonly events: ProcedureEventService,
   ) {}
 
-  private getSdkClient() {
-    return new TribeClient({
-      gatewayUrl: process.env['APICENTER_URL']!,
-      tribeId: process.env['APICENTER_TRIBE_ID']!,
-      secret: process.env['APICENTER_TRIBE_SECRET']!,
+  async createCheckoutSession(authUserId: string, _successUrl: string, cancelUrl: string) {
+    if (!this.client) throw new HttpException('Payment service unavailable', 503);
+    if (!UUID_RE.test(authUserId)) throw new HttpException('Invalid authUserId', 400);
+
+    const carts = await supabaseRequest<{ id: string }[]>(
+      `carts?auth_user_id=eq.${authUserId}&status=eq.active&limit=1`,
+    );
+    const cart = carts[0];
+    if (!cart) throw new HttpException('No active cart found', 404);
+
+    const rawItems = await supabaseRequest<{
+      id: string;
+      campaign_id: string;
+      face_value: number;
+      quantity: number;
+    }[]>(`cart_items?cart_id=eq.${cart.id}&select=id,campaign_id,face_value,quantity`);
+
+    if (rawItems.length === 0) throw new HttpException('Cart is empty', 400);
+
+    const campaignIds = [...new Set(rawItems.map((i) => i.campaign_id))];
+    const campaigns = await supabaseRequest<{ id: string; title: string }[]>(
+      `hc_campaigns?id=in.(${campaignIds.join(',')})&select=id,title`,
+    );
+    const titleById = new Map(campaigns.map((c) => [c.id, c.title]));
+
+    const subtotal = rawItems.reduce((sum, i) => sum + Number(i.face_value) * i.quantity, 0);
+    const processingFee = Math.round(subtotal * 0.015);
+
+    // Line items — amounts sent to PayMongo are in centavos (multiply pesos by 100)
+    const lineItems: { name: string; quantity: number; amount: { value: number; currency: string } }[] =
+      rawItems.map((item) => ({
+        name: titleById.get(item.campaign_id) ?? 'Donation',
+        quantity: item.quantity,
+        amount: { value: Math.round(Number(item.face_value) * 100), currency: 'PHP' },
+      }));
+
+    if (processingFee > 0) {
+      lineItems.push({
+        name: 'Processing Fee (1.5%)',
+        quantity: 1,
+        amount: { value: processingFee * 100, currency: 'PHP' },
+      });
+    }
+
+    const referenceId = `hc-${authUserId.slice(0, 8)}-${Date.now()}`;
+
+    // Append ref and buyerAuthId to the frontend-supplied base URL.
+    // These params are embedded so the success page can confirm the purchase even when
+    // the SameSite=Strict cookie is stripped on the cross-site redirect from PayMongo.
+    const successUrl = `${_successUrl}?ref=${encodeURIComponent(referenceId)}&buyerAuthId=${encodeURIComponent(authUserId)}`;
+
+    let checkout: unknown;
+    try {
+      checkout = await this.client.paymentCreateCheckoutSession({
+        referenceId,
+        idempotencyKey: referenceId,
+        successUrl,
+        cancelUrl,
+        paymentMethods: ['gcash', 'maya', 'grabpay', 'qrph', 'card'],
+        lineItems,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new HttpException(`Payment provider error: ${msg}`, 502);
+    }
+
+    const session = checkout as import('@implementsprint/sdk').PaymentCheckoutSession;
+    return {
+      checkoutId: session.checkoutId,
+      checkoutUrl: session.redirectUrl,
+      referenceId,
+      subtotal,
+      processingFee,
+      total: subtotal + processingFee,
+    };
+  }
+
+  async getCheckoutSession(checkoutId: string) {
+    if (!this.client) throw new HttpException('Payment service unavailable', 503);
+    const session = await this.client.paymentGetCheckoutSession(checkoutId);
+    return { session };
+  }
+
+  async cancelCheckoutSession(checkoutId: string) {
+    if (!this.client) throw new HttpException('Payment service unavailable', 503);
+    await this.client.paymentMarkCheckoutCancelled(checkoutId, {
+      reason: 'user_cancelled',
     });
+    return { success: true };
   }
 
-  private buildReferenceId(): string {
-    const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const suffix = crypto.randomUUID().slice(0, 8).toUpperCase();
-    return `HC-${datePart}-${suffix}`;
-  }
+  async confirmPurchase(authUserId: string, checkoutId: string, referenceId?: string) {
+    if (!this.client) throw new HttpException('Payment service unavailable', 503);
+    if (!UUID_RE.test(authUserId)) throw new HttpException('Invalid authUserId', 400);
+    if (!checkoutId && !referenceId) throw new HttpException('checkoutId or referenceId is required', 400);
 
-  private async fetchHopecards(): Promise<HopecardRecord[]> {
-    const results = await Promise.allSettled([
-      supabaseRequest<HopecardRecord[]>('hc_campaigns?select=*').then(res => (res || []).map(r => ({ ...r, _table: 'hc_campaigns' }))),
-      supabaseRequest<HopecardRecord[]>('hopecards?select=*').then(res => (res || []).map(r => ({ ...r, _table: 'hopecards' }))),
-    ]);
-    const records: HopecardRecord[] = [];
-    results.forEach((r) => { if (r.status === 'fulfilled') records.push(...r.value); });
-    if (records.length === 0) throw new Error('No campaign source rows found in hc_campaigns or hopecards.');
-    return records;
-  }
+    let session: import('@implementsprint/sdk').PaymentCheckoutSession;
+    try {
+      if (checkoutId) {
+        session = await this.client.paymentGetCheckoutSession(checkoutId);
+      } else {
+        session = await this.client.paymentGetCheckoutStatusByReference(referenceId!);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new HttpException(`Payment provider error: ${msg}`, 502);
+    }
+    const status = String(session.status ?? '').toLowerCase();
 
-  private async finalizePurchases(
-    buyerAuthId: string,
-    items: Array<{ campaignId: string; title: string; amount: number; quantity: number }>,
-    paymentReference: string,
-    hopecards: HopecardRecord[],
-  ) {
-    const purchasesToInsert = items.map((item) => ({
-      buyer_auth_id: buyerAuthId,
-      hopecard_id: item.campaignId,
-      amount_paid: item.amount * item.quantity,
-      payment_method: 'paymongo',
-      payment_reference: `${paymentReference}-${item.campaignId.slice(0, 8)}`,
-      status: 'paid',
-      purchased_at: new Date().toISOString(),
-    }));
+    if (!PAID_STATUSES.has(status)) {
+      throw new HttpException(`Payment not confirmed (status: ${status || 'unknown'})`, 402);
+    }
 
-    const inserted = await supabaseRequest<DbPurchase[]>('hopecard_purchases', {
-      method: 'POST',
-      headers: { Prefer: 'return=representation' },
-      body: JSON.stringify(purchasesToInsert),
-    });
+    let carts: { id: string }[];
+    try {
+      carts = await supabaseRequest<{ id: string }[]>(
+        `carts?auth_user_id=eq.${authUserId}&status=eq.active&limit=1`,
+      );
+    } catch (err: unknown) {
+      throw new HttpException(`DB error fetching cart: ${err instanceof Error ? err.message : String(err)}`, 500);
+    }
+    const cart = carts[0];
+    if (!cart) throw new HttpException('No active cart found', 404);
 
-    // Notify donor
-    const totalAmount = items.reduce((sum, i) => sum + i.amount * i.quantity, 0);
-    const campaignNames = items.map((i) => i.title).join(', ');
-    this.notificationsService.createNotification(
-      buyerAuthId,
-      'donation_success',
-      'Donation Successful!',
-      `Your donation of ₱${totalAmount.toLocaleString()} to ${campaignNames} was received. Thank you for your generosity!`,
-      { purchase_ids: inserted.map((p) => p.id) },
-    ).catch(() => {});
+    let rawItems: { id: string; campaign_id: string; face_value: number; quantity: number }[];
+    try {
+      rawItems = await supabaseRequest<typeof rawItems>(
+        `cart_items?cart_id=eq.${cart.id}&select=id,campaign_id,face_value,quantity`,
+      );
+    } catch (err: unknown) {
+      throw new HttpException(`DB error fetching cart items: ${err instanceof Error ? err.message : String(err)}`, 500);
+    }
 
-    // Update collected_amount for each campaign
-    for (const item of items) {
-      const hopecard = hopecards.find((r) => getRecordId(r) === item.campaignId);
-      if (hopecard && hopecard._table) {
-        const currentAmount = Number(hopecard.collected_amount || 0);
-        await supabaseRequest(`${hopecard._table}?id=eq.${item.campaignId}`, {
-          method: 'PATCH',
-          headers: { Prefer: 'return=minimal' },
-          body: JSON.stringify({ collected_amount: currentAmount + item.amount * item.quantity }),
-        }).catch(err => console.error(`Failed to update collected_amount for ${item.campaignId}:`, err));
+    // PaymentCheckoutSession doesn't expose the method actually used — default to 'card'
+    // which is the most common for test payments and matches the constraint:
+    // hopecard_purchases_payment_method_check: gcash | card | bank | maya | bank_transfer
+    const paymentMethod = String((session as any).paymentMethod ?? (session as any).payment_method ?? 'card');
+    const paymentReference = referenceId || checkoutId;
+    const now = new Date().toISOString();
+
+    for (const item of rawItems) {
+      for (let i = 0; i < item.quantity; i++) {
+        try {
+          await supabaseRequest('hopecard_purchases', {
+            method: 'POST',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({
+              buyer_auth_id: authUserId,
+              hopecard_id: item.campaign_id,
+              amount_paid: Number(item.face_value),
+              payment_method: paymentMethod,
+              payment_reference: paymentReference,
+              status: 'paid',
+              purchased_at: now,
+            }),
+          });
+        } catch (err: unknown) {
+          throw new HttpException(`DB error recording purchase: ${err instanceof Error ? err.message : String(err)}`, 500);
+        }
       }
     }
 
     // Clear cart
     try {
-      const cartRes = await supabaseRequest<any[]>(`carts?auth_user_id=eq.${buyerAuthId}&status=eq.active&select=id&limit=1`);
-      if (cartRes?.length) {
-        const cartId = cartRes[0].id;
-        for (const item of items) {
-          await supabaseRequest(`cart_items?cart_id=eq.${cartId}&campaign_id=eq.${item.campaignId}`, {
-            method: 'DELETE',
-            headers: { Prefer: 'return=minimal' },
-          }).catch(err => console.error(`Failed to delete cart item ${item.campaignId}:`, err));
-        }
-      }
-    } catch (err) {
-      console.error('Failed to clear cart:', err);
+      await supabaseRequest(`cart_items?cart_id=eq.${cart.id}`, {
+        method: 'DELETE',
+        headers: { Prefer: 'return=minimal' },
+      });
+      // Reset the cart to active so the user can make another purchase.
+      // The UNIQUE (auth_user_id) constraint means there is exactly one cart row
+      // per user — we cannot insert a new one, so we reuse this row.
+      await supabaseRequest(`carts?id=eq.${cart.id}`, {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'active' }),
+      });
+    } catch (err: unknown) {
+      throw new HttpException(`DB error clearing cart: ${err instanceof Error ? err.message : String(err)}`, 500);
     }
 
+    const totalPurchased = rawItems.reduce((sum, i) => sum + i.quantity, 0);
     this.events.emit(
       'hopecard.donation.completed',
-      {
-        buyerAuthId,
-        totalAmount: items.reduce((sum, i) => sum + i.amount * i.quantity, 0),
-        campaignIds: items.map((i) => i.campaignId),
-        referenceId: paymentReference,
-        purchaseIds: inserted.map((p) => p.id),
-      },
-      { partitionKey: buyerAuthId, sourceServiceId: 'hopecard-donor-service' },
+      { authUserId, checkoutId, itemCount: rawItems.length, totalPurchased },
+      { partitionKey: authUserId, sourceServiceId: 'hopecard-donor-service' },
     );
 
-    return { purchases: inserted };
+    return { success: true, purchasedCount: totalPurchased };
   }
 
-  async createCheckoutSession(buyerAuthId: string, checkoutItems: Array<{ cardId: string; title: string; amount: number; quantity: number }>) {
-    if (!buyerAuthId) throw new HttpException('buyerAuthId is required.', 400);
-    if (!checkoutItems?.length) throw new HttpException('At least one checkout item is required.', 400);
-
-    const subtotal = checkoutItems.reduce((sum, i) => sum + i.amount * i.quantity, 0);
-    const processingFee = Math.round(subtotal * 0.015 * 100) / 100;
-    const referenceId = this.buildReferenceId();
-    const appUrl = process.env['NEXT_PUBLIC_APP_URL'] || 'http://localhost:3000';
-
-    const lineItems = [
-      ...checkoutItems.map(item => ({
-        name: item.title,
-        quantity: item.quantity,
-        amount: { value: Math.round(item.amount * 100), currency: 'PHP' },
-      })),
-      ...(processingFee > 0 ? [{
-        name: 'Processing Fee (1.5%)',
-        quantity: 1,
-        amount: { value: Math.round(processingFee * 100), currency: 'PHP' },
-      }] : []),
-    ];
-
-    try {
-      const session = await this.getSdkClient().paymentCreateCheckoutSession({
-        referenceId,
-        successUrl: `${appUrl}/donor/payment/success?ref=${referenceId}&buyerAuthId=${encodeURIComponent(buyerAuthId)}`,
-        cancelUrl: `${appUrl}/donor/payment/cancel?ref=${referenceId}`,
-        lineItems,
-        paymentMethods: ['gcash', 'maya', 'grabpay', 'qrph', 'card'],
-        metadata: { buyerAuthId },
-      });
-
-      return {
-        checkoutId: session.checkoutId,
-        checkoutUrl: session.redirectUrl,
-        referenceId,
-      };
-    } catch (err) {
-      console.error('[createCheckoutSession] SDK error:', err);
-      throw new HttpException('Failed to create payment session.', 502);
-    }
-  }
-
-  async confirmPurchase(referenceId: string, buyerAuthId: string) {
-    if (!referenceId) throw new HttpException('referenceId is required.', 400);
-    if (!buyerAuthId) throw new HttpException('buyerAuthId is required.', 400);
-
-    // Verify payment status via SDK
-    let session: Awaited<ReturnType<TribeClient['paymentGetCheckoutStatusByReference']>>;
-    try {
-      session = await this.getSdkClient().paymentGetCheckoutStatusByReference(referenceId);
-    } catch (err) {
-      console.error('[confirmPurchase] SDK status check error:', err);
-      throw new HttpException('Failed to verify payment status.', 502);
-    }
-
-    if (session.status !== 'paid') {
-      throw new HttpException({ error: 'Payment not completed.', status: session.status }, 402);
-    }
-
-    // Idempotency: check if already processed
-    const existing = await supabaseRequest<DbPurchase[]>(
-      `hopecard_purchases?buyer_auth_id=eq.${encodeURIComponent(buyerAuthId)}&payment_reference=like.${encodeURIComponent(referenceId)}*&limit=1`
-    ).catch(() => [] as DbPurchase[]);
-    if (existing.length > 0) {
-      return { purchases: existing, alreadyProcessed: true };
-    }
-
-    // Fetch buyer's active cart items with campaign data
-    const cartRes = await supabaseRequest<any[]>(
-      `carts?auth_user_id=eq.${buyerAuthId}&status=eq.active&select=id&limit=1`
-    );
-    if (!cartRes?.length) throw new HttpException('No active cart found for this buyer.', 404);
-    const cartId = cartRes[0].id;
-
-    const cartItems = await supabaseRequest<any[]>(
-      `cart_items?cart_id=eq.${cartId}&select=campaign_id,face_value,quantity,hc_campaigns(title)`
-    );
-    if (!cartItems?.length) throw new HttpException('Cart is empty.', 400);
-
-    const hopecards = await this.fetchHopecards();
-
-    const items = cartItems.map((ci) => ({
-      campaignId: ci.campaign_id as string,
-      title: (ci.hc_campaigns?.title ?? '') as string,
-      amount: ci.face_value as number,
-      quantity: ci.quantity as number,
-    }));
-
-    // Fallback: resolve title from hopecards if join returned nothing
-    for (const item of items) {
-      if (!item.title) {
-        const hopecard = hopecards.find((r) => getRecordId(r) === item.campaignId);
-        item.title = hopecard ? (getRecordTitle(hopecard) ?? item.campaignId) : item.campaignId;
-      }
-    }
-
-    return this.finalizePurchases(buyerAuthId, items, referenceId, hopecards);
-  }
-
-  async getPurchases(buyerAuthId: string) {
-    if (!buyerAuthId) throw new HttpException('buyerAuthId is required.', 400);
-    const purchases = await supabaseRequest<DbPurchase[]>(
-      `hopecard_purchases?select=*&buyer_auth_id=eq.${encodeURIComponent(buyerAuthId)}&order=purchased_at.desc`
-    );
-    const hopecards = await this.fetchHopecards();
-    const titleById = new Map<string, string>();
-    hopecards.forEach((r) => {
-      const id = getRecordId(r);
-      const title = getRecordTitle(r);
-      if (id && title) titleById.set(id, title);
-    });
-    const transactions = purchases.map((p) => ({
-      id: p.id,
-      title: titleById.get(p.hopecard_id) ?? p.hopecard_id,
-      amount: p.amount_paid,
-      method: p.payment_method,
-      status: p.status,
-      paymentReference: p.payment_reference,
-      purchasedAt: p.purchased_at,
-    }));
-    return { transactions };
+  async getPurchases(authUserId: string) {
+    if (!UUID_RE.test(authUserId)) throw new HttpException('Invalid authUserId', 400);
+    const purchases = await supabaseRequest<{
+      id: string;
+      hopecard_id: string;
+      amount_paid: number;
+      payment_method: string;
+      payment_reference: string;
+      status: string;
+      purchased_at: string;
+    }[]>(`hopecard_purchases?buyer_auth_id=eq.${authUserId}&order=purchased_at.desc&limit=50`);
+    return { purchases };
   }
 }

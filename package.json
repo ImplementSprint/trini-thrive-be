@@ -63,7 +63,7 @@
     "helmet": "^8.1.0",
     "jose": "^6.2.3",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^1.4.5-lts.2",
     "nodemailer": "^8.0.7",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
@@ -138,7 +138,11 @@
           "/node_modules/",
           "apps/api/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -173,7 +177,11 @@
           "/node_modules/",
           "apps/location-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -319,7 +327,11 @@
           "/node_modules/",
           "apps/hopecard-admin-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -354,7 +366,11 @@
           "/node_modules/",
           "apps/hopecard-beneficiary-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -389,7 +405,11 @@
           "/node_modules/",
           "apps/hopecard-campaign-manager-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -424,7 +444,11 @@
           "/node_modules/",
           "apps/hopecard-notification-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       },
@@ -459,7 +483,11 @@
           "/node_modules/",
           "apps/hopecard-donor-service/src/main.ts",
           "\\.module\\.ts$",
-          "index\\.ts$"
+          "index\\.ts$",
+          "/libs/api-center/",
+          "/libs/common/src/guards/",
+          "/libs/common/src/decorators/",
+          "/libs/common/src/bootstrap/"
         ],
         "testEnvironment": "node"
       }

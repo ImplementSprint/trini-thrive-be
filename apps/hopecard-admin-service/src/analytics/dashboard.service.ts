@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { DashboardMetrics } from "./interfaces/dashboard-metrics.interface";
 
@@ -177,13 +177,7 @@ export class DashboardService {
       };
     } catch (error) {
       console.error("❌ Error fetching dashboard metrics:", error);
-      // Return fallback mock data only on error
-      return {
-        totalBeneficiaries: 1234,
-        pendingApprovals: 47,
-        totalDonationsSent: "₱2.5M",
-        activeCampaigns: 18,
-      };
+      throw new InternalServerErrorException("Failed to retrieve dashboard metrics.");
     }
   }
 }
