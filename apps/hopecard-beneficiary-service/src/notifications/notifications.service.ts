@@ -1,6 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 
+type SbError = { message: string } | null;
+
+interface ProfileRow {
+  id: string;
+}
+
+interface BeneficiaryRow {
+  id: string;
+}
+
+interface InvitationRow {
+  id: string;
+  invited_at: string;
+  hc_campaigns: { title?: string } | null;
+}
+
+interface TransactionRow {
+  id: string;
+  amount: string;
+  created_at: string;
+  notes: string | null;
+}
+
 @Injectable()
 export class BeneficiaryNotificationsService {
   private get admin() {
@@ -11,7 +34,7 @@ export class BeneficiaryNotificationsService {
   }
 
   private async getProfileAndBeneficiary(authUserId: string) {
-    const [{ data: profile }, { data: beneficiary }] = await Promise.all([
+    const [{ data: profile }, { data: beneficiary }] = (await Promise.all([
       this.admin
         .from('beneficiary_profiles')
         .select('id')
@@ -22,7 +45,10 @@ export class BeneficiaryNotificationsService {
         .select('id')
         .eq('auth_user_id', authUserId)
         .maybeSingle(),
-    ]);
+    ])) as [
+      { data: ProfileRow | null; error: SbError },
+      { data: BeneficiaryRow | null; error: SbError },
+    ];
     return { profile, beneficiary };
   }
 
@@ -42,16 +68,16 @@ export class BeneficiaryNotificationsService {
 
     // 1. Pending campaign invitations
     if (profile) {
-      const { data: invitations } = await this.admin
+      const { data: invitations } = (await this.admin
         .from('campaign_invitations')
         .select('id, invited_at, hc_campaigns(title)')
         .eq('beneficiary_profile_id', profile.id)
         .eq('status', 'pending')
         .order('invited_at', { ascending: false })
-        .limit(10);
+        .limit(10)) as { data: InvitationRow[] | null; error: SbError };
 
       for (const inv of invitations ?? []) {
-        const campaignTitle = (inv.hc_campaigns as any)?.title ?? 'a campaign';
+        const campaignTitle = inv.hc_campaigns?.title ?? 'a campaign';
         notifications.push({
           id: `inv-${inv.id}`,
           type: 'invitation',
@@ -66,13 +92,13 @@ export class BeneficiaryNotificationsService {
 
     // 2. Approved disbursements (admin sent funds)
     if (beneficiary) {
-      const { data: transactions } = await this.admin
+      const { data: transactions } = (await this.admin
         .from('beneficiary_transactions')
         .select('id, amount, created_at, notes')
         .eq('beneficiary_id', beneficiary.id)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(10)) as { data: TransactionRow[] | null; error: SbError };
 
       for (const tx of transactions ?? []) {
         notifications.push({

@@ -7,10 +7,11 @@ import { HealthService } from './health.service';
 describe('HealthController', () => {
   let controller: HealthController;
   const mockService = {
-    getHealth: jest.fn().mockReturnValue({
+    getHealth: jest.fn().mockResolvedValue({
       status: 'ok',
       service: 'beneficiary-health-service',
       timestamp: new Date().toISOString(),
+      checks: { database: true },
     }),
   };
 
@@ -22,8 +23,8 @@ describe('HealthController', () => {
     controller = module.get<HealthController>(HealthController);
   });
 
-  it('getHealth delegates to HealthService', () => {
-    const result = controller.getHealth();
+  it('getHealth delegates to HealthService', async () => {
+    const result = await controller.getHealth();
     expect(result.status).toBe('ok');
     expect(result.service).toBe('beneficiary-health-service');
     expect(mockService.getHealth).toHaveBeenCalled();

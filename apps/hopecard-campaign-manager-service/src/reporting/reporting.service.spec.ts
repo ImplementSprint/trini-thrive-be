@@ -219,4 +219,70 @@ describe('ReportingService', () => {
       spy.mockRestore();
     });
   });
+
+  describe('onModuleInit — partial env vars', () => {
+    it('skips client creation when only URL is missing', async () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportingService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn().mockImplementation((k: string) =>
+                k === 'SUPABASE_SERVICE_ROLE_KEY' ? 'key' : undefined,
+              ),
+            },
+          },
+        ],
+      }).compile();
+      expect(mod.get<ReportingService>(ReportingService)).toBeDefined();
+      spy.mockRestore();
+    });
+
+    it('skips client creation when only KEY is missing', async () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportingService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn().mockImplementation((k: string) =>
+                k === 'SUPABASE_URL' ? 'https://test.supabase.co' : undefined,
+              ),
+            },
+          },
+        ],
+      }).compile();
+      expect(mod.get<ReportingService>(ReportingService)).toBeDefined();
+      spy.mockRestore();
+    });
+  });
+
+  describe('getDashboardData — completed campaign branch', () => {
+    it('counts completed campaigns as 0 active and 0 pending', async () => {
+      const campaigns = [
+        {
+          id: 'c1',
+          title: 'Completed',
+          status: 'completed',
+          collected_amount: 100,
+          target_amount: 500,
+          end_date: '2024-01-01',
+          cover_image_key: null,
+          created_at: '2024-01-01',
+        },
+      ];
+      mockFrom.mockReturnValueOnce(
+        makeChain({ first_name: 'A', last_name: 'B' }),
+      );
+      mockFrom.mockReturnValueOnce(makeChain(campaigns));
+      mockFrom.mockReturnValueOnce(makeChain([]));
+
+      const result = await service.getDashboardData('uid-7');
+      expect(result.metrics.pendingActions).toBe(0);
+      expect(result.metrics.activeCampaigns).toBe(0);
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
 import { PurchasesService } from './purchases.service';
 import { RequirePersona } from '@app/common';
 
@@ -7,33 +7,36 @@ import { RequirePersona } from '@app/common';
 export class PurchasesController {
   constructor(private readonly purchasesService: PurchasesService) {}
 
-  @Get()
-  getPurchases(@Query('buyerAuthId') buyerAuthId: string) {
-    return this.purchasesService.getPurchases(buyerAuthId);
-  }
-
   @Post('checkout')
-  createCheckoutSession(
-    @Body() body: { buyerAuthId: string; checkoutItems: { cardId: string; title: string; amount: number; quantity: number }[] },
+  createCheckout(
+    @Body() body: { authUserId?: string; buyerAuthId?: string; successBaseUrl?: string; successUrl?: string; cancelUrl?: string },
   ) {
-    return this.purchasesService.createCheckoutSession(body.buyerAuthId, body.checkoutItems);
+    const authUserId = body.authUserId ?? body.buyerAuthId ?? '';
+    const cancelUrl = body.cancelUrl ?? 'http://localhost:3001/donor/payment/cancel';
+    const successBaseUrl = body.successBaseUrl ?? body.successUrl ?? 'http://localhost:3001/donor/payment/success';
+    return this.purchasesService.createCheckoutSession(authUserId, successBaseUrl, cancelUrl);
   }
 
   @Get('checkout/:checkoutId')
-  getCheckoutSession(@Param('checkoutId') checkoutId: string) {
+  getCheckout(@Param('checkoutId') checkoutId: string) {
     return this.purchasesService.getCheckoutSession(checkoutId);
   }
 
   @Post('checkout/:checkoutId/cancel')
-  cancelCheckoutSession(
-    @Param('checkoutId') checkoutId: string,
-    @Body() body: { reason?: string },
-  ) {
-    return this.purchasesService.cancelCheckoutSession(checkoutId, body?.reason);
+  cancelCheckout(@Param('checkoutId') checkoutId: string) {
+    return this.purchasesService.cancelCheckoutSession(checkoutId);
   }
 
   @Post('confirm')
-  confirmPurchase(@Body() body: { referenceId: string; buyerAuthId: string }) {
-    return this.purchasesService.confirmPurchase(body.referenceId, body.buyerAuthId);
+  confirmPurchase(@Body() body: { authUserId?: string; buyerAuthId?: string; checkoutId?: string; referenceId?: string }) {
+    const authUserId = body.authUserId ?? body.buyerAuthId ?? '';
+    const checkoutId = body.checkoutId ?? '';
+    const referenceId = body.referenceId ?? '';
+    return this.purchasesService.confirmPurchase(authUserId, checkoutId, referenceId);
+  }
+
+  @Get()
+  getPurchases(@Query('authUserId') authUserId: string) {
+    return this.purchasesService.getPurchases(authUserId);
   }
 }
