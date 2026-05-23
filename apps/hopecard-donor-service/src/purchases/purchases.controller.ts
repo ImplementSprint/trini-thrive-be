@@ -2,7 +2,7 @@ import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
 import { PurchasesService } from './purchases.service';
 import { RequirePersona } from '@app/common';
 
-@RequirePersona('donor')
+@RequirePersona('donor', 'hopecard')
 @Controller('hopecard/donor/purchases')
 export class PurchasesController {
   constructor(private readonly purchasesService: PurchasesService) {}

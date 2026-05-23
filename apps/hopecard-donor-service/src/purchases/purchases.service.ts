@@ -15,7 +15,6 @@ export class PurchasesService {
   ) {}
 
   async createCheckoutSession(authUserId: string, _successUrl: string, cancelUrl: string) {
-    if (!this.client) throw new HttpException('Payment service unavailable', 503);
     if (!UUID_RE.test(authUserId)) throw new HttpException('Invalid authUserId', 400);
 
     const carts = await supabaseRequest<{ id: string }[]>(
@@ -66,6 +65,20 @@ export class PurchasesService {
     const successUrl = `${_successUrl}?ref=${encodeURIComponent(referenceId)}&buyerAuthId=${encodeURIComponent(authUserId)}`;
 
     let checkout: unknown;
+    if (!this.client) {
+      if (process.env.NODE_ENV !== 'production') {
+        return {
+          checkoutId: `mock-checkout-${Date.now()}`,
+          checkoutUrl: successUrl, // Mock: redirect immediately to success page
+          referenceId,
+          subtotal,
+          processingFee,
+          total: subtotal + processingFee,
+        };
+      }
+      throw new HttpException('Payment service unavailable', 503);
+    }
+
     try {
       checkout = await this.client.paymentCreateCheckoutSession({
         referenceId,
@@ -92,13 +105,23 @@ export class PurchasesService {
   }
 
   async getCheckoutSession(checkoutId: string) {
-    if (!this.client) throw new HttpException('Payment service unavailable', 503);
+    if (!this.client) {
+      if (process.env.NODE_ENV !== 'production' && checkoutId.startsWith('mock-checkout-')) {
+        return { session: { status: 'paid', checkoutId, paymentMethod: 'mock_card' } };
+      }
+      throw new HttpException('Payment service unavailable', 503);
+    }
     const session = await this.client.paymentGetCheckoutSession(checkoutId);
     return { session };
   }
 
   async cancelCheckoutSession(checkoutId: string) {
-    if (!this.client) throw new HttpException('Payment service unavailable', 503);
+    if (!this.client) {
+      if (process.env.NODE_ENV !== 'production' && checkoutId.startsWith('mock-checkout-')) {
+        return { success: true };
+      }
+      throw new HttpException('Payment service unavailable', 503);
+    }
     await this.client.paymentMarkCheckoutCancelled(checkoutId, {
       reason: 'user_cancelled',
     });
@@ -106,20 +129,27 @@ export class PurchasesService {
   }
 
   async confirmPurchase(authUserId: string, checkoutId: string, referenceId?: string) {
-    if (!this.client) throw new HttpException('Payment service unavailable', 503);
     if (!UUID_RE.test(authUserId)) throw new HttpException('Invalid authUserId', 400);
     if (!checkoutId && !referenceId) throw new HttpException('checkoutId or referenceId is required', 400);
 
-    let session: import('@implementsprint/sdk').PaymentCheckoutSession;
-    try {
-      if (checkoutId) {
-        session = await this.client.paymentGetCheckoutSession(checkoutId);
+    let session: any; // Using any to support mock session without full type mapping
+    if (!this.client) {
+      if (process.env.NODE_ENV !== 'production') {
+        session = { status: 'paid', paymentMethod: 'mock_card' };
       } else {
-        session = await this.client.paymentGetCheckoutStatusByReference(referenceId!);
+        throw new HttpException('Payment service unavailable', 503);
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      throw new HttpException(`Payment provider error: ${msg}`, 502);
+    } else {
+      try {
+        if (checkoutId) {
+          session = await this.client.paymentGetCheckoutSession(checkoutId);
+        } else {
+          session = await this.client.paymentGetCheckoutStatusByReference(referenceId!);
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new HttpException(`Payment provider error: ${msg}`, 502);
+      }
     }
     const status = String(session.status ?? '').toLowerCase();
 

@@ -119,6 +119,7 @@ export class AuthService {
       email: data.user.email,
       persona: 'donor',
       system: 'hopecard',
+      scopes: ['payment:charge', 'payment:refund'],
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
@@ -331,6 +332,7 @@ export class AuthService {
       name: `${firstName} ${lastName}`.trim(),
       persona: 'donor',
       system: 'hopecard',
+      scopes: ['payment:charge', 'payment:refund'],
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('7d')

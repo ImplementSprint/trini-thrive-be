@@ -13,10 +13,10 @@ import {
 import { BeneficiariesService } from './beneficiaries.service';
 import { RequirePersona } from '@app/common';
 
-@RequirePersona('admin')
+@RequirePersona('admin', 'hopecard')
 @Controller('hopecard/admin/beneficiaries')
 export class BeneficiariesController {
-  constructor(private beneficiariesService: BeneficiariesService) {}
+  constructor(private readonly beneficiariesService: BeneficiariesService) {}
 
   @Get()
 
@@ -24,8 +24,8 @@ export class BeneficiariesController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
   ) {
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+    const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 10));
     return this.beneficiariesService.getAllBeneficiaries(pageNum, limitNum);
   }
 
@@ -46,8 +46,8 @@ export class BeneficiariesController {
       };
     }
 
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+    const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 10));
     return this.beneficiariesService.searchBeneficiaries(
       query,
       pageNum,
@@ -62,8 +62,8 @@ export class BeneficiariesController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
   ) {
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+    const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 10));
     return this.beneficiariesService.getBeneficiariesByStatus(
       status,
       pageNum,

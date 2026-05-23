@@ -2,7 +2,7 @@ import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
 import { CampaignManagerApprovalsService } from './campaign-manager-approvals.service';
 import { RequirePersona } from '@app/common';
 
-@RequirePersona('admin')
+@RequirePersona('admin', 'hopecard')
 @Controller('hopecard/admin/approvals/campaign-managers')
 export class CampaignManagerApprovalsController {
   constructor(private readonly approvalsService: CampaignManagerApprovalsService) {}
@@ -17,8 +17,8 @@ export class CampaignManagerApprovalsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
   ) {
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, parseInt(limit) || 10);
+    const pageNum = Math.max(1, Number.parseInt(page) || 1);
+    const limitNum = Math.min(100, Number.parseInt(limit) || 10);
     const result = await this.approvalsService.getAllApprovals(pageNum, limitNum);
     return {
       success: true,

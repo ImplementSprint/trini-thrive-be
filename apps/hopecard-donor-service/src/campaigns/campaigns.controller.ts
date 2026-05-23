@@ -11,7 +11,7 @@ export class CampaignsController {
     return this.campaignsService.getCampaigns(category, search);
   }
 
-  @RequirePersona('donor')
+  @RequirePersona('donor', 'hopecard')
   @Get()
   getCampaigns(@Query('category') category?: string, @Query('search') search?: string) {
     return this.campaignsService.getCampaigns(category, search);

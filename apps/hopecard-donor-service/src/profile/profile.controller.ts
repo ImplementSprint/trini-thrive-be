@@ -2,7 +2,7 @@ import { Controller, Get, Patch, Query, Body } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { RequirePersona } from '@app/common';
 
-@RequirePersona('donor')
+@RequirePersona('donor', 'hopecard')
 @Controller('hopecard/donor')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}

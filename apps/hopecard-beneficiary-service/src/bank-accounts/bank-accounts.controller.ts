@@ -15,7 +15,7 @@ interface AuthenticatedRequest {
   user: { sub: string };
 }
 
-@RequirePersona('beneficiary')
+@RequirePersona('beneficiary', 'hopecard')
 @Controller('hopecard/beneficiary/bank-accounts')
 export class BankAccountsController {
   constructor(private readonly bankAccountsService: BankAccountsService) {}

@@ -85,7 +85,8 @@
       "Bash(npm list *)",
       "Bash(echo \"Exit code: $?\")",
       "Bash(ls apps/hopecard-beneficiary-service/src/bank-accounts/*.spec.ts)",
-      "Bash(ls apps/hopecard-beneficiary-service/src/campaigns/*.spec.ts)"
+      "Bash(ls apps/hopecard-beneficiary-service/src/campaigns/*.spec.ts)",
+      "Bash(Get-Date *)"
     ]
   }
 }
