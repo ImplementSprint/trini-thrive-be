@@ -9,6 +9,9 @@
     "build": "nest build --all",
     "build:api": "nest build api",
     "build:location-service": "nest build location-service",
+    "build:bayanihub-admin-service": "nest build bayanihub-admin-service",
+    "build:bayanihub-enduser-service": "nest build bayanihub-enduser-service",
+    "build:bayanihub-sitemanager-service": "nest build bayanihub-sitemanager-service",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\" \"tests/**/*.ts\"",
     "start": "nest start api",
@@ -20,6 +23,15 @@
     "start:location-service:dev": "nest start location-service --watch",
     "start:prod:api": "node dist/apps/api/main",
     "start:prod:location-service": "node dist/apps/location-service/main",
+    "start:bayanihub-admin-service": "nest start bayanihub-admin-service",
+    "start:bayanihub-admin-service:dev": "nest start bayanihub-admin-service --watch",
+    "start:prod:bayanihub-admin-service": "node dist/apps/bayanihub-admin-service/main",
+    "start:bayanihub-enduser-service": "nest start bayanihub-enduser-service",
+    "start:bayanihub-enduser-service:dev": "nest start bayanihub-enduser-service --watch",
+    "start:prod:bayanihub-enduser-service": "node dist/apps/bayanihub-enduser-service/main",
+    "start:bayanihub-sitemanager-service": "nest start bayanihub-sitemanager-service",
+    "start:bayanihub-sitemanager-service:dev": "nest start bayanihub-sitemanager-service --watch",
+    "start:prod:bayanihub-sitemanager-service": "node dist/apps/bayanihub-sitemanager-service/main",
     "lint": "eslint \"{apps,libs,tests}/**/*.ts\"",
     "lint:fix": "eslint \"{apps,libs,tests}/**/*.ts\" --fix",
     "test": "jest",
@@ -27,65 +39,21 @@
     "test:cov": "jest --coverage",
     "test:api": "jest --selectProjects api",
     "test:location-service": "jest --selectProjects location-service",
+    "test:bayanihub-admin-service": "jest --selectProjects bayanihub-admin-service",
+    "test:bayanihub-enduser-service": "jest --selectProjects bayanihub-enduser-service",
+    "test:bayanihub-sitemanager-service": "jest --selectProjects bayanihub-sitemanager-service",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./tests/e2e/jest-e2e.json",
-    "dummy:show": "node ./scripts/show-dummy-account.cjs",
-    "build:hopecard-admin-service": "nest build hopecard-admin-service",
-    "start:hopecard-admin-service": "nest start hopecard-admin-service",
-    "start:hopecard-admin-service:dev": "nest start hopecard-admin-service --watch",
-    "start:prod:hopecard-admin-service": "node dist/apps/hopecard-admin-service/main",
-    "test:hopecard-admin-service": "jest --selectProjects hopecard-admin-service",
-    "build:hopecard-beneficiary-service": "nest build hopecard-beneficiary-service",
-    "start:hopecard-beneficiary-service": "nest start hopecard-beneficiary-service",
-    "start:hopecard-beneficiary-service:dev": "nest start hopecard-beneficiary-service --watch",
-    "start:prod:hopecard-beneficiary-service": "node dist/apps/hopecard-beneficiary-service/main",
-    "test:hopecard-beneficiary-service": "jest --selectProjects hopecard-beneficiary-service",
-    "build:hopecard-campaign-manager-service": "nest build hopecard-campaign-manager-service",
-    "start:hopecard-campaign-manager-service": "nest start hopecard-campaign-manager-service",
-    "start:hopecard-campaign-manager-service:dev": "nest start hopecard-campaign-manager-service --watch",
-    "start:prod:hopecard-campaign-manager-service": "node dist/apps/hopecard-campaign-manager-service/main",
-    "test:hopecard-campaign-manager-service": "jest --selectProjects hopecard-campaign-manager-service",
-    "build:hopecard-notification-service": "nest build hopecard-notification-service",
-    "start:hopecard-notification-service": "nest start hopecard-notification-service",
-    "start:hopecard-notification-service:dev": "nest start hopecard-notification-service --watch",
-    "start:prod:hopecard-notification-service": "node dist/apps/hopecard-notification-service/main",
-    "test:hopecard-notification-service": "jest --selectProjects hopecard-notification-service",
-    "build:hopecard-donor-service": "nest build hopecard-donor-service",
-    "start:hopecard-donor-service": "nest start hopecard-donor-service",
-    "start:hopecard-donor-service:dev": "nest start hopecard-donor-service --watch",
-    "start:prod:hopecard-donor-service": "node dist/apps/hopecard-donor-service/main",
-    "test:hopecard-donor-service": "jest --selectProjects hopecard-donor-service",
-    "build:damayan-admin-service": "nest build damayan-admin-service",
-    "start:damayan-admin-service": "nest start damayan-admin-service",
-    "start:damayan-admin-service:dev": "nest start damayan-admin-service --watch",
-    "start:prod:damayan-admin-service": "node dist/apps/damayan-admin-service/main",
-    "test:damayan-admin-service": "jest --selectProjects damayan-admin-service",
-    "build:damayan-site-manager-service": "nest build damayan-site-manager-service",
-    "start:damayan-site-manager-service": "nest start damayan-site-manager-service",
-    "start:damayan-site-manager-service:dev": "nest start damayan-site-manager-service --watch",
-    "start:prod:damayan-site-manager-service": "node dist/apps/damayan-site-manager-service/main",
-    "test:damayan-site-manager-service": "jest --selectProjects damayan-site-manager-service",
-    "build:damayan-dispatcher-service": "nest build damayan-dispatcher-service",
-    "start:damayan-dispatcher-service": "nest start damayan-dispatcher-service",
-    "start:damayan-dispatcher-service:dev": "nest start damayan-dispatcher-service --watch",
-    "start:prod:damayan-dispatcher-service": "node dist/apps/damayan-dispatcher-service/main",
-    "test:damayan-dispatcher-service": "jest --selectProjects damayan-dispatcher-service",
-    "build:damayan-citizen-service": "nest build damayan-citizen-service",
-    "start:damayan-citizen-service": "nest start damayan-citizen-service",
-    "start:damayan-citizen-service:dev": "nest start damayan-citizen-service --watch",
-    "start:prod:damayan-citizen-service": "node dist/apps/damayan-citizen-service/main",
-    "test:damayan-citizen-service": "jest --selectProjects damayan-citizen-service"
+    "dummy:show": "node ./scripts/show-dummy-account.cjs"
   },
   "dependencies": {
-    "@implementsprint/sdk": "^1.2.1",
-    "@nestjs/axios": "^4.0.1",
+    "@implementsprint/sdk": "^1.1.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
     "@nestjs/microservices": "^11.1.21",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.2.6",
-    "@nestjs/throttler": "^6.5.0",
     "@supabase/supabase-js": "^2.100.1",
     "axios": "^1.15.2",
     "class-transformer": "0.5.1",
@@ -93,9 +61,9 @@
     "helmet": "^8.1.0",
     "jose": "^6.2.3",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^1.4.5-lts.2",
     "nodemailer": "^8.0.7",
     "qrcode": "^1.5.4",
-    "multer": "^1.4.5-lts.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -213,6 +181,117 @@
           "/libs/common/src/decorators/",
           "/libs/common/src/bootstrap/"
         ],
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "bayanihub-admin-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "apps/bayanihub-admin-service/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/bayanihub-admin-service/src/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/bayanihub-admin-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
+        "coverageThreshold": {
+          "global": {
+            "lines": 80
+          }
+        },
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "bayanihub-enduser-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "apps/bayanihub-enduser-service/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/bayanihub-enduser-service/src/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/bayanihub-enduser-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
+        "coverageThreshold": {
+          "global": {
+            "lines": 80
+          }
+        },
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "bayanihub-sitemanager-service",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "rootDir": ".",
+        "testRegex": "apps/bayanihub-sitemanager-service/(.*)\\.spec\\.ts$",
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "moduleNameMapper": {
+          "^@app/common$": "<rootDir>/libs/common/src",
+          "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/supabase$": "<rootDir>/libs/supabase/src",
+          "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
+          "^@app/contracts$": "<rootDir>/libs/contracts/src",
+          "^@app/contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+          "^(\\.{1,2}/.*)\\.js$": "$1"
+        },
+        "collectCoverageFrom": [
+          "apps/bayanihub-sitemanager-service/src/**/*.ts"
+        ],
+        "coveragePathIgnorePatterns": [
+          "/node_modules/",
+          "apps/bayanihub-sitemanager-service/src/main.ts",
+          "\\.module\\.ts$",
+          "index\\.ts$"
+        ],
+        "coverageThreshold": {
+          "global": {
+            "lines": 80
+          }
+        },
         "testEnvironment": "node"
       },
       {
