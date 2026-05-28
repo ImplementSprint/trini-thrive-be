@@ -4,7 +4,7 @@ import { DonorsService } from './donors.service';
 import { CreateDonationDto, FilterDonorsDto, UpdateDonationDto } from './dto/donors.dto';
 
 @RequirePersona('admin', 'bayanihub')
-@Controller('api/v1/bayanihub/admin/donors')
+@Controller('donors')
 export class DonorsController {
   constructor(private readonly donorsService: DonorsService) {}
   @Get() findAll(@Query() filters: FilterDonorsDto) { return this.donorsService.findAll(filters); }

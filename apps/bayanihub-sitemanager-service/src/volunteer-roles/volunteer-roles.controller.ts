@@ -3,7 +3,7 @@ import { RequirePersona } from '@app/common';
 import { VolunteerRolesService } from './volunteer-roles.service';
 
 @RequirePersona('site-manager', 'bayanihub')
-@Controller('api/v1/bayanihub/site-manager/volunteer-roles')
+@Controller('volunteer-roles')
 export class VolunteerRolesController {
   constructor(private readonly service: VolunteerRolesService) {}
 

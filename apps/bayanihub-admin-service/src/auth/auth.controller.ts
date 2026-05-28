@@ -8,7 +8,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import type { JwtPayload } from '@app/common';
 
-@Controller('api/v1/bayanihub/admin/auth')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

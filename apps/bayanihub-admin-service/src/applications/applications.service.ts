@@ -108,14 +108,16 @@ export class ApplicationsService {
       await this.db.from('user_profiles').update({ role: 'volunteer' }).eq('auth_user_id', application.volunteer_auth_id);
     }
 
-    await this.db.from('bh_notifications').insert({
-      user_id: application.volunteer_auth_id,
-      target_role: 'volunteer',
-      title: `Volunteer Application ${dto.status === ApplicationStatus.APPROVED ? 'Approved' : 'Rejected'}`,
-      message: `Your volunteer application has been ${dto.status} by the administrator.`,
-      type: 'volunteer_application_review',
-      reference_id: applicationId,
-    }).catch(() => undefined);
+    try {
+      await this.db.from('bh_notifications').insert({
+        user_id: application.volunteer_auth_id,
+        target_role: 'volunteer',
+        title: `Volunteer Application ${dto.status === ApplicationStatus.APPROVED ? 'Approved' : 'Rejected'}`,
+        message: `Your volunteer application has been ${dto.status} by the administrator.`,
+        type: 'volunteer_application_review',
+        reference_id: applicationId,
+      });
+    } catch (e) {}
 
     return updated;
   }

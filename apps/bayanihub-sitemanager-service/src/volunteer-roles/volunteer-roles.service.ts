@@ -37,7 +37,7 @@ export class VolunteerRolesService {
     const appsByRole: Record<string, any[]> = {};
     for (const a of applicationsRes.data ?? []) {
       if (!appsByRole[a.role_id]) appsByRole[a.role_id] = [];
-      appsByRole[a.role_id].push(a);
+      appsByRole[a.role_id]?.push(a);
     }
 
     return items.map((r) => ({ ...r, bh_campaigns: campaignMap.get(r.campaign_id) ?? null, volunteer_applications: appsByRole[r.id] ?? [] }));
