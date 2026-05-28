@@ -5,7 +5,7 @@ import { JwtPayload } from '@app/common';
 import { NotificationsService } from './notifications.service';
 
 @RequirePersona('enduser', 'bayanihub')
-@Controller('api/v1/bayanihub/enduser/notifications')
+@Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 

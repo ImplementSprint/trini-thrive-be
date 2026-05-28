@@ -18,7 +18,7 @@ import { JwtPayload } from '@app/common';
 import { FormsService } from './forms.service';
 
 @RequirePersona('enduser', 'bayanihub')
-@Controller('api/v1/bayanihub/enduser/forms')
+@Controller('forms')
 export class FormsController {
   constructor(private readonly formsService: FormsService) {}
 

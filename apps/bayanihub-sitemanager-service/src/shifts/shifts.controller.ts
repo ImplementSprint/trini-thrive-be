@@ -3,7 +3,7 @@ import { RequirePersona } from '@app/common';
 import { ShiftsService } from './shifts.service';
 
 @RequirePersona('site-manager', 'bayanihub')
-@Controller('api/v1/bayanihub/site-manager/shifts')
+@Controller('shifts')
 export class ShiftsController {
   constructor(private readonly shiftsService: ShiftsService) {}
 

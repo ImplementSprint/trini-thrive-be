@@ -4,7 +4,7 @@ import { CampaignsService } from './campaigns.service';
 import { FilterCampaignsDto, UpdateCampaignDto } from './dto/campaigns.dto';
 
 @RequirePersona('admin', 'bayanihub')
-@Controller('api/v1/bayanihub/admin/campaigns')
+@Controller('campaigns')
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 

@@ -21,7 +21,7 @@ import {
 } from './dto/auth.dto';
 import { FileValidationPipe } from './pipes/file-validation.pipe';
 
-@Controller('api/v1/bayanihub/enduser/auth')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

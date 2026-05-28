@@ -5,7 +5,7 @@ import { QrService } from './qr.service';
 import { GenerateQrDto } from './dto/generate-qr.dto';
 
 @RequirePersona('admin', 'bayanihub')
-@Controller('api/v1/bayanihub/admin/qr')
+@Controller('qr')
 export class QrController {
   constructor(private readonly qrService: QrService) {}
 
