@@ -86,14 +86,16 @@ export class DonorsService {
     if (!data) throw new NotFoundException('Donation not found');
 
     if (dto.status && dto.status !== existing.status) {
-      await this.db.from('bh_notifications').insert({
-        user_id: existing.donor_auth_id,
-        target_role: 'donor',
-        title: 'Donation Pledge Updated',
-        message: `Your donation pledge status has been updated to ${dto.status}.`,
-        type: 'donation_pledge_review',
-        reference_id: id,
-      }).catch(() => undefined);
+      try {
+        await this.db.from('bh_notifications').insert({
+          user_id: existing.donor_auth_id,
+          target_role: 'donor',
+          title: 'Donation Pledge Updated',
+          message: `Your donation pledge status has been updated to ${dto.status}.`,
+          type: 'donation_pledge_review',
+          reference_id: id,
+        });
+      } catch (e) {}
     }
 
     if (dto.status === 'confirmed' && existing.status !== 'confirmed' && existing.campaign_id) {

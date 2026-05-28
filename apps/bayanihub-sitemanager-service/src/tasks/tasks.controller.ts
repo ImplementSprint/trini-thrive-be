@@ -3,7 +3,7 @@ import { RequirePersona } from '@app/common';
 import { TasksService } from './tasks.service';
 
 @RequirePersona('site-manager', 'bayanihub')
-@Controller('api/v1/bayanihub/site-manager/tasks')
+@Controller('tasks')
 export class TasksController {
   constructor(private readonly service: TasksService) {}
 

@@ -3,7 +3,7 @@ import { RequirePersona } from '@app/common';
 import { NotificationsService } from './notifications.service';
 
 @RequirePersona('admin', 'bayanihub')
-@Controller('api/v1/bayanihub/admin/notifications')
+@Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
   @Get() findAll() { return this.notificationsService.findAll(); }

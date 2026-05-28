@@ -3,7 +3,7 @@ import { RequirePersona } from '@app/common';
 import { DocumentsService } from './documents.service';
 
 @RequirePersona('admin', 'bayanihub')
-@Controller('api/v1/bayanihub/admin/documents')
+@Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 

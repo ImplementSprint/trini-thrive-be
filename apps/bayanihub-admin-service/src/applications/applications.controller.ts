@@ -6,7 +6,7 @@ import { ApplicationsService } from './applications.service';
 import { FilterApplicationsDto, ReviewApplicationDto } from './dto/applications.dto';
 
 @RequirePersona('admin', 'bayanihub')
-@Controller('api/v1/bayanihub/admin/applications')
+@Controller('applications')
 export class ApplicationsController {
   constructor(private readonly applicationsService: ApplicationsService) {}
 

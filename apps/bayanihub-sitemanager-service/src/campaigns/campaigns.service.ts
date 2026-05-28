@@ -53,7 +53,7 @@ export class CampaignsService {
     const rolesMap: Record<string, any[]> = {};
     for (const r of rolesRes.data ?? []) {
       if (!rolesMap[r.campaign_id]) rolesMap[r.campaign_id] = [];
-      rolesMap[r.campaign_id].push(r);
+      rolesMap[r.campaign_id]?.push(r);
     }
 
     return items.map((c) => ({ ...c, organizations: orgMap.get(c.org_id) ?? null, volunteer_roles: rolesMap[c.id] ?? [] }));

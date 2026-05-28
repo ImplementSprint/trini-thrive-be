@@ -3,7 +3,7 @@ import { RequirePersona } from '@app/common';
 import { CampaignsService } from './campaigns.service';
 
 @RequirePersona('site-manager', 'bayanihub')
-@Controller('api/v1/bayanihub/site-manager/campaigns')
+@Controller('campaigns')
 export class CampaignsController {
   constructor(private readonly service: CampaignsService) {}
 

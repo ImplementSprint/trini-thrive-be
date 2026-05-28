@@ -3,7 +3,7 @@ import { RequirePersona } from '@app/common';
 import { MissionsService, ActivateMissionDto } from './missions.service';
 
 @RequirePersona('site-manager', 'bayanihub')
-@Controller('api/v1/bayanihub/site-manager/missions')
+@Controller('missions')
 export class MissionsController {
   constructor(private readonly service: MissionsService) {}
 

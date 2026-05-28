@@ -3,7 +3,7 @@ import { RequirePersona } from '@app/common';
 import { QrScanService } from './qr-scan.service';
 
 @RequirePersona('site-manager', 'bayanihub')
-@Controller('api/v1/bayanihub/site-manager/qr-scan')
+@Controller('qr-scan')
 export class QrScanController {
   constructor(private readonly qrScanService: QrScanService) {}
 

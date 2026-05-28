@@ -4,7 +4,7 @@ import { VolunteersService } from './volunteers.service';
 import { FilterVolunteerRolesDto } from './dto/volunteers.dto';
 
 @RequirePersona('admin', 'bayanihub')
-@Controller('api/v1/bayanihub/admin/volunteers')
+@Controller('volunteers')
 export class VolunteersController {
   constructor(private readonly volunteersService: VolunteersService) {}
   @Get('roles') findRoles(@Query() filters: FilterVolunteerRolesDto) { return this.volunteersService.findRoles(filters); }

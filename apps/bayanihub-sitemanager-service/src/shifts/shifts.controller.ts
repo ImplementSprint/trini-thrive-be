@@ -3,7 +3,7 @@ import { RequirePersona } from '@app/common';
 import { ShiftsService } from './shifts.service';
 
 @RequirePersona('site-manager', 'bayanihub')
-@Controller('api/v1/bayanihub/site-manager/shifts')
+@Controller('shifts')
 export class ShiftsController {
   constructor(private readonly shiftsService: ShiftsService) {}
 
@@ -18,7 +18,10 @@ export class ShiftsController {
     @Query('volunteer_name') volunteerName?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.shiftsService.getShiftHistory({ status, volunteerName, limit: limit ? parseInt(limit, 10) : 100 });
+    const payload: { status?: string; volunteerName?: string; limit?: number } = { limit: limit ? parseInt(limit, 10) : 100 };
+    if (status !== undefined) payload.status = status;
+    if (volunteerName !== undefined) payload.volunteerName = volunteerName;
+    return this.shiftsService.getShiftHistory(payload);
   }
 
   @Post(':id/approve')
