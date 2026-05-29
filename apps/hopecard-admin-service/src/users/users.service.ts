@@ -32,6 +32,8 @@ export class UsersService {
 
   /**
    * Fetch all approved/active users with optional role filtering
+   * IMPORTANT: Pagination must be applied AFTER combining results from all tables
+   * to avoid broken pagination across multiple tables
    */
   async getAllUsers(
     page: number = 1,
@@ -50,14 +52,14 @@ export class UsersService {
       const allUsers: any[] = [];
       let totalCount = 0;
 
-      // Query each table with database-level pagination
+      // Query each table WITHOUT pagination (get all matching records)
       for (const table of tablesToQuery) {
         const { data, error, count } = await supabase
           .from(table)
           .select('*', { count: 'exact' })
           .in('status', ['approved', 'active'])
-          .order('created_at', { ascending: false })
-          .range(offset, offset + limit - 1);
+          .order('created_at', { ascending: false });
+        // NOTE: Removed .range() - we want all records from each table to combine properly
 
         if (error) {
           console.error(`Error fetching from ${table}:`, error);
@@ -75,14 +77,17 @@ export class UsersService {
         }
       }
 
-      // Sort users by created_at (since results come from multiple tables)
+      // Sort all users by created_at (combining results from multiple tables)
       const sortedUsers = allUsers.sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
 
-      // Map to response format (no slicing needed - pagination done at DB level)
-      const formattedUsers: UserProfile[] = sortedUsers.map((user) => ({
+      // Apply pagination AFTER combining and sorting
+      const paginatedUsers = sortedUsers.slice(offset, offset + limit);
+
+      // Map to response format
+      const formattedUsers: UserProfile[] = paginatedUsers.map((user) => ({
         id: user.id,
         auth_user_id: user.auth_user_id,
         first_name: user.first_name,
@@ -129,7 +134,10 @@ export class UsersService {
         .single();
 
       if (fetchError || !user) {
-        return { success: false, message: 'User not found' };
+        return {
+          success: false,
+          message: `User not found: ID ${userId} in ${table}`
+        };
       }
 
       // Skip if status is not changing
@@ -197,11 +205,11 @@ export class UsersService {
   private getRoleFromTable(
     table: string,
   ): 'Donor' | 'Beneficiary' | 'Campaign Manager' {
-    const roleMap = {
+    const roleMap: Record<string, 'Donor' | 'Beneficiary' | 'Campaign Manager'> = {
       'digital_donor_profiles': 'Donor',
       'beneficiary_profiles': 'Beneficiary',
       'campaign_manager_profiles': 'Campaign Manager',
     };
-    return roleMap[table] as any;
+    return roleMap[table] || 'Donor';  // Default to 'Donor' if not found
   }
 }

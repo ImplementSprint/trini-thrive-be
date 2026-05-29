@@ -55,7 +55,8 @@ export class UsersController {
     }
 
     // Extract admin ID from request (from @RequirePersona decorator context)
-    const adminId = req.user?.id || req.user?.sub || 'unknown';
+    // JWT payload contains 'sub', not 'id'
+    const adminId = req.user?.sub || 'unknown';
 
     const result = await this.usersService.updateUserStatus(
       userId,
