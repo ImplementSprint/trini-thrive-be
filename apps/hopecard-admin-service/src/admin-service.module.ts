@@ -16,6 +16,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { AuthModule } from './auth/auth.module';
 import { BeneficiariesModule } from './beneficiary-management/beneficiaries.module';
+import { UsersModule } from './users/users.module';
 
 const shouldValidateEnv = process.env.NODE_ENV === 'production';
 
@@ -35,6 +36,7 @@ const shouldValidateEnv = process.env.NODE_ENV === 'production';
     BeneficiariesModule,
     AnalyticsModule,
     ApprovalsModule,
+    UsersModule,
   ],
 })
 export class HopecardAdminServiceModule implements NestModule {
