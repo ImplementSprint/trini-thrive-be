@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
@@ -37,6 +38,25 @@ export class AuthController {
   @HttpCode(200)
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.reset_token, dto.new_password);
+  }
+
+  @Post('id-document')
+  @HttpCode(200)
+  @UseInterceptors(FileInterceptor('file', { storage: require('multer').memoryStorage() }))
+  uploadIdDocument(@UploadedFile() file: Express.Multer.File) {
+    return this.authService.uploadIdDocument(file);
+  }
+
+  @Post('verify-email')
+  @HttpCode(200)
+  verifyEmail(@Body('email') email: string, @Body('otp') otp: string) {
+    return this.authService.verifyEmail(email, otp);
+  }
+
+  @Post('resend-otp')
+  @HttpCode(200)
+  resendOtp(@Body('email') email: string) {
+    return this.authService.resendSignupOtp(email);
   }
 
   @Get('google/url')

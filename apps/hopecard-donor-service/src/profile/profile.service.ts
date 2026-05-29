@@ -6,6 +6,7 @@ import { getRecordId, getRecordTitle } from '@app/common/supabase-helpers';
 import { ProcedureEventService } from '@app/api-center';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PAID_STATUSES = new Set(['paid', 'succeeded', 'completed', 'active']);
 
 interface DbImpactProfile {
   total_donations_amount: number;
@@ -88,7 +89,13 @@ export class ProfileService {
     ]);
 
     const profile = profiles[0] ?? { total_donations_amount: 0, total_donations_count: 0, first_name: 'Donor' };
-    const totalAmount = Number(profile.total_donations_amount);
+
+    // Always compute the live accumulative total from actual purchases (paid only)
+    // so the TRAIN Law credit section is always accurate, even for existing accounts
+    // whose stored totals were never updated.
+    const paidPurchases = purchases.filter((p) => PAID_STATUSES.has(String(p.status).toLowerCase()));
+    const totalAmount = paidPurchases.reduce((sum, p) => sum + Number(p.amount_paid), 0);
+    const totalCount = paidPurchases.length;
 
     const allCampaignRecords = [...hcCampaigns, ...hopecards];
     const titleById = new Map<string, string>();
@@ -98,7 +105,7 @@ export class ProfileService {
       if (id && title) titleById.set(id, title);
     });
 
-    const distinctCampaigns = new Set(purchases.map((p) => p.hopecard_id)).size;
+    const distinctCampaigns = new Set(paidPurchases.map((p) => p.hopecard_id)).size;
 
     const donationHistory = purchases.map((p) => ({
       id: p.id,
@@ -113,7 +120,7 @@ export class ProfileService {
       first_name: profile.first_name,
       stats: {
         total_donations_amount: totalAmount,
-        total_donations_count: Number(profile.total_donations_count),
+        total_donations_count: totalCount,
         hopecards_donated: distinctCampaigns,
       },
       donation_history: donationHistory,

@@ -7,8 +7,8 @@ export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 
   @Get('public')
-  getPublicCampaigns(@Query('category') category?: string, @Query('search') search?: string) {
-    return this.campaignsService.getCampaigns(category, search);
+  getPublicCampaigns(@Query('category') category?: string, @Query('search') search?: string, @Query('limit') limit?: string) {
+    return this.campaignsService.getCampaigns(category, search, limit ? Number(limit) : undefined);
   }
 
   @Get('public/:id')
@@ -18,8 +18,8 @@ export class CampaignsController {
 
   @RequirePersona('donor', 'hopecard')
   @Get()
-  getCampaigns(@Query('category') category?: string, @Query('search') search?: string) {
-    return this.campaignsService.getCampaigns(category, search);
+  getCampaigns(@Query('category') category?: string, @Query('search') search?: string, @Query('limit') limit?: string) {
+    return this.campaignsService.getCampaigns(category, search, limit ? Number(limit) : undefined);
   }
 
   @RequirePersona('donor', 'hopecard')

@@ -48,7 +48,7 @@ export class AuthService {
 
   // ── Email / password auth ────────────────────────────────────────────────
 
-  async signup(dto: SignupDto): Promise<{ success: boolean; message: string }> {
+  async signup(dto: SignupDto): Promise<{ success: boolean; message: string; token: string }> {
     const admin = this.admin;
 
     const { data: created, error } = await admin.auth.admin.createUser({
@@ -69,7 +69,10 @@ export class AuthService {
       last_name: dto.last_name,
       phone: dto.phone ?? null,
       address: dto.address ?? null,
-      id_verification_key: dto.id_verification_key ?? null,
+      barangay: dto.barangay ?? null,
+      municipality: dto.municipality ?? null,
+      province: dto.province ?? null,
+      id_verification_key: dto.id_verification_key ?? dto.id_document_key ?? null,
       status: 'pending',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -86,8 +89,100 @@ export class AuthService {
       { partitionKey: created.user.id, sourceServiceId: 'hopecard-donor-service' },
     );
 
-    return { success: true, message: 'Account created successfully. Awaiting admin approval.' };
+    // Send signup verification OTP
+    await this.sendSignupOtp(dto.email, dto.first_name);
+
+    // Issue a registration token so the mobile app can navigate to verify screen.
+    const secret = process.env['JWT_SECRET'];
+    if (!secret) throw new InternalServerErrorException('JWT_SECRET not configured');
+
+    const token = await new SignJWT({
+      sub: created.user.id,
+      email: dto.email,
+      persona: 'donor',
+      system: 'hopecard',
+      status: 'pending',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('7d')
+      .sign(new TextEncoder().encode(secret));
+
+    return { success: true, message: 'Account created. Please check your email for your verification code.', token };
   }
+
+  private async sendSignupOtp(email: string, firstName: string): Promise<void> {
+    const admin = this.admin;
+    const now = Date.now();
+
+    // Clear any existing unused OTPs for this email
+    await admin.from('otp_sessions').delete().eq('email', email).eq('used', false);
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await admin.from('otp_sessions').insert({
+      email,
+      otp,
+      expires_at_ms: now + 10 * 60 * 1000,
+      created_at_ms: now,
+      used: false,
+    });
+
+    await this.mailer.sendMail({
+      from: process.env.SMTP_FROM,
+      to: email,
+      subject: 'Your HOPECARD Verification Code',
+      html: `
+        <div style="font-family: 'Plus Jakarta Sans', sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #fff8f7; border-radius: 16px;">
+          <h2 style="color: #97453e; margin: 0 0 8px;">Welcome to HOPECARD 🌿</h2>
+          <p style="color: #554240; margin: 0 0 8px;">Hi ${firstName},</p>
+          <p style="color: #554240; margin: 0 0 24px;">Use the code below to verify your email address. It expires in 10 minutes.</p>
+          <div style="background: #fff; border: 1px solid #dac1be4d; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
+            <span style="font-size: 2.5rem; font-weight: 800; letter-spacing: 0.3em; color: #241918;">${otp}</span>
+          </div>
+          <p style="color: #554240; font-size: 0.875rem; margin: 0;">If you did not create a HOPECARD account, you can safely ignore this email.</p>
+        </div>
+      `,
+    });
+  }
+
+  async verifyEmail(email: string, otp: string): Promise<{ success: boolean; message: string }> {
+    const admin = this.admin;
+    const now = Date.now();
+
+    const { data: session, error } = await admin
+      .from('otp_sessions')
+      .select('id, expires_at_ms')
+      .eq('email', email)
+      .eq('otp', otp)
+      .eq('used', false)
+      .maybeSingle();
+
+    if (error) throw new InternalServerErrorException('Database error');
+    if (!session) throw new BadRequestException('Invalid or already-used verification code');
+    if (now > (session as any).expires_at_ms) throw new BadRequestException('Verification code has expired. Please request a new one.');
+
+    await admin.from('otp_sessions').update({ used: true }).eq('id', (session as any).id);
+
+    return { success: true, message: 'Email verified successfully.' };
+  }
+
+  async resendSignupOtp(email: string): Promise<{ success: boolean; message: string }> {
+    const admin = this.admin;
+
+    const { data: profile } = await admin
+      .from('digital_donor_profiles')
+      .select('first_name')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (!profile) throw new BadRequestException('No account found with that email address');
+
+    await this.sendSignupOtp(email, (profile as any).first_name ?? 'there');
+
+    return { success: true, message: 'A new verification code has been sent to your email.' };
+  }
+
+
 
   async login(email: string, password: string): Promise<{ success: boolean; token: string; session: unknown; status: string }> {
     const admin = this.admin;
@@ -242,6 +337,27 @@ export class AuthService {
     if (updateError) throw new InternalServerErrorException('Failed to update password');
 
     return { success: true };
+  }
+
+  // ── ID Document Upload ───────────────────────────────────────────────────
+
+  async uploadIdDocument(file: Express.Multer.File): Promise<{ key: string; message: string }> {
+    if (!file) throw new BadRequestException('No file provided');
+
+    const admin = this.admin;
+    const ext = file.originalname.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { data, error } = await admin.storage
+      .from('donor-ids')
+      .upload(filename, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      });
+
+    if (error) throw new BadRequestException(`Storage upload failed: ${error.message}`);
+
+    return { key: data.path, message: 'ID document uploaded successfully' };
   }
 
   // ── Google OAuth ─────────────────────────────────────────────────────────

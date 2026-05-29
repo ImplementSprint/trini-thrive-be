@@ -63,7 +63,8 @@ export class PurchasesService {
     // Append ref and buyerAuthId to the frontend-supplied base URL.
     // These params are embedded so the success page can confirm the purchase even when
     // the SameSite=Strict cookie is stripped on the cross-site redirect from PayMongo.
-    const successUrl = `${_successUrl}?ref=${encodeURIComponent(referenceId)}&buyerAuthId=${encodeURIComponent(authUserId)}`;
+    const separator = _successUrl.includes('?') ? '&' : '?';
+    const successUrl = `${_successUrl}${separator}ref=${encodeURIComponent(referenceId)}&buyerAuthId=${encodeURIComponent(authUserId)}`;
 
     let checkout: unknown;
     try {
@@ -194,6 +195,28 @@ export class PurchasesService {
       throw new HttpException(`DB error clearing cart: ${err instanceof Error ? err.message : String(err)}`, 500);
     }
 
+    // Update the donor's cumulative donation totals on their profile
+    // by summing all paid purchases — this drives the TRAIN Law credit section in the wallet.
+    try {
+      const allPurchases = await supabaseRequest<{ amount_paid: number }[]>(
+        `hopecard_purchases?buyer_auth_id=eq.${authUserId}&status=eq.paid&select=amount_paid`,
+      );
+      const cumulativeTotal = allPurchases.reduce((sum, p) => sum + Number(p.amount_paid), 0);
+      const cumulativeCount = allPurchases.length;
+
+      await supabaseRequest(`digital_donor_profiles?auth_user_id=eq.${authUserId}`, {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          total_donations_amount: cumulativeTotal,
+          total_donations_count: cumulativeCount,
+          updated_at: new Date().toISOString(),
+        }),
+      });
+    } catch {
+      // Non-fatal — totals will be recalculated on next profile fetch
+    }
+
     const totalPurchased = rawItems.reduce((sum, i) => sum + i.quantity, 0);
     this.events.emit(
       'hopecard.donation.completed',
@@ -201,7 +224,17 @@ export class PurchasesService {
       { partitionKey: authUserId, sourceServiceId: 'hopecard-donor-service' },
     );
 
-    return { success: true, purchasedCount: totalPurchased };
+    const subtotal = rawItems.reduce((sum, i) => sum + Number(i.face_value) * i.quantity, 0);
+    const processingFee = Math.round(subtotal * 0.015);
+    const totalAmount = subtotal + processingFee;
+
+    return { 
+      success: true, 
+      purchasedCount: totalPurchased, 
+      totalAmount, 
+      subtotal, 
+      processingFee 
+    };
   }
 
   async getPurchases(authUserId: string) {

@@ -131,4 +131,18 @@ export class CartService {
     );
     return this.formatCart(cartId, await this.fetchItemsWithCampaigns(cartId));
   }
+
+  async clearCart(authUserId: string) {
+    if (!isUuid(authUserId)) throw new HttpException('Invalid authUserId', 400);
+    const existing = await supabaseRequest<DbCart[]>(`carts?auth_user_id=eq.${authUserId}&status=eq.active&limit=1`);
+    const cart = existing[0];
+    if (cart) {
+      await supabaseRequest(`cart_items?cart_id=eq.${cart.id}`, {
+        method: 'DELETE',
+        headers: { Prefer: 'return=minimal' },
+      });
+    }
+    const cartId = cart?.id ?? (await this.upsertActiveCart(authUserId));
+    return this.formatCart(cartId, []);
+  }
 }
