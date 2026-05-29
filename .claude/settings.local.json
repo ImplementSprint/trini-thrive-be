@@ -86,7 +86,15 @@
       "Bash(echo \"Exit code: $?\")",
       "Bash(ls apps/hopecard-beneficiary-service/src/bank-accounts/*.spec.ts)",
       "Bash(ls apps/hopecard-beneficiary-service/src/campaigns/*.spec.ts)",
-      "Bash(Get-Date *)"
+      "Bash(Get-Date *)",
+      "Bash(xargs grep -l \"campaign\" -i)",
+      "Bash(curl -s http://localhost:3103/health)",
+      "Bash(xargs grep -l \"Controller\")",
+      "Bash(Select-Object FullName)",
+      "Bash(xargs grep -l \"otp\\\\|OTP\\\\|oauth\\\\|OAuth\")",
+      "Bash(xargs head -20)",
+      "mcp__claude_ai_Supabase__list_tables",
+      "mcp__claude_ai_Supabase__get_logs"
     ]
   }
 }

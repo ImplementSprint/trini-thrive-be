@@ -39,4 +39,18 @@ export class PurchasesController {
   getPurchases(@Query('authUserId') authUserId: string) {
     return this.purchasesService.getPurchases(authUserId);
   }
+
+  @Post('wallet')
+  purchaseFromWallet(
+    @Body()
+    body: {
+      authUserId?: string;
+      buyerAuthId?: string;
+      campaignIds: string[];
+      quantities: number[];
+    },
+  ) {
+    const authUserId = body.authUserId ?? body.buyerAuthId ?? '';
+    return this.purchasesService.purchaseFromWallet(authUserId, body.campaignIds, body.quantities);
+  }
 }

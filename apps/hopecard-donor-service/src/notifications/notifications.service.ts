@@ -3,8 +3,8 @@ import { supabaseRequest } from '@app/common/supabase-helpers';
 
 export interface DbNotification {
   id: string;
-  donor_auth_id: string;
-  type: 'new_campaign' | 'donation_success';
+  donor_auth_id: string | null;
+  type: 'new_campaign' | 'donation_success' | 'topup_success' | 'new_story';
   title: string;
   message: string;
   metadata: Record<string, unknown> | null;
@@ -15,8 +15,9 @@ export interface DbNotification {
 @Injectable()
 export class NotificationsService {
   async getNotifications(donorAuthId: string) {
+    // Fetch personal notifications + broadcast (donor_auth_id IS NULL) in one query
     const rows = await supabaseRequest<DbNotification[]>(
-      `hc_donor_notifications?donor_auth_id=eq.${encodeURIComponent(donorAuthId)}&order=created_at.desc&limit=30`,
+      `hc_donor_notifications?or=(donor_auth_id.eq.${encodeURIComponent(donorAuthId)},donor_auth_id.is.null)&order=created_at.desc&limit=50`,
     );
     return { notifications: rows };
   }
@@ -46,7 +47,7 @@ export class NotificationsService {
   }
 
   async createNotification(
-    donorAuthId: string,
+    donorAuthId: string | null,
     type: DbNotification['type'],
     title: string,
     message: string,

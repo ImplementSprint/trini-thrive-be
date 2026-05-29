@@ -149,7 +149,7 @@ export class AuthService {
       });
     }
 
-    if (status !== 'approved' && status !== 'suspended') {
+    if (status !== 'approved' && status !== 'active' && status !== 'suspended') {
       throw new ForbiddenException({ reason: 'pending_approval', status });
     }
 

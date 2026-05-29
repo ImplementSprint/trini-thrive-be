@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
+import { sendAccountStatusEmail, sendAccountReactivationEmail } from '@app/common/email';
 
 export interface UserProfile {
   id: string;
@@ -57,7 +58,7 @@ export class UsersService {
         const { data, error, count } = await supabase
           .from(table)
           .select('*', { count: 'exact' })
-          .in('status', ['approved', 'active'])
+          .in('status', ['approved', 'active', 'suspended', 'banned'])
           .order('created_at', { ascending: false });
         // NOTE: Removed .range() - we want all records from each table to combine properly
 
@@ -127,10 +128,10 @@ export class UsersService {
         return { success: false, message: 'Invalid role provided' };
       }
 
-      // Fetch the user to get auth_user_id
+      // Fetch the user to get auth_user_id and contact details
       const { data: user, error: fetchError } = await supabase
         .from(table)
-        .select('auth_user_id, status')
+        .select('auth_user_id, status, email, first_name')
         .eq('id', userId)
         .single();
 
@@ -185,6 +186,28 @@ export class UsersService {
         } catch (sessionError) {
           console.warn('Warning: Could not invalidate sessions:', sessionError);
           // Don't fail the overall operation if session invalidation fails
+        }
+      }
+
+      // Notify the user by email on status change
+      if (user.email) {
+        if (newStatus === 'suspended' || newStatus === 'banned') {
+          sendAccountStatusEmail(user.email, {
+            firstName: user.first_name || 'User',
+            status: newStatus,
+            reason,
+            expiresAt,
+          }).catch((emailErr) =>
+            console.warn('[EMAIL] Non-fatal: failed to send account status email:', emailErr),
+          );
+        } else if (newStatus === 'active') {
+          sendAccountReactivationEmail(user.email, {
+            firstName: user.first_name || 'User',
+            previousStatus: user.status,
+            reason,
+          }).catch((emailErr) =>
+            console.warn('[EMAIL] Non-fatal: failed to send reactivation email:', emailErr),
+          );
         }
       }
 

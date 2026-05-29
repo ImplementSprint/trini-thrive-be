@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
@@ -9,6 +10,15 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 @Controller('hopecard/donor/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Post('upload-id')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadId(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('userId') userId: string,
+  ) {
+    return this.authService.uploadId(file, userId);
+  }
 
   @Post('signup')
   signup(@Body() dto: SignupDto) {
