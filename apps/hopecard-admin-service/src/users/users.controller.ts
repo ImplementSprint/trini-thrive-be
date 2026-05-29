@@ -40,6 +40,7 @@ export class UsersController {
       status: 'active' | 'suspended' | 'banned';
       reason: string;
       role: string;
+      expiresAt?: string | null;
     },
     @Request() req: any,
   ) {
@@ -54,6 +55,14 @@ export class UsersController {
       return { success: false, message: 'Invalid status value' };
     }
 
+    // Validate expiresAt is a valid ISO timestamp if provided
+    if (body.expiresAt) {
+      const expiresDate = new Date(body.expiresAt);
+      if (isNaN(expiresDate.getTime())) {
+        return { success: false, message: 'Invalid expiration date format' };
+      }
+    }
+
     // Extract admin ID from request (from @RequirePersona decorator context)
     // JWT payload contains 'sub', not 'id'
     const adminId = req.user?.sub || 'unknown';
@@ -64,6 +73,7 @@ export class UsersController {
       body.reason,
       body.role,
       adminId,
+      body.expiresAt || null,
     );
 
     return result;

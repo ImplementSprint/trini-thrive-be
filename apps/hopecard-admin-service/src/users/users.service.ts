@@ -22,7 +22,7 @@ export interface GetUsersResponse {
 
 @Injectable()
 export class UsersService {
-  private readonly tableMap = {
+  private readonly tableMap: Record<string, string> = {
     'Donor': 'digital_donor_profiles',
     'Beneficiary': 'beneficiary_profiles',
     'Campaign Manager': 'campaign_manager_profiles',
@@ -119,6 +119,7 @@ export class UsersService {
     reason: string,
     role: string,
     adminId: string = 'unknown',
+    expiresAt: string | null = null,
   ): Promise<{ success: boolean; message: string; data?: any }> {
     try {
       const table = this.tableMap[role];
@@ -149,14 +150,25 @@ export class UsersService {
         };
       }
 
+      // Build update object with expiration handling
+      const updateData: any = {
+        status: newStatus,
+        status_reason: reason,
+        status_changed_at: new Date().toISOString(),
+      };
+
+      // Only set status_expires_at if provided (for suspensions/bans)
+      if (expiresAt) {
+        updateData.status_expires_at = expiresAt;
+      } else if (newStatus === 'active') {
+        // Clear expiration when reactivating
+        updateData.status_expires_at = null;
+      }
+
       // Update profile table
       const { data: updated, error: updateError } = await supabase
         .from(table)
-        .update({
-          status: newStatus,
-          status_reason: reason,
-          status_changed_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', userId)
         .select()
         .single();
@@ -169,9 +181,7 @@ export class UsersService {
       if (newStatus === 'suspended' || newStatus === 'banned') {
         try {
           // Sign out the user from all sessions
-          await supabase.auth.admin.signOut(user.auth_user_id, {
-            scope: 'all',
-          });
+          await supabase.auth.admin.signOut(user.auth_user_id, 'global');
         } catch (sessionError) {
           console.warn('Warning: Could not invalidate sessions:', sessionError);
           // Don't fail the overall operation if session invalidation fails
@@ -195,7 +205,7 @@ export class UsersService {
       };
     } catch (error) {
       console.error('Error in updateUserStatus:', error);
-      return { success: false, message: `Error: ${error.message}` };
+      return { success: false, message: `Error: ${error instanceof Error ? error.message : String(error)}` };
     }
   }
 
