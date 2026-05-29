@@ -138,9 +138,8 @@ export class AuthService {
     if (profileError) throw new InternalServerErrorException('Database error');
     if (!profile) throw new UnauthorizedException('No donor account found for this email');
 
-    const status = (profile as any).status as string;
-    const statusReason = (profile as any).status_reason as string | null;
-    const statusExpiresAt = (profile as any).status_expires_at as string | null;
+    const { status, status_reason: statusReason, status_expires_at: statusExpiresAt } =
+      profile as { status: string; status_reason: string | null; status_expires_at: string | null };
 
     if (status === 'banned') {
       throw new ForbiddenException({
