@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, Query, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { RequirePersona } from '@app/common';
 
@@ -41,6 +41,7 @@ export class UsersController {
       reason: string;
       role: string;
     },
+    @Request() req: any,
   ) {
     if (!body.status || !body.reason || !body.role) {
       return {
@@ -53,11 +54,15 @@ export class UsersController {
       return { success: false, message: 'Invalid status value' };
     }
 
+    // Extract admin ID from request (from @RequirePersona decorator context)
+    const adminId = req.user?.id || req.user?.sub || 'unknown';
+
     const result = await this.usersService.updateUserStatus(
       userId,
       body.status,
       body.reason,
       body.role,
+      adminId,
     );
 
     return result;

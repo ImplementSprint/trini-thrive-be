@@ -50,13 +50,14 @@ export class UsersService {
       const allUsers: any[] = [];
       let totalCount = 0;
 
-      // Query each table
+      // Query each table with database-level pagination
       for (const table of tablesToQuery) {
         const { data, error, count } = await supabase
           .from(table)
           .select('*', { count: 'exact' })
           .in('status', ['approved', 'active'])
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
 
         if (error) {
           console.error(`Error fetching from ${table}:`, error);
@@ -74,16 +75,14 @@ export class UsersService {
         }
       }
 
-      // Sort all users by created_at and apply pagination
+      // Sort users by created_at (since results come from multiple tables)
       const sortedUsers = allUsers.sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
 
-      const paginatedUsers = sortedUsers.slice(offset, offset + limit);
-
-      // Map to response format
-      const formattedUsers: UserProfile[] = paginatedUsers.map((user) => ({
+      // Map to response format (no slicing needed - pagination done at DB level)
+      const formattedUsers: UserProfile[] = sortedUsers.map((user) => ({
         id: user.id,
         auth_user_id: user.auth_user_id,
         first_name: user.first_name,
@@ -114,6 +113,7 @@ export class UsersService {
     newStatus: 'active' | 'suspended' | 'banned',
     reason: string,
     role: string,
+    adminId: string = 'unknown',
   ): Promise<{ success: boolean; message: string; data?: any }> {
     try {
       const table = this.tableMap[role];
@@ -170,17 +170,14 @@ export class UsersService {
         }
       }
 
-      // Log the activity
-      await this.activityLogger.log({
-        adminId: null, // Will be set by controller
+      // Log the activity with adminId
+      await this.activityLogger.logActivity({
+        admin_id: adminId,
+        admin_email: 'admin@system', // Email not available from request, using system default
         action: 'status_update',
-        description: `${newStatus === 'active' ? 'Reactivated' : newStatus === 'suspended' ? 'Suspended' : 'Banned'} user account`,
-        resourceType: 'user',
-        resourceId: userId,
-        changes: {
-          status: { from: user.status, to: newStatus },
-          reason,
-        },
+        description: `${newStatus === 'active' ? 'Reactivated' : newStatus === 'suspended' ? 'Suspended' : 'Banned'} user account. Reason: ${reason}`,
+        resource_type: 'user',
+        resource_id: userId,
       });
 
       return {
