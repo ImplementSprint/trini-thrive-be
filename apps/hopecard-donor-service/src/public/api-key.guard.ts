@@ -26,20 +26,27 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('Missing X-Api-Key header');
     }
 
-    const { data, error } = await supabase
-      .from('partner_api_keys')
-      .select('id, daily_limit')
-      .eq('key', apiKey)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (error || !data) {
+    let data: PartnerKey | null;
+    try {
+      const result = await supabase
+        .from('partner_api_keys')
+        .select('id, daily_limit')
+        .eq('key', apiKey)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (result.error || !result.data) {
+        throw new UnauthorizedException('Invalid or inactive API key');
+      }
+      data = result.data as PartnerKey;
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
       throw new UnauthorizedException('Invalid or inactive API key');
     }
 
-    const partner = data as PartnerKey;
+    const partner = data;
     const bucket = `${partner.id}:${todayUtc()}`;
     const count = (requestCounts.get(bucket) ?? 0) + 1;
+    requestCounts.set(bucket, count);
 
     if (count > partner.daily_limit) {
       throw new HttpException(
@@ -48,7 +55,6 @@ export class ApiKeyGuard implements CanActivate {
       );
     }
 
-    requestCounts.set(bucket, count);
     return true;
   }
 }

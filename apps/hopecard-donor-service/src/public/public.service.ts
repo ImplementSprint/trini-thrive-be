@@ -34,7 +34,7 @@ function formatCampaign(row: DbCampaignRow) {
             ),
           )
         : 0,
-    cover_image_url: getStorageUrl('campaigns', row.cover_image_key ?? ''),
+    cover_image_url: getStorageUrl('campaigns', row.cover_image_key),
     end_date: row.end_date ?? null,
   };
 }
