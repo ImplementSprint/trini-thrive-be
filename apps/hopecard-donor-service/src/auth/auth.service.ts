@@ -48,6 +48,35 @@ export class AuthService {
 
   // ── Email / password auth ────────────────────────────────────────────────
 
+  async uploadId(file: Express.Multer.File, userId: string): Promise<{ path: string }> {
+    const admin = this.admin;
+    const MAX_BYTES = 5 * 1024 * 1024;
+    const SAFE_CONTENT_TYPES: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      pdf: 'application/pdf',
+    };
+
+    if (!file) throw new BadRequestException('No file provided');
+    if (file.size > MAX_BYTES) throw new BadRequestException('File must be under 5 MB');
+    const ext = file.originalname.split('.').pop()?.toLowerCase() ?? '';
+    const contentType = SAFE_CONTENT_TYPES[ext];
+    if (!contentType) throw new BadRequestException('File must be a JPG, PNG, or PDF');
+
+    // userId is only used for path organisation — sanitise strictly, never trust for auth decisions
+    const safeUserId = userId.replace(/[^a-z0-9_-]/gi, '_').slice(0, 64);
+    const filename = `${safeUserId}/${Date.now()}-id.${ext}`;
+
+    const { data, error } = await admin.storage
+      .from('donor-ids')
+      .upload(filename, file.buffer, { contentType, upsert: false });
+
+    if (error || !data) throw new BadRequestException(`Upload failed: ${error?.message ?? 'unknown'}`);
+
+    return { path: data.path };
+  }
+
   async signup(dto: SignupDto): Promise<{ success: boolean; message: string }> {
     const admin = this.admin;
 
@@ -69,6 +98,9 @@ export class AuthService {
       last_name: dto.last_name,
       phone: dto.phone ?? null,
       address: dto.address ?? null,
+      barangay: dto.barangay ?? null,
+      municipality: dto.municipality ?? null,
+      province: dto.province ?? null,
       id_verification_key: dto.id_verification_key ?? null,
       status: 'pending',
       created_at: new Date().toISOString(),
@@ -99,7 +131,7 @@ export class AuthService {
 
     const { data: profile, error: profileError } = await admin
       .from('digital_donor_profiles')
-      .select('id, status')
+      .select('id, status, status_reason, status_expires_at')
       .eq('auth_user_id', data.user.id)
       .maybeSingle();
 
@@ -107,7 +139,18 @@ export class AuthService {
     if (!profile) throw new UnauthorizedException('No donor account found for this email');
 
     const status = (profile as any).status as string;
-    if (status !== 'approved') {
+    const statusReason = (profile as any).status_reason as string | null;
+    const statusExpiresAt = (profile as any).status_expires_at as string | null;
+
+    if (status === 'banned') {
+      throw new ForbiddenException({
+        reason: 'banned',
+        status_reason: statusReason,
+        status_expires_at: statusExpiresAt,
+      });
+    }
+
+    if (status !== 'approved' && status !== 'suspended') {
       throw new ForbiddenException({ reason: 'pending_approval', status });
     }
 
