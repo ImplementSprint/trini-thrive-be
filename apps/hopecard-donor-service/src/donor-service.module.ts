@@ -19,6 +19,9 @@ import { CartModule } from './cart/cart.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ProfileModule } from './profile/profile.module';
 import { PurchasesModule } from './purchases/purchases.module';
+import { WalletModule } from './wallet/wallet.module';
+import { StoriesModule } from './stories/stories.module';
+import { PublicModule } from './public/public.module';
 
 const shouldValidateEnv = process.env.NODE_ENV === 'production';
 
@@ -41,6 +44,9 @@ const shouldValidateEnv = process.env.NODE_ENV === 'production';
     NotificationsModule,
     ProfileModule,
     PurchasesModule,
+    WalletModule,
+    StoriesModule,
+    PublicModule,
   ],
 })
 export class HopecardDonorServiceModule implements NestModule {
