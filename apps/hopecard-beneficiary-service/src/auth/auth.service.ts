@@ -120,7 +120,7 @@ export class AuthService {
       email: dto.email,
       password: dto.password,
       options: {
-        redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/beneficiary/login`,
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/beneficiary/login`,
       },
     });
 

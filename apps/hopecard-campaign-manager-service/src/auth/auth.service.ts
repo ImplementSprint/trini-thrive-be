@@ -139,9 +139,8 @@ export class AuthService implements OnModuleInit {
 
     // Generate and send confirmation email (admin.createUser does not trigger Supabase's built-in email)
     try {
-      const redirectTo = this.configService.get<string>('APP_URL')
-        ? `${this.configService.get<string>('APP_URL')}/campaign-manager/auth/callback`
-        : 'http://localhost:3000/campaign-manager/auth/callback';
+      const appUrl = this.configService.get<string>('NEXT_PUBLIC_APP_URL') || 'http://localhost:3001';
+      const redirectTo = `${appUrl}/campaign-manager/auth/callback`;
 
       const { data: linkData, error: linkError } = await this.supabase.auth.admin.generateLink({
         type: 'signup',
