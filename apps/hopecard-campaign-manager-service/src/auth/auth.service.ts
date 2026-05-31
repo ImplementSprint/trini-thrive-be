@@ -29,22 +29,29 @@ export class AuthService implements OnModuleInit {
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
+  private static readonly ALLOWED_DOC_TYPES: Record<string, string> = {
+    pdf: 'application/pdf',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+  };
+
+  private static readonly MAX_DOC_BYTES = 5 * 1024 * 1024; // 5 MB
+
   async register(
-    body: { email: string; firstName: string; lastName: string; organization: string; contactNumber?: string },
+    body: { authUserId: string; email: string; firstName: string; lastName: string; organization: string; contactNumber?: string },
     files: { secRegistration?: Express.Multer.File[]; orgCertificate?: Express.Multer.File[] },
   ): Promise<{ success: boolean; message: string }> {
-    const { email, firstName, lastName, organization, contactNumber } = body;
+    const { authUserId, email, firstName, lastName, organization, contactNumber } = body;
 
-    if (!email || !firstName || !lastName || !organization) {
-      throw new BadRequestException('email, firstName, lastName, and organization are required');
+    if (!authUserId || !email || !firstName || !lastName || !organization) {
+      throw new BadRequestException('authUserId, email, firstName, lastName, and organization are required');
     }
 
-    // Find the auth user created by supabase.auth.signUp() on the frontend
-    const { data: { users }, error: listError } = await this.supabase.auth.admin.listUsers();
-    if (listError) throw new InternalServerErrorException('Failed to look up user');
-
-    const authUser = users.find((u) => u.email === email);
-    if (!authUser) throw new BadRequestException('No auth user found for this email. Please sign up first.');
+    // Verify the caller's identity by looking up the auth user by ID (not by client-supplied email)
+    const { data: { user: authUser }, error: userError } = await this.supabase.auth.admin.getUserById(authUserId);
+    if (userError || !authUser) throw new BadRequestException('Invalid authUserId');
+    if (authUser.email !== email) throw new BadRequestException('Email does not match the authenticated user');
 
     // Idempotent — if profile already exists, return success
     const { data: existing } = await this.supabase
@@ -57,15 +64,23 @@ export class AuthService implements OnModuleInit {
       return { success: true, message: 'Profile already registered. Awaiting admin approval.' };
     }
 
-    // Upload documents to storage if provided
+    // Upload documents to storage if provided, with strict type + size validation
     let documentKey: string | null = null;
     const docFile = files.secRegistration?.[0] ?? files.orgCertificate?.[0];
     if (docFile) {
-      const ext = docFile.originalname.split('.').pop()?.toLowerCase() ?? 'bin';
-      const path = `${authUser.id}/${Date.now()}-org-doc.${ext}`;
+      if (docFile.size > AuthService.MAX_DOC_BYTES) {
+        throw new BadRequestException('Document file must be under 5 MB');
+      }
+      const ext = docFile.originalname.split('.').pop()?.toLowerCase() ?? '';
+      const allowedContentType = AuthService.ALLOWED_DOC_TYPES[ext];
+      if (!allowedContentType) {
+        throw new BadRequestException('Document must be a PDF, JPG, or PNG');
+      }
+
+      const safePath = `${authUser.id}/${Date.now()}-org-doc.${ext}`;
       const { data: uploaded, error: uploadError } = await this.supabase.storage
         .from('campaign-manager-docs')
-        .upload(path, docFile.buffer, { contentType: docFile.mimetype, upsert: false });
+        .upload(safePath, docFile.buffer, { contentType: allowedContentType, upsert: false });
       if (!uploadError && uploaded) {
         documentKey = uploaded.path;
       }

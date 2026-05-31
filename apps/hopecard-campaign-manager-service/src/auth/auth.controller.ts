@@ -11,10 +11,10 @@ export class AuthController {
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'secRegistration', maxCount: 1 },
     { name: 'orgCertificate', maxCount: 1 },
-  ]))
+  ], { limits: { fileSize: 5 * 1024 * 1024 } }))
   register(
     @UploadedFiles() files: { secRegistration?: Express.Multer.File[]; orgCertificate?: Express.Multer.File[] },
-    @Body() body: { email: string; firstName: string; lastName: string; organization: string; contactNumber?: string },
+    @Body() body: { authUserId: string; email: string; firstName: string; lastName: string; organization: string; contactNumber?: string },
   ) {
     return this.authService.register(body, files ?? {});
   }
