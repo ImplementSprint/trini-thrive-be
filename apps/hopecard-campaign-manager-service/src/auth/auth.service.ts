@@ -44,14 +44,17 @@ export class AuthService implements OnModuleInit {
   ): Promise<{ success: boolean; message: string }> {
     const { authUserId, email, firstName, lastName, organization, contactNumber } = body;
 
-    if (!authUserId || !email || !firstName || !lastName || !organization) {
-      throw new BadRequestException('authUserId, email, firstName, lastName, and organization are required');
-    }
-
     // Verify the caller's identity by looking up the auth user by ID (not by client-supplied email)
     const { data: { user: authUser }, error: userError } = await this.supabase.auth.admin.getUserById(authUserId);
-    if (userError || !authUser) throw new BadRequestException('Invalid authUserId');
-    if (authUser.email !== email) throw new BadRequestException('Email does not match the authenticated user');
+    if (userError || !authUser) {
+      console.error('[CM Register] getUserById failed:', userError?.message ?? 'user not found', { authUserId });
+      throw new BadRequestException('Invalid authUserId');
+    }
+    if (authUser.email?.toLowerCase() !== email.toLowerCase()) {
+      console.error('[CM Register] Email mismatch:', { authUserEmail: authUser.email, bodyEmail: email });
+      throw new BadRequestException('Email does not match the authenticated user');
+    }
+    console.log('[CM Register] Identity verified for:', authUser.id, email);
 
     // Idempotent — if profile already exists, return success
     const { data: existing } = await this.supabase

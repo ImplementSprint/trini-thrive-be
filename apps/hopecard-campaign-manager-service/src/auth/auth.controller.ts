@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, Param, Post, Query, UploadedFiles, Use
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { RequirePersona } from '@app/common';
 import { AuthService } from './auth.service';
+import { RegisterDto } from './dto/register.dto';
 
 @Controller('hopecard/cm/auth')
 export class AuthController {
@@ -14,7 +15,7 @@ export class AuthController {
   ], { limits: { fileSize: 5 * 1024 * 1024 } }))
   register(
     @UploadedFiles() files: { secRegistration?: Express.Multer.File[]; orgCertificate?: Express.Multer.File[] },
-    @Body() body: { authUserId: string; email: string; firstName: string; lastName: string; organization: string; contactNumber?: string },
+    @Body() body: RegisterDto,
   ) {
     return this.authService.register(body, files ?? {});
   }
