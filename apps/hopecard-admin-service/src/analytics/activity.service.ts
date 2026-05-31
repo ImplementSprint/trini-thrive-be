@@ -207,14 +207,7 @@ export class ActivityService {
 
   async getUnifiedActivity(limit: number = 50): Promise<UnifiedActivity[]> {
     try {
-      const [
-        logsResult,
-        donationsResult,
-        campaignsResult,
-        donorProfilesResult,
-        managerProfilesResult,
-        beneficiaryProfilesResult,
-      ] = await Promise.all([
+      const [logsResult, donationsResult, campaignsResult] = await Promise.all([
         supabase
           .from('activity_logs')
           .select('id, action, description, resource_type, created_at')
@@ -230,25 +223,17 @@ export class ActivityService {
           .select('id, title, created_at')
           .order('created_at', { ascending: false })
           .limit(limit),
-        supabase
-          .from('digital_donor_profiles')
-          .select('id, first_name, last_name, updated_at')
-          .eq('status', 'approved')
-          .order('updated_at', { ascending: false })
-          .limit(limit),
-        supabase
-          .from('campaign_manager_profiles')
-          .select('id, first_name, last_name, updated_at')
-          .eq('status', 'approved')
-          .order('updated_at', { ascending: false })
-          .limit(limit),
-        supabase
-          .from('beneficiary_profiles')
-          .select('id, first_name, last_name, updated_at')
-          .eq('status', 'approved')
-          .order('updated_at', { ascending: false })
-          .limit(limit),
       ]);
+
+      if (logsResult.error) {
+        console.warn('⚠️ getUnifiedActivity: activity_logs query failed:', logsResult.error.message);
+      }
+      if (donationsResult.error) {
+        console.warn('⚠️ getUnifiedActivity: hopecard_purchases query failed:', donationsResult.error.message);
+      }
+      if (campaignsResult.error) {
+        console.warn('⚠️ getUnifiedActivity: hc_campaigns query failed:', campaignsResult.error.message);
+      }
 
       const unified: UnifiedActivity[] = [];
 
@@ -269,7 +254,7 @@ export class ActivityService {
         }
 
         unified.push({
-          id: log.id,
+          id: `log:${log.id}`,
           type,
           description: log.description ?? '',
           resource_type: log.resource_type ?? 'admin_action',
@@ -279,9 +264,9 @@ export class ActivityService {
 
       // Map donations
       for (const donation of donationsResult.data ?? []) {
-        const amount = parseFloat(String(donation.amount_paid)) || 0;
+        const amount = Number(donation.amount_paid) || 0;
         unified.push({
-          id: donation.id,
+          id: `donation:${donation.id}`,
           type: 'donation',
           description: `Donation of ₱${amount.toFixed(2)} received`,
           resource_type: 'donation',
@@ -292,7 +277,7 @@ export class ActivityService {
       // Map campaigns
       for (const campaign of campaignsResult.data ?? []) {
         unified.push({
-          id: campaign.id,
+          id: `campaign:${campaign.id}`,
           type: 'campaign',
           description: `Campaign '${campaign.title}' created`,
           resource_type: 'campaign',
@@ -300,46 +285,12 @@ export class ActivityService {
         });
       }
 
-      // Map approved digital donors
-      for (const profile of donorProfilesResult.data ?? []) {
-        const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Unknown';
-        unified.push({
-          id: profile.id,
-          type: 'approval',
-          description: `Digital donor account approved: ${name}`,
-          resource_type: 'digital_donor',
-          created_at: profile.updated_at,
-        });
-      }
-
-      // Map approved campaign managers
-      for (const profile of managerProfilesResult.data ?? []) {
-        const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Unknown';
-        unified.push({
-          id: profile.id,
-          type: 'approval',
-          description: `Campaign manager account approved: ${name}`,
-          resource_type: 'campaign_manager',
-          created_at: profile.updated_at,
-        });
-      }
-
-      // Map approved beneficiaries
-      for (const profile of beneficiaryProfilesResult.data ?? []) {
-        const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Unknown';
-        unified.push({
-          id: profile.id,
-          type: 'approval',
-          description: `Beneficiary account approved: ${name}`,
-          resource_type: 'beneficiary',
-          created_at: profile.updated_at,
-        });
-      }
-
       // Sort all by created_at descending, return top `limit`
-      unified.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
+      unified.sort((a, b) => {
+        const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tb - ta;
+      });
 
       return unified.slice(0, limit);
     } catch (error) {
