@@ -39,77 +39,107 @@ export class AuthService implements OnModuleInit {
   private static readonly MAX_DOC_BYTES = 5 * 1024 * 1024; // 5 MB
 
   async register(
-    body: { authUserId: string; email: string; firstName: string; lastName: string; organization: string; contactNumber?: string },
+    body: { email: string; password: string; firstName: string; lastName: string; organization: string; contactNumber?: string },
     files: { secRegistration?: Express.Multer.File[]; orgCertificate?: Express.Multer.File[] },
   ): Promise<{ success: boolean; message: string }> {
-    const { authUserId, email, firstName, lastName, organization, contactNumber } = body;
+    const { email, password, firstName, lastName, organization, contactNumber } = body;
 
-    // Verify the caller's identity by looking up the auth user by ID (not by client-supplied email)
-    const { data: { user: authUser }, error: userError } = await this.supabase.auth.admin.getUserById(authUserId);
-    if (userError || !authUser) {
-      console.error('[CM Register] getUserById failed:', userError?.message ?? 'user not found', { authUserId });
-      throw new BadRequestException('Invalid authUserId');
-    }
-    if (authUser.email?.toLowerCase() !== email.toLowerCase()) {
-      console.error('[CM Register] Email mismatch:', { authUserEmail: authUser.email, bodyEmail: email });
-      throw new BadRequestException('Email does not match the authenticated user');
-    }
-    console.log('[CM Register] Identity verified for:', authUser.id, email);
+    // Create auth user server-side — never trust a client-supplied user ID
+    const { data: created, error: createError } = await this.supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: false,
+      user_metadata: {
+        first_name: firstName,
+        last_name: lastName,
+        organization,
+        role: 'campaign-manager',
+      },
+    });
 
-    // Idempotent — if profile already exists, return success
-    const { data: existing } = await this.supabase
-      .from('campaign_manager_profiles')
-      .select('id')
-      .eq('auth_user_id', authUser.id)
-      .maybeSingle();
-
-    if (existing) {
-      return { success: true, message: 'Profile already registered. Awaiting admin approval.' };
+    if (createError || !created.user) {
+      console.error('[CM Register] createUser failed:', createError?.message);
+      throw new BadRequestException(createError?.message ?? 'Failed to create account');
     }
 
-    // Upload documents to storage if provided, with strict type + size validation
-    let documentKey: string | null = null;
-    const docFile = files.secRegistration?.[0] ?? files.orgCertificate?.[0];
-    if (docFile) {
+    const authUserId = created.user.id;
+
+    // Upload documents with strict type + size validation
+    let secDocKey: string | null = null;
+    let orgDocKey: string | null = null;
+
+    if (files.secRegistration?.[0]) {
+      const docFile = files.secRegistration[0];
       if (docFile.size > AuthService.MAX_DOC_BYTES) {
-        throw new BadRequestException('Document file must be under 5 MB');
+        await this.supabase.auth.admin.deleteUser(authUserId);
+        throw new BadRequestException('SEC Registration document must be under 5 MB');
       }
       const ext = docFile.originalname.split('.').pop()?.toLowerCase() ?? '';
       const allowedContentType = AuthService.ALLOWED_DOC_TYPES[ext];
       if (!allowedContentType) {
-        throw new BadRequestException('Document must be a PDF, JPG, or PNG');
+        await this.supabase.auth.admin.deleteUser(authUserId);
+        throw new BadRequestException('SEC Registration document must be a PDF, JPG, or PNG');
       }
 
-      const safePath = `${authUser.id}/${Date.now()}-org-doc.${ext}`;
+      const safePath = `${authUserId}/${Date.now()}-sec-registration.${ext}`;
       const { data: uploaded, error: uploadError } = await this.supabase.storage
         .from('campaign-manager-docs')
         .upload(safePath, docFile.buffer, { contentType: allowedContentType, upsert: false });
       if (!uploadError && uploaded) {
-        documentKey = uploaded.path;
+        secDocKey = uploaded.path;
+      }
+    }
+
+    if (files.orgCertificate?.[0]) {
+      const docFile = files.orgCertificate[0];
+      if (docFile.size > AuthService.MAX_DOC_BYTES) {
+        await this.supabase.auth.admin.deleteUser(authUserId);
+        throw new BadRequestException('Organizational Certificate must be under 5 MB');
+      }
+      const ext = docFile.originalname.split('.').pop()?.toLowerCase() ?? '';
+      const allowedContentType = AuthService.ALLOWED_DOC_TYPES[ext];
+      if (!allowedContentType) {
+        await this.supabase.auth.admin.deleteUser(authUserId);
+        throw new BadRequestException('Organizational Certificate must be a PDF, JPG, or PNG');
+      }
+
+      const safePath = `${authUserId}/${Date.now()}-org-certificate.${ext}`;
+      const { data: uploaded, error: uploadError } = await this.supabase.storage
+        .from('campaign-manager-docs')
+        .upload(safePath, docFile.buffer, { contentType: allowedContentType, upsert: false });
+      if (!uploadError && uploaded) {
+        orgDocKey = uploaded.path;
       }
     }
 
     const { error: insertError } = await this.supabase
       .from('campaign_manager_profiles')
       .insert({
-        auth_user_id: authUser.id,
+        auth_user_id: authUserId,
         email,
         first_name: firstName,
         last_name: lastName,
         organization_name: organization,
         phone: contactNumber ?? null,
-        organization_document_key: documentKey,
+        sec_registration: secDocKey,
+        organizational_certificate: orgDocKey,
         status: 'pending',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
 
-    if (insertError) throw new InternalServerErrorException(`Failed to create campaign manager profile: ${insertError.message}`);
+    if (insertError) {
+      await this.supabase.auth.admin.deleteUser(authUserId);
+      console.error('[CM Register] Profile insert failed:', insertError.message);
+      throw new InternalServerErrorException('Failed to create campaign manager profile');
+    }
+
+    console.log('[CM Register] Registered:', authUserId, email);
 
     this.events.emit(
       'hopecard.campaign_manager.registered',
-      { authUserId: authUser.id, email },
-      { partitionKey: authUser.id, sourceServiceId: 'hopecard-campaign-manager-service' },
+      { authUserId, email },
+      { partitionKey: authUserId, sourceServiceId: 'hopecard-campaign-manager-service' },
     );
 
     return { success: true, message: 'Registration submitted. Awaiting admin approval.' };

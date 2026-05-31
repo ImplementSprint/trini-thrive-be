@@ -1,11 +1,12 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
-  @IsUUID()
-  authUserId!: string;
-
   @IsEmail()
   email!: string;
+
+  @IsString()
+  @MinLength(6)
+  password!: string;
 
   @IsString()
   @IsNotEmpty()
