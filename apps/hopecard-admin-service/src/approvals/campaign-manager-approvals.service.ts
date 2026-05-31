@@ -32,15 +32,27 @@ export class CampaignManagerApprovalsService {
     try {
       const offset = (page - 1) * limit;
 
-      // Get total count
+      // Only show managers who have confirmed their email
+      const { data: { users: authUsers } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+      const confirmedIds = (authUsers || [])
+        .filter(u => u.email_confirmed_at)
+        .map(u => u.id);
+
+      if (confirmedIds.length === 0) {
+        return { data: [], total: 0, page, limit };
+      }
+
+      // Get total count of confirmed managers
       const { count } = await supabase
         .from('campaign_manager_profiles')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact', head: true })
+        .in('auth_user_id', confirmedIds);
 
-      // Get paginated campaign managers
+      // Get paginated confirmed campaign managers
       const { data, error } = await supabase
         .from('campaign_manager_profiles')
         .select('*')
+        .in('auth_user_id', confirmedIds)
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
