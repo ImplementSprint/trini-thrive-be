@@ -226,11 +226,14 @@ export class DigitalDonorApprovalsService {
         if (!email) {
           console.warn('No email found for digital donor after rejection, skipping email notification');
         } else {
-          await sendRejectionEmail(email, {
+          const emailPayload: { name: string; role: string; reason?: string } = {
             name: existingDonor?.name ?? 'Donor',
             role: 'digital donor',
-            ...(reason && { reason }),
-          });
+          };
+          if (reason) {
+            emailPayload.reason = reason;
+          }
+          await sendRejectionEmail(email, emailPayload);
         }
       } catch (emailError) {
         console.warn('Failed to send rejection email to digital donor:', emailError);
