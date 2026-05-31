@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
 import { ProcedureEventService } from '@app/api-center';
+import { sendApprovalEmail, sendRejectionEmail } from '@app/common/email';
 
 export interface BeneficiaryApproval {
   id: string;
@@ -136,6 +137,15 @@ export class BeneficiaryApprovalsService {
         { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
       );
 
+      try {
+        await sendApprovalEmail(data?.[0]?.email, {
+          name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
+          role: 'beneficiary',
+        });
+      } catch (emailError) {
+        console.warn('Failed to send approval email to beneficiary:', emailError);
+      }
+
       console.log('✅ Beneficiary approved:', beneficiaryId);
       return {
         success: true,
@@ -199,6 +209,19 @@ export class BeneficiaryApprovalsService {
         { beneficiaryId, adminId, name: `${beneficiaryData?.first_name} ${beneficiaryData?.last_name}`, reason: reason ?? null },
         { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
       );
+
+      try {
+        const emailPayload: any = {
+          name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
+          role: 'beneficiary',
+        };
+        if (reason) {
+          emailPayload.reason = reason;
+        }
+        await sendRejectionEmail(data?.[0]?.email, emailPayload);
+      } catch (emailError) {
+        console.warn('Failed to send rejection email to beneficiary:', emailError);
+      }
 
       console.log('✅ Beneficiary rejected:', beneficiaryId);
       return {
