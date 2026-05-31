@@ -141,11 +141,12 @@ export class StoriesService {
         `hc_stories?id=eq.${storyId}&select=id,title,category,description,body,cover_image_url,read_time_minutes,published_at,created_at`,
       );
 
-      if (!stories || stories.length === 0) {
+      const story = stories?.[0];
+      if (!story) {
         throw new HttpException('Story not found', 404);
       }
 
-      return { story: stories[0] };
+      return { story };
     } catch (err: unknown) {
       if (err instanceof HttpException) throw err;
       throw new HttpException(

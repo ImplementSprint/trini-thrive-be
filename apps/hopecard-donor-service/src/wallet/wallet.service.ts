@@ -22,7 +22,8 @@ export class WalletService {
         `user_wallets?user_id=eq.${authUserId}&select=wallet_balance,currency`,
       );
 
-      if (wallets.length === 0) {
+      const wallet = wallets?.[0];
+      if (!wallet) {
         // Initialize wallet for new user
         await supabaseRequest('user_wallets', {
           method: 'POST',
@@ -36,7 +37,6 @@ export class WalletService {
         return { balance: 0, currency: 'PHP' };
       }
 
-      const wallet = wallets[0];
       return {
         balance: Number(wallet.wallet_balance),
         currency: wallet.currency,
@@ -174,11 +174,11 @@ export class WalletService {
         `user_wallets?user_id=eq.${authUserId}&select=id,wallet_balance`,
       );
 
-      if (wallets.length === 0) {
+      const wallet = wallets?.[0];
+      if (!wallet) {
         throw new HttpException('Wallet not found', 404);
       }
 
-      const wallet = wallets[0];
       const newBalance = Number(wallet.wallet_balance) + creditAmount;
 
       await supabaseRequest('wallet_transactions', {
@@ -241,11 +241,11 @@ export class WalletService {
         `user_wallets?user_id=eq.${authUserId}&select=id,wallet_balance`,
       );
 
-      if (wallets.length === 0) {
+      const wallet = wallets?.[0];
+      if (!wallet) {
         throw new HttpException('Wallet not found', 404);
       }
 
-      const wallet = wallets[0];
       const currentBalance = Number(wallet.wallet_balance);
 
       if (currentBalance < amount) {
@@ -271,11 +271,12 @@ export class WalletService {
         }),
       });
 
-      if (!transactions || transactions.length === 0) {
+      const transaction = transactions?.[0];
+      if (!transaction) {
         throw new HttpException('Failed to create transaction record', 500);
       }
 
-      const transactionId = transactions[0].id;
+      const transactionId = transaction.id;
 
       // Update wallet balance
       await supabaseRequest(`user_wallets?id=eq.${wallet.id}`, {
