@@ -261,6 +261,64 @@ export async function sendOTPEmail(to: string, otp: string): Promise<boolean> {
 }
 
 /**
+ * Send email confirmation link for a newly registered campaign manager
+ */
+export async function sendConfirmationEmail(
+  to: string,
+  params: { name: string; confirmationUrl: string },
+): Promise<boolean> {
+  try {
+    const { name, confirmationUrl } = params;
+    const hasSmtp =
+      process.env.SMTP_HOST &&
+      process.env.SMTP_PORT &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD;
+
+    if (!hasSmtp) {
+      console.warn('[EMAIL] SMTP not configured. Logging confirmation email to console only.');
+      console.log(`\n📧 CONFIRMATION EMAIL (Console Fallback)`);
+      console.log(`To: ${to}`);
+      console.log(`Confirmation URL: ${confirmationUrl}`);
+      console.log(`---\n`);
+      return true;
+    }
+
+    const senderName = process.env.SMTP_FROM || 'Hopecard';
+    const senderEmail = process.env.SMTP_USER;
+    const fromAddress = `${senderName} <${senderEmail}>`;
+    const transporter = createEmailTransporter();
+
+    await transporter.sendMail({
+      from: fromAddress,
+      to,
+      subject: 'Confirm your HopeCard Campaign Manager account',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #823a33;">Confirm Your Account</h2>
+          <p>Hi ${esc(name)},</p>
+          <p>Thank you for registering as a HopeCard Campaign Manager. Click the button below to confirm your email address.</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${esc(confirmationUrl)}" style="background-color: #823a33; color: white; padding: 14px 28px; text-decoration: none; border-radius: 24px; font-weight: bold; font-size: 14px;">
+              Confirm Email Address
+            </a>
+          </div>
+          <p style="color: #666; font-size: 13px;">Once confirmed, your application will be reviewed by an admin before you can log in.</p>
+          <p style="color: #999; font-size: 12px;">If you did not create this account, you can safely ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="color: #999; font-size: 12px;">© 2026 HopeCard. All rights reserved.</p>
+        </div>
+      `,
+    });
+
+    return true;
+  } catch (error) {
+    console.error('[EMAIL] Error sending confirmation email:', error);
+    return false;
+  }
+}
+
+/**
  * Send account approval notification email
  */
 export async function sendApprovalEmail(

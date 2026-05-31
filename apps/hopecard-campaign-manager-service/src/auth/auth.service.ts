@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, OnModuleInit, UnauthorizedException } from '@nestjs/common';
+import { sendConfirmationEmail } from '@app/common/email';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SignJWT } from 'jose';
@@ -135,6 +136,31 @@ export class AuthService implements OnModuleInit {
     }
 
     console.log('[CM Register] Registered:', authUserId, email);
+
+    // Generate and send confirmation email (admin.createUser does not trigger Supabase's built-in email)
+    try {
+      const redirectTo = this.configService.get<string>('APP_URL')
+        ? `${this.configService.get<string>('APP_URL')}/campaign-manager/auth/callback`
+        : 'http://localhost:3000/campaign-manager/auth/callback';
+
+      const { data: linkData, error: linkError } = await this.supabase.auth.admin.generateLink({
+        type: 'signup',
+        email,
+        password,
+        options: { redirectTo },
+      });
+
+      if (linkError || !linkData?.properties?.action_link) {
+        console.warn('[CM Register] Could not generate confirmation link:', linkError?.message);
+      } else {
+        await sendConfirmationEmail(email, {
+          name: `${firstName} ${lastName}`.trim(),
+          confirmationUrl: linkData.properties.action_link,
+        });
+      }
+    } catch (emailErr) {
+      console.warn('[CM Register] Confirmation email failed (non-fatal):', emailErr);
+    }
 
     this.events.emit(
       'hopecard.campaign_manager.registered',
