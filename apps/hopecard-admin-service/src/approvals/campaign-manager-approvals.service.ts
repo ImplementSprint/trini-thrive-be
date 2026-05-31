@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
 import { ProcedureEventService } from '@app/api-center';
+import { sendApprovalEmail, sendRejectionEmail } from '@app/common/email';
 
 export interface CampaignManagerApproval {
   id: string;
@@ -103,6 +104,12 @@ export class CampaignManagerApprovalsService {
     adminId: string,
   ): Promise<{ success: boolean; message: string; data?: any }> {
     try {
+      const { data: managerData } = await supabase
+        .from('campaign_manager_profiles')
+        .select('first_name, last_name, email')
+        .eq('id', campaignManagerId)
+        .single();
+
       const { data, error } = await supabase
         .from('campaign_manager_profiles')
         .update({
@@ -122,6 +129,21 @@ export class CampaignManagerApprovalsService {
         { campaignManagerId, adminId },
         { partitionKey: campaignManagerId, sourceServiceId: 'hopecard-admin-service' },
       );
+
+      try {
+        const email = managerData?.email ?? data?.[0]?.email;
+        if (!email) {
+          console.warn('No email found for campaign manager after approval, skipping email notification');
+        } else {
+          const managerName = `${managerData?.first_name ?? ''} ${managerData?.last_name ?? ''}`.trim();
+          await sendApprovalEmail(email, {
+            name: managerName || 'Campaign Manager',
+            role: 'campaign manager',
+          });
+        }
+      } catch (emailError) {
+        console.warn('Failed to send approval email to campaign manager:', emailError);
+      }
 
       console.log('✅ Campaign manager approved:', campaignManagerId);
       return {
@@ -144,6 +166,12 @@ export class CampaignManagerApprovalsService {
     reason?: string,
   ): Promise<{ success: boolean; message: string; data?: any }> {
     try {
+      const { data: managerData } = await supabase
+        .from('campaign_manager_profiles')
+        .select('first_name, last_name, email')
+        .eq('id', campaignManagerId)
+        .single();
+
       const { data, error } = await supabase
         .from('campaign_manager_profiles')
         .update({
@@ -164,6 +192,25 @@ export class CampaignManagerApprovalsService {
         { campaignManagerId, adminId, reason: reason ?? null },
         { partitionKey: campaignManagerId, sourceServiceId: 'hopecard-admin-service' },
       );
+
+      try {
+        const email = managerData?.email ?? data?.[0]?.email;
+        if (!email) {
+          console.warn('No email found for campaign manager after rejection, skipping email notification');
+        } else {
+          const managerName = `${managerData?.first_name ?? ''} ${managerData?.last_name ?? ''}`.trim();
+          const emailPayload: { name: string; role: string; reason?: string } = {
+            name: managerName || 'Campaign Manager',
+            role: 'campaign manager',
+          };
+          if (reason) {
+            emailPayload.reason = reason;
+          }
+          await sendRejectionEmail(email, emailPayload);
+        }
+      } catch (emailError) {
+        console.warn('Failed to send rejection email to campaign manager:', emailError);
+      }
 
       console.log('✅ Campaign manager rejected:', campaignManagerId);
       return {
