@@ -138,10 +138,15 @@ export class BeneficiaryApprovalsService {
       );
 
       try {
-        await sendApprovalEmail(data?.[0]?.email, {
-          name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
-          role: 'beneficiary',
-        });
+        const email = data?.[0]?.email;
+        if (!email) {
+          console.warn('No email found for beneficiary after approval, skipping email notification');
+        } else {
+          await sendApprovalEmail(email, {
+            name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
+            role: 'beneficiary',
+          });
+        }
       } catch (emailError) {
         console.warn('Failed to send approval email to beneficiary:', emailError);
       }
@@ -211,14 +216,19 @@ export class BeneficiaryApprovalsService {
       );
 
       try {
-        const emailPayload: any = {
-          name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
-          role: 'beneficiary',
-        };
-        if (reason) {
-          emailPayload.reason = reason;
+        const email = data?.[0]?.email;
+        if (!email) {
+          console.warn('No email found for beneficiary after rejection, skipping email notification');
+        } else {
+          const emailPayload: { name: string; role: string; reason?: string } = {
+            name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
+            role: 'beneficiary',
+          };
+          if (reason) {
+            emailPayload.reason = reason;
+          }
+          await sendRejectionEmail(email, emailPayload);
         }
-        await sendRejectionEmail(data?.[0]?.email, emailPayload);
       } catch (emailError) {
         console.warn('Failed to send rejection email to beneficiary:', emailError);
       }
