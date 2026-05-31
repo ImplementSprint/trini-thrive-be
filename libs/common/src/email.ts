@@ -259,3 +259,122 @@ export async function sendOTPEmail(to: string, otp: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Send account approval notification email
+ */
+export async function sendApprovalEmail(
+  to: string,
+  params: { name: string; role: string },
+): Promise<boolean> {
+  try {
+    const { name, role } = params;
+    const hasSmtp =
+      process.env.SMTP_HOST &&
+      process.env.SMTP_PORT &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD;
+
+    if (!hasSmtp) {
+      console.warn('[EMAIL] SMTP not configured. Logging approval email to console only.');
+      console.log(`\n📧 APPROVAL EMAIL (Console Fallback)`);
+      console.log(`To: ${to}`);
+      console.log(`Name: ${name} | Role: ${role}`);
+      console.log(`---\n`);
+      return true;
+    }
+
+    const senderName = process.env.SMTP_FROM || 'Hopecard';
+    const senderEmail = process.env.SMTP_USER;
+    const fromAddress = `${senderName} <${senderEmail}>`;
+    const transporter = createEmailTransporter();
+
+    await transporter.sendMail({
+      from: fromAddress,
+      to,
+      subject: 'Your HopeCard application has been approved',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2d6a4f;">HopeCard Application Approved</h2>
+          <p>Hi ${esc(name)},</p>
+          <p>Great news — your HopeCard <strong>${esc(role)}</strong> application has been <strong>approved</strong>.</p>
+          <p>You can now log in and access your account using all HopeCard features available to your role.</p>
+          <p style="color: #666; font-size: 14px;">
+            If you have any questions, please contact our support team.
+          </p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="color: #999; font-size: 12px;">© 2026 HopeCard. All rights reserved.</p>
+        </div>
+      `,
+    });
+
+    return true;
+  } catch (error) {
+    console.error('[EMAIL] Error sending approval email:', error);
+    return false;
+  }
+}
+
+/**
+ * Send account rejection notification email
+ */
+export async function sendRejectionEmail(
+  to: string,
+  params: { name: string; role: string; reason?: string },
+): Promise<boolean> {
+  try {
+    const { name, role, reason } = params;
+    const hasSmtp =
+      process.env.SMTP_HOST &&
+      process.env.SMTP_PORT &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD;
+
+    if (!hasSmtp) {
+      console.warn('[EMAIL] SMTP not configured. Logging rejection email to console only.');
+      console.log(`\n📧 REJECTION EMAIL (Console Fallback)`);
+      console.log(`To: ${to}`);
+      console.log(`Name: ${name} | Role: ${role} | Reason: ${reason ?? 'N/A'}`);
+      console.log(`---\n`);
+      return true;
+    }
+
+    const senderName = process.env.SMTP_FROM || 'Hopecard';
+    const senderEmail = process.env.SMTP_USER;
+    const fromAddress = `${senderName} <${senderEmail}>`;
+    const transporter = createEmailTransporter();
+
+    await transporter.sendMail({
+      from: fromAddress,
+      to,
+      subject: 'Your HopeCard application was not approved',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #9b2c2c;">HopeCard Application Update</h2>
+          <p>Hi ${esc(name)},</p>
+          <p>We regret to inform you that your HopeCard <strong>${esc(role)}</strong> application has not been approved at this time.</p>
+          ${
+            reason
+              ? `<table style="width:100%; border-collapse:collapse; margin: 16px 0;">
+              <tr>
+                <td style="padding: 8px; background:#f8f8f8; font-weight:bold; width:140px;">Reason</td>
+                <td style="padding: 8px; background:#fff;">${esc(reason)}</td>
+              </tr>
+            </table>`
+              : ''
+          }
+          <p style="color: #666; font-size: 14px;">
+            If you believe this decision was made in error or have questions, please contact our support team.
+          </p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="color: #999; font-size: 12px;">© 2026 HopeCard. All rights reserved.</p>
+        </div>
+      `,
+    });
+
+    return true;
+  } catch (error) {
+    console.error('[EMAIL] Error sending rejection email:', error);
+    return false;
+  }
+}
