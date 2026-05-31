@@ -107,6 +107,9 @@ describe('sendRejectionEmail', () => {
 
     expect(result).toBe(true);
     const call = mockSendMail.mock.calls[0][0];
+    expect(call.html).toContain('Maria Santos');
+    expect(call.html).toContain('digital donor');
+    expect(call.html).not.toContain('<table');
     expect(call.html).not.toContain('Reason');
   });
 
