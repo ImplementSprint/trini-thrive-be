@@ -10,7 +10,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { ActivityService } from './activity.service';
-import type { Activity } from './activity.service';
+import type { Activity, UnifiedActivity } from './activity.service';
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('admin', 'hopecard')
@@ -97,6 +97,19 @@ export class ActivityController {
         page: 1,
         limit: 20,
       };
+    }
+  }
+
+  @Get('unified')
+  async getUnifiedActivity(
+    @Query('limit') limit: string = '50',
+  ): Promise<UnifiedActivity[]> {
+    try {
+      const limitNum = Math.min(200, Math.max(1, Number.parseInt(limit, 10) || 50));
+      return await this.activityService.getUnifiedActivity(limitNum);
+    } catch (error) {
+      console.error('❌ Error in getUnifiedActivity:', error);
+      return [];
     }
   }
 
