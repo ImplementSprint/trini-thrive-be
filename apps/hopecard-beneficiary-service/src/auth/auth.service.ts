@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -116,6 +118,7 @@ export class AuthService {
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
       type: 'signup',
       email: dto.email,
+      password: dto.password,
       options: {
         redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/beneficiary/login`,
       },
@@ -323,22 +326,42 @@ export class AuthService {
     }
 
     if (profile.status === 'pending' || profile.status === 'pending_review') {
-      throw new UnauthorizedException('Your account is still pending admin approval');
+      throw new HttpException(
+        { code: 'PENDING_APPROVAL', message: 'Your application is under review. You will be notified once an admin approves it.' },
+        HttpStatus.FORBIDDEN,
+      );
     }
     if (profile.status === 'rejected') {
-      const reason = profile.rejection_reason ? `: ${profile.rejection_reason}` : '';
-      throw new UnauthorizedException(`Your account application was rejected${reason}`);
+      const reason = profile.rejection_reason ?? null;
+      throw new HttpException(
+        { code: 'REJECTED', message: 'Your account application was rejected.', reason },
+        HttpStatus.FORBIDDEN,
+      );
     }
     if (profile.status === 'banned' || profile.status === 'suspended') {
-      let durationStr = 'permanently';
+      let duration: string;
       if (profile.status_expires_at) {
         const expDate = new Date(profile.status_expires_at);
-        const diffDays = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-        durationStr = diffDays > 0 ? `for ${diffDays} day(s)` : 'temporarily';
+        const diffMs = expDate.getTime() - Date.now();
+        if (diffMs <= 0) {
+          duration = 'temporarily';
+        } else {
+          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          const expDateStr = expDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+          duration = diffDays === 1 ? `for 1 day (until ${expDateStr})` : `for ${diffDays} days (until ${expDateStr})`;
+        }
+      } else {
+        duration = 'permanently';
       }
-      
-      const reason = profile.status_reason ? `. Reason: ${profile.status_reason}` : '';
-      throw new UnauthorizedException(`Your account has been ${profile.status} ${durationStr}${reason}`);
+      throw new HttpException(
+        {
+          code: profile.status === 'banned' ? 'BANNED' : 'SUSPENDED',
+          message: `Your account has been ${profile.status} ${duration}.`,
+          reason: profile.status_reason ?? null,
+          duration,
+        },
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     const secret = process.env['JWT_SECRET'];
