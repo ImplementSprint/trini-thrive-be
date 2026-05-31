@@ -49,8 +49,6 @@ export class CampaignManagerApprovalsService {
         return { data: [], total: 0, page, limit };
       }
 
-      console.log('✅ Pending campaign manager approvals:', count);
-      
       // Fetch user emails from auth.users for managers that don't have email
       const managersWithEmail = await Promise.all(
         (data || []).map(async (manager) => {
@@ -59,7 +57,7 @@ export class CampaignManagerApprovalsService {
               ...manager,
               organization: manager.organization_name,
               verification_status: manager.status,
-              documents_verified: !!manager.organization_document_key
+              documents_verified: !!(manager.sec_registration || manager.organizational_certificate)
             };
           }
           
@@ -76,7 +74,7 @@ export class CampaignManagerApprovalsService {
                 email: authUser.email,
                 organization: manager.organization_name,
                 verification_status: manager.status,
-                documents_verified: !!manager.organization_document_key
+                documents_verified: !!(manager.sec_registration || manager.organizational_certificate)
               };
             }
           }
@@ -84,7 +82,7 @@ export class CampaignManagerApprovalsService {
             ...manager,
             organization: manager.organization_name,
             verification_status: manager.status,
-            documents_verified: !!manager.organization_document_key
+            documents_verified: !!(manager.sec_registration || manager.organizational_certificate)
           };
         })
       );
@@ -122,6 +120,19 @@ export class CampaignManagerApprovalsService {
       if (error) {
         console.error('Supabase error approving campaign manager:', error);
         return { success: false, message: 'Failed to approve campaign manager' };
+      }
+
+      try {
+        await this.activityService.logActivity({
+          admin_id: adminId,
+          admin_email: 'admin@hopecard.com',
+          action: 'APPROVED',
+          description: `Approved campaign manager application: ${managerData?.first_name ?? ''} ${managerData?.last_name ?? ''}`.trim(),
+          resource_type: 'campaign_manager',
+          resource_id: campaignManagerId,
+        });
+      } catch (activityError) {
+        console.warn('Failed to log activity, but approval succeeded:', activityError);
       }
 
       this.events.emit(
@@ -185,6 +196,19 @@ export class CampaignManagerApprovalsService {
       if (error) {
         console.error('Supabase error rejecting campaign manager:', error);
         return { success: false, message: 'Failed to reject campaign manager' };
+      }
+
+      try {
+        await this.activityService.logActivity({
+          admin_id: adminId,
+          admin_email: 'admin@hopecard.com',
+          action: 'REJECTED',
+          description: `Rejected campaign manager application: ${managerData?.first_name ?? ''} ${managerData?.last_name ?? ''}`.trim() + (reason ? ` - Reason: ${reason}` : ''),
+          resource_type: 'campaign_manager',
+          resource_id: campaignManagerId,
+        });
+      } catch (activityError) {
+        console.warn('Failed to log activity, but rejection succeeded:', activityError);
       }
 
       this.events.emit(
