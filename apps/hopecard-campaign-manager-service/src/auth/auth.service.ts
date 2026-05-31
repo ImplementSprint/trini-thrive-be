@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, OnModuleInit, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, OnModuleInit, UnauthorizedException } from '@nestjs/common';
 import { sendConfirmationEmail } from '@app/common/email';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -178,12 +178,35 @@ export class AuthService implements OnModuleInit {
 
     const { data: profile, error: profileError } = await this.supabase
       .from('campaign_manager_profiles')
-      .select('id')
+      .select('id, status, status_reason, status_expires_at')
       .eq('auth_user_id', data.user.id)
       .maybeSingle();
 
     if (profileError) throw new InternalServerErrorException(profileError.message);
     if (!profile) throw new UnauthorizedException('No campaign manager account found for this email');
+
+    const { status, status_reason: statusReason, status_expires_at: statusExpiresAt } =
+      profile as { status: string; status_reason: string | null; status_expires_at: string | null };
+
+    if (status === 'banned') {
+      throw new ForbiddenException({
+        reason: 'banned',
+        status_reason: statusReason,
+        status_expires_at: statusExpiresAt,
+      });
+    }
+
+    if (status === 'suspended') {
+      throw new ForbiddenException({
+        reason: 'suspended',
+        status_reason: statusReason,
+        status_expires_at: statusExpiresAt,
+      });
+    }
+
+    if (status !== 'approved' && status !== 'active') {
+      throw new ForbiddenException({ reason: 'pending_approval', status });
+    }
 
     const secret = this.configService.get<string>('JWT_SECRET');
     if (!secret) throw new InternalServerErrorException('JWT_SECRET not configured');
