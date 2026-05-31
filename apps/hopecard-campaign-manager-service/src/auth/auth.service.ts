@@ -177,6 +177,9 @@ export class AuthService implements OnModuleInit {
   async login(email: string, password: string): Promise<{ success: boolean; token: string }> {
     const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) {
+      if (error?.message?.toLowerCase().includes('email not confirmed')) {
+        throw new UnauthorizedException('Please confirm your email address first. Check your inbox for the confirmation link we sent when you registered.');
+      }
       throw new UnauthorizedException('Invalid email or password');
     }
 
