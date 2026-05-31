@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
 import { ProcedureEventService } from '@app/api-center';
+import { sendApprovalEmail, sendRejectionEmail } from '@app/common/email';
 
 export interface DigitalDonorApproval {
   id: string;
@@ -131,6 +132,20 @@ export class DigitalDonorApprovalsService {
         { partitionKey: donorId, sourceServiceId: 'hopecard-admin-service' },
       );
 
+      try {
+        const email = existingDonor?.email;
+        if (!email) {
+          console.warn('No email found for digital donor after approval, skipping email notification');
+        } else {
+          await sendApprovalEmail(email, {
+            name: existingDonor?.name ?? 'Donor',
+            role: 'digital donor',
+          });
+        }
+      } catch (emailError) {
+        console.warn('Failed to send approval email to digital donor:', emailError);
+      }
+
       console.log('✅ Digital donor approved:', donorId, 'New data:', data?.[0]);
       return {
         success: true,
@@ -205,6 +220,21 @@ export class DigitalDonorApprovalsService {
         { donorId, adminId, name: existingDonor?.name ?? '', reason: reason ?? null },
         { partitionKey: donorId, sourceServiceId: 'hopecard-admin-service' },
       );
+
+      try {
+        const email = existingDonor?.email;
+        if (!email) {
+          console.warn('No email found for digital donor after rejection, skipping email notification');
+        } else {
+          await sendRejectionEmail(email, {
+            name: existingDonor?.name ?? 'Donor',
+            role: 'digital donor',
+            ...(reason && { reason }),
+          });
+        }
+      } catch (emailError) {
+        console.warn('Failed to send rejection email to digital donor:', emailError);
+      }
 
       console.log('✅ Digital donor rejected:', donorId, 'New data:', data?.[0]);
       return {
