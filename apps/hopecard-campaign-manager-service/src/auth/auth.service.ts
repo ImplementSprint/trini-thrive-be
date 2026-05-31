@@ -84,9 +84,11 @@ export class AuthService implements OnModuleInit {
 
       const safePath = `${authUserId}/${Date.now()}-sec-registration.${ext}`;
       const { data: uploaded, error: uploadError } = await this.supabase.storage
-        .from('campaign-manager-docs')
+        .from('camp-man-files')
         .upload(safePath, docFile.buffer, { contentType: allowedContentType, upsert: false });
-      if (!uploadError && uploaded) {
+      if (uploadError) {
+        console.error('[CM Register] SEC registration upload failed:', uploadError.message);
+      } else if (uploaded) {
         secDocKey = uploaded.path;
       }
     }
@@ -106,9 +108,11 @@ export class AuthService implements OnModuleInit {
 
       const safePath = `${authUserId}/${Date.now()}-org-certificate.${ext}`;
       const { data: uploaded, error: uploadError } = await this.supabase.storage
-        .from('campaign-manager-docs')
+        .from('camp-man-files')
         .upload(safePath, docFile.buffer, { contentType: allowedContentType, upsert: false });
-      if (!uploadError && uploaded) {
+      if (uploadError) {
+        console.error('[CM Register] Org certificate upload failed:', uploadError.message);
+      } else if (uploaded) {
         orgDocKey = uploaded.path;
       }
     }
