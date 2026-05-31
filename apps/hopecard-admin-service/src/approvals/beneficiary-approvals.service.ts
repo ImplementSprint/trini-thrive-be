@@ -32,10 +32,10 @@ export class BeneficiaryApprovalsService {
     try {
       const offset = (page - 1) * limit;
 
-      // Get total count (all statuses)
+      // Get total count of all beneficiary profiles
       const { count } = await supabase
         .from('beneficiary_profiles')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact', head: true });
 
       // Get paginated beneficiaries
       const { data, error } = await supabase
