@@ -16,7 +16,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/bayanihub-admin-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -28,7 +27,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/bayanihub-enduser-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -40,7 +38,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/bayanihub-sitemanager-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -52,7 +49,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/damayan-admin-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -64,7 +60,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/damayan-citizen-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -76,7 +71,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/damayan-dispatcher-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -88,7 +82,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/damayan-site-manager-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -100,7 +93,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/hopecard-admin-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -112,7 +104,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/hopecard-beneficiary-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -124,7 +115,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/hopecard-campaign-manager-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -136,7 +126,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/hopecard-donor-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -148,7 +137,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/hopecard-notification-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -160,7 +148,6 @@ services:
     runtime: docker
     dockerfilePath: ./apps/location-service/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
