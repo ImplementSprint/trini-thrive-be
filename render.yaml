@@ -1,0 +1,168 @@
+services:
+  - type: web
+    name: api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: bayanihub-admin-service
+    runtime: docker
+    dockerfilePath: ./apps/bayanihub-admin-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: bayanihub-enduser-service
+    runtime: docker
+    dockerfilePath: ./apps/bayanihub-enduser-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: bayanihub-sitemanager-service
+    runtime: docker
+    dockerfilePath: ./apps/bayanihub-sitemanager-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: damayan-admin-service
+    runtime: docker
+    dockerfilePath: ./apps/damayan-admin-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: damayan-citizen-service
+    runtime: docker
+    dockerfilePath: ./apps/damayan-citizen-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: damayan-dispatcher-service
+    runtime: docker
+    dockerfilePath: ./apps/damayan-dispatcher-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: damayan-site-manager-service
+    runtime: docker
+    dockerfilePath: ./apps/damayan-site-manager-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: hopecard-admin-service
+    runtime: docker
+    dockerfilePath: ./apps/hopecard-admin-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: hopecard-beneficiary-service
+    runtime: docker
+    dockerfilePath: ./apps/hopecard-beneficiary-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: hopecard-campaign-manager-service
+    runtime: docker
+    dockerfilePath: ./apps/hopecard-campaign-manager-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: hopecard-donor-service
+    runtime: docker
+    dockerfilePath: ./apps/hopecard-donor-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: hopecard-notification-service
+    runtime: docker
+    dockerfilePath: ./apps/hopecard-notification-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
+
+  - type: pserv
+    name: location-service
+    runtime: docker
+    dockerfilePath: ./apps/location-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APICENTER_TRIBE_SECRET
+        sync: false
