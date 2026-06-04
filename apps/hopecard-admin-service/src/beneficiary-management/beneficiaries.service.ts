@@ -355,14 +355,20 @@ export class BeneficiariesService {
 
   async deleteBeneficiary(id: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('beneficiary_profiles')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
 
       if (error) {
         console.error('❌ Error deleting beneficiary:', error);
         throw new Error(`Failed to delete beneficiary: ${error.message}`);
+      }
+
+      if (!data || data.length === 0) {
+        console.error(`❌ Delete silently failed for beneficiary ${id} — 0 rows affected. Check RLS and service role key.`);
+        throw new Error(`Beneficiary ${id} not found or delete was blocked by RLS. Ensure SUPABASE_SERVICE_ROLE_KEY is set.`);
       }
 
       console.log(`✅ Deleted beneficiary: ${id}`);

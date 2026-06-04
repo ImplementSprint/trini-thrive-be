@@ -1,9 +1,9 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ReportingService } from './reporting.service';
 import { RequirePersona } from '@app/common';
 
-@RequirePersona('cm')
-@Controller('hopecard/cm/reporting')
+@RequirePersona('cm', 'hopecard')
+@Controller('api/v1/hopecard/cm/reporting')
 export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}
 

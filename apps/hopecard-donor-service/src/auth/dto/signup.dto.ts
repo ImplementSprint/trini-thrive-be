@@ -24,5 +24,17 @@ export class SignupDto {
 
   @IsOptional()
   @IsString()
+  barangay?: string;
+
+  @IsOptional()
+  @IsString()
+  municipality?: string;
+
+  @IsOptional()
+  @IsString()
+  province?: string;
+
+  @IsOptional()
+  @IsString()
   id_verification_key?: string;
 }

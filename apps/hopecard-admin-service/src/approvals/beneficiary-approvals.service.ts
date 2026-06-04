@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
 import { ProcedureEventService } from '@app/api-center';
+import { sendApprovalEmail, sendRejectionEmail } from '@app/common/email';
 
 export interface BeneficiaryApproval {
   id: string;
@@ -32,10 +33,10 @@ export class BeneficiaryApprovalsService {
     try {
       const offset = (page - 1) * limit;
 
-      // Get total count (all statuses)
+      // Get total count of all beneficiary profiles
       const { count } = await supabase
         .from('beneficiary_profiles')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact', head: true });
 
       // Get paginated beneficiaries
       const { data, error } = await supabase
@@ -136,6 +137,20 @@ export class BeneficiaryApprovalsService {
         { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
       );
 
+      try {
+        const email = data?.[0]?.email;
+        if (!email) {
+          console.warn('No email found for beneficiary after approval, skipping email notification');
+        } else {
+          await sendApprovalEmail(email, {
+            name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
+            role: 'beneficiary',
+          });
+        }
+      } catch (emailError) {
+        console.warn('Failed to send approval email to beneficiary:', emailError);
+      }
+
       console.log('✅ Beneficiary approved:', beneficiaryId);
       return {
         success: true,
@@ -199,6 +214,24 @@ export class BeneficiaryApprovalsService {
         { beneficiaryId, adminId, name: `${beneficiaryData?.first_name} ${beneficiaryData?.last_name}`, reason: reason ?? null },
         { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
       );
+
+      try {
+        const email = data?.[0]?.email;
+        if (!email) {
+          console.warn('No email found for beneficiary after rejection, skipping email notification');
+        } else {
+          const emailPayload: { name: string; role: string; reason?: string } = {
+            name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
+            role: 'beneficiary',
+          };
+          if (reason) {
+            emailPayload.reason = reason;
+          }
+          await sendRejectionEmail(email, emailPayload);
+        }
+      } catch (emailError) {
+        console.warn('Failed to send rejection email to beneficiary:', emailError);
+      }
 
       console.log('✅ Beneficiary rejected:', beneficiaryId);
       return {

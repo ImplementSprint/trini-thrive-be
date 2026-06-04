@@ -1,20 +1,22 @@
-import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, Req } from '@nestjs/common';
+import type { Request } from 'express';
 import { PurchasesService } from './purchases.service';
 import { RequirePersona } from '@app/common';
+import type { JwtPayload } from '@app/common';
 
-@RequirePersona('donor')
-@Controller('hopecard/donor/purchases')
+@RequirePersona('donor', 'hopecard')
+@Controller('api/v1/hopecard/donor/purchases')
 export class PurchasesController {
   constructor(private readonly purchasesService: PurchasesService) {}
 
   @Post('checkout')
   createCheckout(
-    @Body() body: { authUserId?: string; buyerAuthId?: string; successBaseUrl?: string; successUrl?: string; cancelUrl?: string },
+    @Req() req: Request & { user: JwtPayload },
+    @Body() body: { successBaseUrl?: string; successUrl?: string; cancelUrl?: string },
   ) {
-    const authUserId = body.authUserId ?? body.buyerAuthId ?? '';
     const cancelUrl = body.cancelUrl ?? 'http://localhost:3001/donor/payment/cancel';
     const successBaseUrl = body.successBaseUrl ?? body.successUrl ?? 'http://localhost:3001/donor/payment/success';
-    return this.purchasesService.createCheckoutSession(authUserId, successBaseUrl, cancelUrl);
+    return this.purchasesService.createCheckoutSession(req.user.sub, successBaseUrl, cancelUrl);
   }
 
   @Get('checkout/:checkoutId')
@@ -28,15 +30,29 @@ export class PurchasesController {
   }
 
   @Post('confirm')
-  confirmPurchase(@Body() body: { authUserId?: string; buyerAuthId?: string; checkoutId?: string; referenceId?: string }) {
-    const authUserId = body.authUserId ?? body.buyerAuthId ?? '';
+  confirmPurchase(
+    @Req() req: Request & { user: JwtPayload },
+    @Body() body: { checkoutId?: string; referenceId?: string },
+  ) {
     const checkoutId = body.checkoutId ?? '';
     const referenceId = body.referenceId ?? '';
-    return this.purchasesService.confirmPurchase(authUserId, checkoutId, referenceId);
+    return this.purchasesService.confirmPurchase(req.user.sub, checkoutId, referenceId);
   }
 
   @Get()
-  getPurchases(@Query('authUserId') authUserId: string) {
-    return this.purchasesService.getPurchases(authUserId);
+  getPurchases(@Req() req: Request & { user: JwtPayload }) {
+    return this.purchasesService.getPurchases(req.user.sub);
+  }
+
+  @Post('wallet')
+  purchaseFromWallet(
+    @Req() req: Request & { user: JwtPayload },
+    @Body()
+    body: {
+      campaignIds: string[];
+      quantities: number[];
+    },
+  ) {
+    return this.purchasesService.purchaseFromWallet(req.user.sub, body.campaignIds, body.quantities);
   }
 }

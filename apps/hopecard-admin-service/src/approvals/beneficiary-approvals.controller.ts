@@ -2,8 +2,8 @@ import { Controller, Get, Post, Param, Body, Query, Req } from '@nestjs/common';
 import { BeneficiaryApprovalsService } from './beneficiary-approvals.service';
 import { RequirePersona } from '@app/common';
 
-@RequirePersona('admin')
-@Controller('hopecard/admin/approvals/beneficiaries')
+@RequirePersona('admin', 'hopecard')
+@Controller('api/v1/hopecard/admin/approvals/beneficiaries')
 export class BeneficiaryApprovalsController {
   constructor(private readonly approvalsService: BeneficiaryApprovalsService) {}
 
@@ -17,8 +17,8 @@ export class BeneficiaryApprovalsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
   ) {
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, parseInt(limit) || 10);
+    const pageNum = Math.max(1, Number.parseInt(page) || 1);
+    const limitNum = Math.min(100, Number.parseInt(limit) || 10);
     const result = await this.approvalsService.getAllApprovals(pageNum, limitNum);
     return {
       success: true,
@@ -39,8 +39,8 @@ export class BeneficiaryApprovalsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
   ) {
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, parseInt(limit) || 10);
+    const pageNum = Math.max(1, Number.parseInt(page) || 1);
+    const limitNum = Math.min(100, Number.parseInt(limit) || 10);
     const result = await this.approvalsService.getDocumentApprovals(pageNum, limitNum);
     return {
       success: true,
@@ -61,8 +61,8 @@ export class BeneficiaryApprovalsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
   ) {
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, parseInt(limit) || 10);
+    const pageNum = Math.max(1, Number.parseInt(page) || 1);
+    const limitNum = Math.min(100, Number.parseInt(limit) || 10);
     const result = await this.approvalsService.getBankApprovals(pageNum, limitNum);
     return {
       success: true,
