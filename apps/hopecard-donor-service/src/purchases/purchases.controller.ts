@@ -2,8 +2,8 @@ import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
 import { PurchasesService } from './purchases.service';
 import { RequirePersona } from '@app/common';
 
-@RequirePersona('donor')
-@Controller('hopecard/donor/purchases')
+@RequirePersona('donor', 'hopecard')
+@Controller('api/v1/hopecard/donor/purchases')
 export class PurchasesController {
   constructor(private readonly purchasesService: PurchasesService) {}
 
@@ -38,5 +38,19 @@ export class PurchasesController {
   @Get()
   getPurchases(@Query('authUserId') authUserId: string) {
     return this.purchasesService.getPurchases(authUserId);
+  }
+
+  @Post('wallet')
+  purchaseFromWallet(
+    @Body()
+    body: {
+      authUserId?: string;
+      buyerAuthId?: string;
+      campaignIds: string[];
+      quantities: number[];
+    },
+  ) {
+    const authUserId = body.authUserId ?? body.buyerAuthId ?? '';
+    return this.purchasesService.purchaseFromWallet(authUserId, body.campaignIds, body.quantities);
   }
 }

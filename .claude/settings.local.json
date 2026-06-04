@@ -85,7 +85,26 @@
       "Bash(npm list *)",
       "Bash(echo \"Exit code: $?\")",
       "Bash(ls apps/hopecard-beneficiary-service/src/bank-accounts/*.spec.ts)",
-      "Bash(ls apps/hopecard-beneficiary-service/src/campaigns/*.spec.ts)"
+      "Bash(ls apps/hopecard-beneficiary-service/src/campaigns/*.spec.ts)",
+      "Bash(Get-Date *)",
+      "Bash(xargs grep -l \"campaign\" -i)",
+      "Bash(curl -s http://localhost:3103/health)",
+      "Bash(xargs grep -l \"Controller\")",
+      "Bash(Select-Object FullName)",
+      "Bash(xargs grep -l \"otp\\\\|OTP\\\\|oauth\\\\|OAuth\")",
+      "Bash(xargs head -20)",
+      "mcp__claude_ai_Supabase__list_tables",
+      "mcp__claude_ai_Supabase__get_logs",
+      "Bash(grep -v \"^$\")",
+      "Bash(findstr /C:\"jest\" /C:\"test\")",
+      "Bash(npm test *)",
+      "PowerShell(cd \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\"; npx tsc --noEmit 2>&1 | Out-String | Select-String \"approvals|email.ts\" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Value })",
+      "PowerShell(cd \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\"; $errors = npx tsc --noEmit 2>&1; $relevant = $errors | Where-Object { $_ -match \"approvals|email\\\\.ts\" }; if \\($relevant\\) { $relevant } else { \"No errors in our files\" })",
+      "PowerShell(cd \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\"; $out = npx tsc --noEmit 2>&1; $out | Where-Object { $_ -match \"hopecard-campaign-manager\" })",
+      "PowerShell(cd \"C:\\\\Users\\\\arjel\\\\Downloads\\\\TriniThrive_Hopecard\\\\Backend\\\\trini-thrive-be\"; $out = npx tsc --noEmit 2>&1 | Out-String; $lines = $out -split \"`n\" | Where-Object { $_ -match \"hopecard-campaign-manager\" }; $lines)",
+      "Bash(curl -s http://localhost:3103/api/v1/health)",
+      "Bash(curl -s -X POST http://localhost:3103/api/v1/hopecard/cm/auth/register -F email=__TRACKED_VAR__ -F password=TestPass123! -F firstName=Verify -F lastName=Test -F 'organization=Test Org' -F contactNumber=09123456789 -w '\\\\nHTTP_STATUS:%{http_code}')",
+      "Bash(npx nest *)"
     ]
   }
 }

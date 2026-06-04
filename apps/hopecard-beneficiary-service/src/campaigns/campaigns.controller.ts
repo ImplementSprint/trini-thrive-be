@@ -6,8 +6,8 @@ interface AuthenticatedRequest {
   user: { sub: string };
 }
 
-@RequirePersona('beneficiary')
-@Controller('hopecard/beneficiary/campaigns')
+@RequirePersona('beneficiary', 'hopecard')
+@Controller('api/v1/hopecard/beneficiary/campaigns')
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 

@@ -4,8 +4,8 @@ import { NotificationsService } from './notifications.service';
 import { RequirePersona } from '@app/common';
 import type { JwtPayload } from '@app/common';
 
-@RequirePersona('donor')
-@Controller('hopecard/donor/notifications')
+@RequirePersona('donor', 'hopecard')
+@Controller('api/v1/hopecard/donor/notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 

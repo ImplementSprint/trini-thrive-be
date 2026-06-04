@@ -15,6 +15,14 @@ export interface Activity {
   created_at?: string;
 }
 
+export interface UnifiedActivity {
+  id: string;
+  type: 'approval' | 'rejection' | 'donation' | 'campaign' | 'ban' | 'suspension' | 'status_update';
+  description: string;
+  resource_type: string;
+  created_at: string;
+}
+
 @Injectable()
 export class ActivityService {
   async logActivity(activity: Activity): Promise<Activity> {
@@ -194,6 +202,100 @@ export class ActivityService {
     } catch (error) {
       console.error('❌ Exception in deleteOldActivities:', error);
       throw error;
+    }
+  }
+
+  async getUnifiedActivity(limit: number = 50): Promise<UnifiedActivity[]> {
+    try {
+      const [logsResult, donationsResult, campaignsResult] = await Promise.all([
+        supabase
+          .from('activity_logs')
+          .select('id, action, description, resource_type, created_at')
+          .order('created_at', { ascending: false })
+          .limit(limit),
+        supabase
+          .from('hopecard_purchases')
+          .select('id, amount_paid, created_at')
+          .order('created_at', { ascending: false })
+          .limit(limit),
+        supabase
+          .from('hc_campaigns')
+          .select('id, title, created_at')
+          .order('created_at', { ascending: false })
+          .limit(limit),
+      ]);
+
+      if (logsResult.error) {
+        console.warn('⚠️ getUnifiedActivity: activity_logs query failed:', logsResult.error.message);
+      }
+      if (donationsResult.error) {
+        console.warn('⚠️ getUnifiedActivity: hopecard_purchases query failed:', donationsResult.error.message);
+      }
+      if (campaignsResult.error) {
+        console.warn('⚠️ getUnifiedActivity: hc_campaigns query failed:', campaignsResult.error.message);
+      }
+
+      const unified: UnifiedActivity[] = [];
+
+      // Map activity_logs
+      for (const log of logsResult.data ?? []) {
+        let type: UnifiedActivity['type'] = 'status_update';
+        const action = (log.action ?? '').toUpperCase();
+        const desc = (log.description ?? '').toLowerCase();
+
+        if (action === 'APPROVED') {
+          type = 'approval';
+        } else if (action === 'REJECTED') {
+          type = 'rejection';
+        } else if (desc.includes('ban')) {
+          type = 'ban';
+        } else if (desc.includes('suspend')) {
+          type = 'suspension';
+        }
+
+        unified.push({
+          id: `log:${log.id}`,
+          type,
+          description: log.description ?? '',
+          resource_type: log.resource_type ?? 'admin_action',
+          created_at: log.created_at,
+        });
+      }
+
+      // Map donations
+      for (const donation of donationsResult.data ?? []) {
+        const amount = Number(donation.amount_paid) || 0;
+        unified.push({
+          id: `donation:${donation.id}`,
+          type: 'donation',
+          description: `Donation of ₱${amount.toFixed(2)} received`,
+          resource_type: 'donation',
+          created_at: donation.created_at,
+        });
+      }
+
+      // Map campaigns
+      for (const campaign of campaignsResult.data ?? []) {
+        unified.push({
+          id: `campaign:${campaign.id}`,
+          type: 'campaign',
+          description: `Campaign '${campaign.title}' created`,
+          resource_type: 'campaign',
+          created_at: campaign.created_at,
+        });
+      }
+
+      // Sort all by created_at descending, return top `limit`
+      unified.sort((a, b) => {
+        const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tb - ta;
+      });
+
+      return unified.slice(0, limit);
+    } catch (error) {
+      console.error('❌ Exception in getUnifiedActivity:', error);
+      return [];
     }
   }
 }

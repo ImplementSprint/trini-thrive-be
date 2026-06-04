@@ -17,8 +17,8 @@ interface AuthenticatedRequest {
   user: { sub: string };
 }
 
-@RequirePersona('beneficiary')
-@Controller('hopecard/beneficiary/identity-documents')
+@RequirePersona('beneficiary', 'hopecard')
+@Controller('api/v1/hopecard/beneficiary/identity-documents')
 export class IdentityDocumentsController {
   constructor(
     private readonly identityDocumentsService: IdentityDocumentsService,

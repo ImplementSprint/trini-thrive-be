@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { GlobalStatsService } from './global-stats.service';
 
-@Controller('hopecard/donor/global-stats')
+@Controller('api/v1/hopecard/donor/global-stats')
 export class GlobalStatsController {
   constructor(private readonly globalStatsService: GlobalStatsService) {}
 
