@@ -1,6 +1,8 @@
-import { Body, Controller, Get, HttpCode, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
-import type { Response } from 'express';
+import { Body, Controller, Get, HttpCode, Post, Query, Req, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RequirePersona } from '@app/common';
+import type { JwtPayload } from '@app/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
@@ -13,12 +15,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('upload-id')
+  @RequirePersona('donor', 'hopecard')
   @UseInterceptors(FileInterceptor('file'))
   uploadId(
+    @Req() req: Request & { user: JwtPayload },
     @UploadedFile() file: Express.Multer.File,
-    @Body('userId') userId: string,
   ) {
-    return this.authService.uploadId(file, userId);
+    return this.authService.uploadId(file, req.user.sub);
   }
 
   @Post('signup')
