@@ -4,8 +4,8 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package*.json .npmrc ./
-ARG GITHUB_TOKEN
-RUN npm ci
+RUN --mount=type=secret,id=GITHUB_TOKEN \
+    GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" npm ci
 
 COPY tsconfig*.json nest-cli.json ./
 COPY apps ./apps
@@ -19,8 +19,9 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 COPY package*.json .npmrc ./
-ARG GITHUB_TOKEN
-RUN apk upgrade --no-cache zlib \
+RUN --mount=type=secret,id=GITHUB_TOKEN \
+    GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" \
+    apk upgrade --no-cache zlib \
   && npm ci --omit=dev \
   && rm -f .npmrc package-lock.json \
   && addgroup --system --gid 1001 nodejs \
