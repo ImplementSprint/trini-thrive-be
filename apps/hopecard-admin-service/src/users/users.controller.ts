@@ -3,7 +3,7 @@ import { UsersService } from './users.service';
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('admin', 'hopecard')
-@Controller('hopecard/admin/users')
+@Controller('api/v1/hopecard/admin/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

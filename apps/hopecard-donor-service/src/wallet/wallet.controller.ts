@@ -3,7 +3,7 @@ import { WalletService } from './wallet.service';
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('donor', 'hopecard')
-@Controller('hopecard/donor/wallet')
+@Controller('api/v1/hopecard/donor/wallet')
 export class WalletController {
   constructor(private readonly walletService: WalletService) {}
 

@@ -3,7 +3,7 @@ import { ApiKeyGuard } from './api-key.guard';
 import { PublicService } from './public.service';
 
 @UseGuards(ApiKeyGuard)
-@Controller('hopecard/public')
+@Controller('api/v1/hopecard/public')
 export class PublicController {
   constructor(private readonly publicService: PublicService) {}
 

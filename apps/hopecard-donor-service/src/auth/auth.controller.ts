@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -7,7 +8,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
-@Controller('hopecard/donor/auth')
+@Controller('api/v1/hopecard/donor/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -57,5 +58,12 @@ export class AuthController {
   @Get('google/callback')
   googleCallback(@Query('code') code: string) {
     return this.authService.googleCallback(code);
+  }
+
+  @Post('logout')
+  @HttpCode(200)
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.cookie('persona', '', { maxAge: 0, path: '/', httpOnly: false, sameSite: 'lax' });
+    return { success: true, message: 'Logged out successfully' };
   }
 }

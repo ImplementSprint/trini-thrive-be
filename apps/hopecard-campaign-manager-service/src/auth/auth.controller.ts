@@ -1,10 +1,11 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { RequirePersona } from '@app/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 
-@Controller('hopecard/cm/auth')
+@Controller('api/v1/hopecard/cm/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -36,5 +37,12 @@ export class AuthController {
   @Get('beneficiaries')
   async getBeneficiaryProfiles(@Query('status') status: string) {
     return this.authService.getBeneficiaryProfiles(status);
+  }
+
+  @Post('logout')
+  @HttpCode(200)
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.cookie('persona', '', { maxAge: 0, path: '/', httpOnly: false, sameSite: 'lax' });
+    return { success: true, message: 'Logged out successfully' };
   }
 }

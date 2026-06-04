@@ -7,7 +7,7 @@ interface AuthenticatedRequest {
 }
 
 @RequirePersona('beneficiary', 'hopecard')
-@Controller('hopecard/beneficiary/notifications')
+@Controller('api/v1/hopecard/beneficiary/notifications')
 export class BeneficiaryNotificationsController {
   constructor(
     private readonly notificationsService: BeneficiaryNotificationsService,

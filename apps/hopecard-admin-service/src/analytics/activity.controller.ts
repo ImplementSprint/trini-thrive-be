@@ -14,7 +14,7 @@ import type { Activity, UnifiedActivity } from './activity.service';
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('admin', 'hopecard')
-@Controller('hopecard/admin/activity')
+@Controller('api/v1/hopecard/admin/activity')
 export class ActivityController {
   constructor(private readonly activityService: ActivityService) {}
 

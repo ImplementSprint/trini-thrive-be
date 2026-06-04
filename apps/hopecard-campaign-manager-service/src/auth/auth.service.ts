@@ -10,7 +10,7 @@ export class AuthService implements OnModuleInit {
   private supabase!: SupabaseClient;
 
   constructor(
-    private configService: ConfigService,
+    private readonly configService: ConfigService,
     private readonly events: ProcedureEventService,
   ) {}
 

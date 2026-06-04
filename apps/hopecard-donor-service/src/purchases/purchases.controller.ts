@@ -3,7 +3,7 @@ import { PurchasesService } from './purchases.service';
 import { RequirePersona } from '@app/common';
 
 @RequirePersona('donor', 'hopecard')
-@Controller('hopecard/donor/purchases')
+@Controller('api/v1/hopecard/donor/purchases')
 export class PurchasesController {
   constructor(private readonly purchasesService: PurchasesService) {}
 

@@ -4,7 +4,7 @@ import { RequirePersona } from "@app/common";
 import { DashboardMetrics } from "./interfaces/dashboard-metrics.interface";
 
 @RequirePersona('admin', 'hopecard')
-@Controller('hopecard/admin/dashboard')
+@Controller('api/v1/hopecard/admin/dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
