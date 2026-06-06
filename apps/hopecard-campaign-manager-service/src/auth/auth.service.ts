@@ -39,6 +39,35 @@ export class AuthService implements OnModuleInit {
 
   private static readonly MAX_DOC_BYTES = 5 * 1024 * 1024; // 5 MB
 
+  private async uploadRegistrationDoc(
+    authUserId: string,
+    docFile: Express.Multer.File,
+    logLabel: string,
+    sizeError: string,
+    typeError: string,
+    storageSuffix: string,
+  ): Promise<string | null> {
+    if (docFile.size > AuthService.MAX_DOC_BYTES) {
+      await this.supabase.auth.admin.deleteUser(authUserId);
+      throw new BadRequestException(sizeError);
+    }
+    const ext = docFile.originalname.split('.').pop()?.toLowerCase() ?? '';
+    const allowedContentType = AuthService.ALLOWED_DOC_TYPES[ext];
+    if (!allowedContentType) {
+      await this.supabase.auth.admin.deleteUser(authUserId);
+      throw new BadRequestException(typeError);
+    }
+    const safePath = `${authUserId}/${Date.now()}-${storageSuffix}.${ext}`;
+    const { data: uploaded, error: uploadError } = await this.supabase.storage
+      .from('camp-man-files')
+      .upload(safePath, docFile.buffer, { contentType: allowedContentType, upsert: false });
+    if (uploadError) {
+      console.error(`[CM Register] ${logLabel} upload failed:`, uploadError.message);
+      return null;
+    }
+    return uploaded?.path ?? null;
+  }
+
   async register(
     body: { email: string; password: string; firstName: string; lastName: string; organization: string; contactNumber?: string },
     files: { secRegistration?: Express.Multer.File[]; orgCertificate?: Express.Multer.File[] },
@@ -66,56 +95,27 @@ export class AuthService implements OnModuleInit {
     const authUserId = created.user.id;
 
     // Upload documents with strict type + size validation
-    let secDocKey: string | null = null;
-    let orgDocKey: string | null = null;
+    const secDocKey = files.secRegistration?.[0]
+      ? await this.uploadRegistrationDoc(
+          authUserId,
+          files.secRegistration[0],
+          'SEC registration',
+          'SEC Registration document must be under 5 MB',
+          'SEC Registration document must be a PDF, JPG, or PNG',
+          'sec-registration',
+        )
+      : null;
 
-    if (files.secRegistration?.[0]) {
-      const docFile = files.secRegistration[0];
-      if (docFile.size > AuthService.MAX_DOC_BYTES) {
-        await this.supabase.auth.admin.deleteUser(authUserId);
-        throw new BadRequestException('SEC Registration document must be under 5 MB');
-      }
-      const ext = docFile.originalname.split('.').pop()?.toLowerCase() ?? '';
-      const allowedContentType = AuthService.ALLOWED_DOC_TYPES[ext];
-      if (!allowedContentType) {
-        await this.supabase.auth.admin.deleteUser(authUserId);
-        throw new BadRequestException('SEC Registration document must be a PDF, JPG, or PNG');
-      }
-
-      const safePath = `${authUserId}/${Date.now()}-sec-registration.${ext}`;
-      const { data: uploaded, error: uploadError } = await this.supabase.storage
-        .from('camp-man-files')
-        .upload(safePath, docFile.buffer, { contentType: allowedContentType, upsert: false });
-      if (uploadError) {
-        console.error('[CM Register] SEC registration upload failed:', uploadError.message);
-      } else if (uploaded) {
-        secDocKey = uploaded.path;
-      }
-    }
-
-    if (files.orgCertificate?.[0]) {
-      const docFile = files.orgCertificate[0];
-      if (docFile.size > AuthService.MAX_DOC_BYTES) {
-        await this.supabase.auth.admin.deleteUser(authUserId);
-        throw new BadRequestException('Organizational Certificate must be under 5 MB');
-      }
-      const ext = docFile.originalname.split('.').pop()?.toLowerCase() ?? '';
-      const allowedContentType = AuthService.ALLOWED_DOC_TYPES[ext];
-      if (!allowedContentType) {
-        await this.supabase.auth.admin.deleteUser(authUserId);
-        throw new BadRequestException('Organizational Certificate must be a PDF, JPG, or PNG');
-      }
-
-      const safePath = `${authUserId}/${Date.now()}-org-certificate.${ext}`;
-      const { data: uploaded, error: uploadError } = await this.supabase.storage
-        .from('camp-man-files')
-        .upload(safePath, docFile.buffer, { contentType: allowedContentType, upsert: false });
-      if (uploadError) {
-        console.error('[CM Register] Org certificate upload failed:', uploadError.message);
-      } else if (uploaded) {
-        orgDocKey = uploaded.path;
-      }
-    }
+    const orgDocKey = files.orgCertificate?.[0]
+      ? await this.uploadRegistrationDoc(
+          authUserId,
+          files.orgCertificate[0],
+          'Org certificate',
+          'Organizational Certificate must be under 5 MB',
+          'Organizational Certificate must be a PDF, JPG, or PNG',
+          'org-certificate',
+        )
+      : null;
 
     const { error: insertError } = await this.supabase
       .from('campaign_manager_profiles')

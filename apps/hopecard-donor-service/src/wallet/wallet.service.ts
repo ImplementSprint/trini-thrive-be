@@ -91,15 +91,30 @@ export class WalletService {
         ],
       });
 
-      const session = checkout as import('@implementsprint/sdk').PaymentCheckoutSession;
       return {
-        checkoutUrl: session.redirectUrl,
+        checkoutUrl: checkout.redirectUrl,
         referenceId,
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       throw new HttpException(`Payment provider error: ${msg}`, 502);
     }
+  }
+
+  private async resolvePaymentSession(referenceId: string): Promise<{ session: any; isMock: boolean }> {
+    if (this.client) {
+      try {
+        const session = await this.client.paymentGetCheckoutStatusByReference(referenceId);
+        return { session, isMock: false };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new HttpException(`Payment provider error: ${msg}`, 502);
+      }
+    }
+    if (process.env.NODE_ENV === 'production') {
+      throw new HttpException('Payment service unavailable', 503);
+    }
+    return { session: { status: 'paid', paymentMethod: 'mock_card' }, isMock: true };
   }
 
   async confirmTopUp(
@@ -123,24 +138,7 @@ export class WalletService {
       throw new HttpException('referenceId does not belong to this user', 403);
     }
 
-    let session: any;
-    let isMock = false;
-
-    if (!this.client) {
-      if (process.env.NODE_ENV !== 'production') {
-        session = { status: 'paid', paymentMethod: 'mock_card' };
-        isMock = true;
-      } else {
-        throw new HttpException('Payment service unavailable', 503);
-      }
-    } else {
-      try {
-        session = await this.client.paymentGetCheckoutStatusByReference(referenceId);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        throw new HttpException(`Payment provider error: ${msg}`, 502);
-      }
-    }
+    const { session, isMock } = await this.resolvePaymentSession(referenceId);
 
     const status = String(session.status ?? '').toLowerCase();
     if (!PAID_STATUSES.has(status)) {
@@ -156,7 +154,7 @@ export class WalletService {
       : amount;
 
     const now = new Date().toISOString();
-    const paymentMethod = String((session as any).paymentMethod ?? 'card');
+    const paymentMethod = String(session.paymentMethod ?? 'card');
 
     try {
       // [Replay] Reject if this referenceId was already credited

@@ -53,7 +53,7 @@ export class JwtGuard implements CanActivate {
       if (scheme === 'Bearer' && token) return token;
     }
     
-    if (request.cookies && request.cookies.admin_token) {
+    if (request.cookies?.admin_token) {
       return request.cookies.admin_token;
     }
     
