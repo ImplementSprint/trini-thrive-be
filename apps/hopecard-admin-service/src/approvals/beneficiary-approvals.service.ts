@@ -139,13 +139,13 @@ export class BeneficiaryApprovalsService {
 
       try {
         const email = data?.[0]?.email;
-        if (!email) {
-          console.warn('No email found for beneficiary after approval, skipping email notification');
-        } else {
+        if (email) {
           await sendApprovalEmail(email, {
             name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
             role: 'beneficiary',
           });
+        } else {
+          console.warn('No email found for beneficiary after approval, skipping email notification');
         }
       } catch (emailError) {
         console.warn('Failed to send approval email to beneficiary:', emailError);
@@ -201,7 +201,7 @@ export class BeneficiaryApprovalsService {
           admin_id: adminId,
           admin_email: adminEmail || 'admin@hopecard.com',
           action: 'REJECTED',
-          description: `Rejected beneficiary application: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}${reason ? ` - Reason: ${reason}` : ''}`,
+          description: `Rejected beneficiary application: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}` + (reason ? ` - Reason: ${reason}` : ''),
           resource_type: 'beneficiary',
           resource_id: beneficiaryId,
         });
@@ -217,9 +217,7 @@ export class BeneficiaryApprovalsService {
 
       try {
         const email = data?.[0]?.email;
-        if (!email) {
-          console.warn('No email found for beneficiary after rejection, skipping email notification');
-        } else {
+        if (email) {
           const emailPayload: { name: string; role: string; reason?: string } = {
             name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
             role: 'beneficiary',
@@ -228,6 +226,8 @@ export class BeneficiaryApprovalsService {
             emailPayload.reason = reason;
           }
           await sendRejectionEmail(email, emailPayload);
+        } else {
+          console.warn('No email found for beneficiary after rejection, skipping email notification');
         }
       } catch (emailError) {
         console.warn('Failed to send rejection email to beneficiary:', emailError);
@@ -445,7 +445,7 @@ export class BeneficiaryApprovalsService {
         admin_id: adminId,
         admin_email: adminEmail || 'admin@hopecard.com',
         action: 'REJECTED_DOCUMENTS',
-        description: `Rejected documents for beneficiary: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}${reason ? ` - Reason: ${reason}` : ''}`,
+        description: `Rejected documents for beneficiary: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}` + (reason ? ` - Reason: ${reason}` : ''),
         resource_type: 'beneficiary_document',
         resource_id: beneficiaryId,
       });
@@ -560,7 +560,7 @@ export class BeneficiaryApprovalsService {
         admin_id: adminId,
         admin_email: adminEmail || 'admin@hopecard.com',
         action: 'REJECTED_BANK',
-        description: `Rejected bank details for beneficiary: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}${reason ? ` - Reason: ${reason}` : ''}`,
+        description: `Rejected bank details for beneficiary: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}` + (reason ? ` - Reason: ${reason}` : ''),
         resource_type: 'beneficiary_bank',
         resource_id: beneficiaryId,
       });
@@ -619,7 +619,7 @@ export class BeneficiaryApprovalsService {
       }
 
       const formattedData = (data || []).map(doc => {
-        const profile = doc.beneficiary_profiles as any;
+        const profile = doc.beneficiary_profiles;
         return {
           ...doc,
           beneficiary_name: profile
@@ -673,7 +673,7 @@ export class BeneficiaryApprovalsService {
       }
 
       const formattedData = (data || []).map(bank => {
-        const profile = bank.beneficiary_profiles as any;
+        const profile = bank.beneficiary_profiles;
         return {
           ...bank,
           beneficiary_name: profile
