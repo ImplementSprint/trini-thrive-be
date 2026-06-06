@@ -110,7 +110,10 @@
       "PowerShell(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('C:/Users/arjel/Downloads/TriniThrive_Hopecard/Backend/trini-thrive-be/package.json','utf8'\\)\\); console.log\\('JSON valid'\\)\")",
       "Bash(ls *.json)",
       "Bash(npx nest *)",
-      "Bash(python -c \"import json; json.load\\(open\\('.claude/settings.local.json'\\)\\); print\\('JSON valid'\\)\")"
+      "Bash(python -c \"import json; json.load\\(open\\('.claude/settings.local.json'\\)\\); print\\('JSON valid'\\)\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\('package.json'\\)\\); jest=d.get\\('jest',{}\\); print\\(json.dumps\\(jest, indent=2\\)\\)\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\('package.json'\\)\\); jest=d.get\\('jest',{}\\); projects=jest.get\\('projects',[]\\); [print\\(p.get\\('displayName'\\), '|', p.get\\('collectCoverageFrom'\\)\\) for p in projects]\")",
+      "Bash(python -c ' *)"
     ]
   }
 }
