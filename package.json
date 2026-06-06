@@ -162,6 +162,9 @@
           "/libs/common/src/decorators/",
           "/libs/common/src/bootstrap/"
         ],
+        "transformIgnorePatterns": [
+          "node_modules/(?!(jose)/)"
+        ],
         "testEnvironment": "node"
       },
       {
@@ -201,6 +204,9 @@
           "/libs/common/src/decorators/",
           "/libs/common/src/bootstrap/"
         ],
+        "transformIgnorePatterns": [
+          "node_modules/(?!(jose)/)"
+        ],
         "testEnvironment": "node"
       },
       {
@@ -218,6 +224,8 @@
         "moduleNameMapper": {
           "^@app/common$": "<rootDir>/libs/common/src",
           "^@app/common/(.*)$": "<rootDir>/libs/common/src/$1",
+          "^@app/api-center$": "<rootDir>/libs/api-center/src",
+          "^@app/api-center/(.*)$": "<rootDir>/libs/api-center/src/$1",
           "^@app/supabase$": "<rootDir>/libs/supabase/src",
           "^@app/supabase/(.*)$": "<rootDir>/libs/supabase/src/$1",
           "^@app/contracts$": "<rootDir>/libs/contracts/src",
@@ -238,6 +246,9 @@
             "lines": 80
           }
         },
+        "transformIgnorePatterns": [
+          "node_modules/(?!(jose)/)"
+        ],
         "testEnvironment": "node"
       },
       {
@@ -275,6 +286,9 @@
             "lines": 80
           }
         },
+        "transformIgnorePatterns": [
+          "node_modules/(?!(jose)/)"
+        ],
         "testEnvironment": "node"
       },
       {
@@ -312,6 +326,9 @@
             "lines": 80
           }
         },
+        "transformIgnorePatterns": [
+          "node_modules/(?!(jose)/)"
+        ],
         "testEnvironment": "node"
       },
       {
@@ -350,6 +367,9 @@
           "/libs/common/src/guards/",
           "/libs/common/src/decorators/",
           "/libs/common/src/bootstrap/"
+        ],
+        "transformIgnorePatterns": [
+          "node_modules/(?!(jose)/)"
         ],
         "testEnvironment": "node"
       },
@@ -390,6 +410,9 @@
           "/libs/common/src/decorators/",
           "/libs/common/src/bootstrap/"
         ],
+        "transformIgnorePatterns": [
+          "node_modules/(?!(jose)/)"
+        ],
         "testEnvironment": "node"
       },
       {
@@ -428,6 +451,9 @@
           "/libs/common/src/guards/",
           "/libs/common/src/decorators/",
           "/libs/common/src/bootstrap/"
+        ],
+        "transformIgnorePatterns": [
+          "node_modules/(?!(jose)/)"
         ],
         "testEnvironment": "node"
       },
@@ -468,6 +494,9 @@
           "/libs/common/src/decorators/",
           "/libs/common/src/bootstrap/"
         ],
+        "transformIgnorePatterns": [
+          "node_modules/(?!(jose)/)"
+        ],
         "testEnvironment": "node"
       },
       {
@@ -506,6 +535,9 @@
           "/libs/common/src/guards/",
           "/libs/common/src/decorators/",
           "/libs/common/src/bootstrap/"
+        ],
+        "transformIgnorePatterns": [
+          "node_modules/(?!(jose)/)"
         ],
         "testEnvironment": "node"
       }
