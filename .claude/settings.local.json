@@ -111,6 +111,8 @@
       "Bash(ls *.json)",
       "Bash(npx nest *)",
       "Bash(python -c \"import json; json.load\\(open\\('.claude/settings.local.json'\\)\\); print\\('JSON valid'\\)\")"
+      "Bash(ls *.json)"
+      "Bash(npx nest *)"
     ]
   }
 }
