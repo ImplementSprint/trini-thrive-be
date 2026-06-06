@@ -146,14 +146,9 @@ export class IdentityDocumentsService {
       throw new ForbiddenException('Only pending documents can be deleted');
 
     if (doc.document_key) {
-      void (await this.admin.storage
-        .from('beneficiary-ids')
-        .remove([doc.document_key]));
+      await this.admin.storage.from('beneficiary-ids').remove([doc.document_key]);
     }
-    void (await this.admin
-      .from('beneficiary_identity_documents')
-      .delete()
-      .eq('id', documentId));
+    await this.admin.from('beneficiary_identity_documents').delete().eq('id', documentId);
     this.events.emit(
       'hopecard.document.deleted',
       { authUserId, beneficiaryProfileId: profile.id, documentId },

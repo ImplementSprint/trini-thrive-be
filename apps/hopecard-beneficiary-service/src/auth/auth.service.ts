@@ -304,6 +304,48 @@ export class AuthService {
     return { success: true };
   }
 
+  private formatBanDuration(statusExpiresAt: string | null): string {
+    if (!statusExpiresAt) return 'permanently';
+    const expDate = new Date(statusExpiresAt);
+    const diffMs = expDate.getTime() - Date.now();
+    if (diffMs <= 0) return 'temporarily';
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const expDateStr = expDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return diffDays === 1 ? `for 1 day (until ${expDateStr})` : `for ${diffDays} days (until ${expDateStr})`;
+  }
+
+  private checkBeneficiaryStatus(profile: {
+    status: string;
+    rejection_reason?: string | null;
+    status_reason?: string | null;
+    status_expires_at?: string | null;
+  }): void {
+    if (profile.status === 'pending' || profile.status === 'pending_review') {
+      throw new HttpException(
+        { code: 'PENDING_APPROVAL', message: 'Your application is under review. You will be notified once an admin approves it.' },
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    if (profile.status === 'rejected') {
+      throw new HttpException(
+        { code: 'REJECTED', message: 'Your account application was rejected.', reason: profile.rejection_reason ?? null },
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    if (profile.status === 'banned' || profile.status === 'suspended') {
+      const duration = this.formatBanDuration(profile.status_expires_at ?? null);
+      throw new HttpException(
+        {
+          code: profile.status === 'banned' ? 'BANNED' : 'SUSPENDED',
+          message: `Your account has been ${profile.status} ${duration}.`,
+          reason: profile.status_reason ?? null,
+          duration,
+        },
+        HttpStatus.FORBIDDEN,
+      );
+    }
+  }
+
   async login(email: string, password: string): Promise<{ success: boolean; token: string }> {
     const admin = this.admin;
 
@@ -325,44 +367,7 @@ export class AuthService {
       throw new UnauthorizedException('No beneficiary account found for this email');
     }
 
-    if (profile.status === 'pending' || profile.status === 'pending_review') {
-      throw new HttpException(
-        { code: 'PENDING_APPROVAL', message: 'Your application is under review. You will be notified once an admin approves it.' },
-        HttpStatus.FORBIDDEN,
-      );
-    }
-    if (profile.status === 'rejected') {
-      const reason = profile.rejection_reason ?? null;
-      throw new HttpException(
-        { code: 'REJECTED', message: 'Your account application was rejected.', reason },
-        HttpStatus.FORBIDDEN,
-      );
-    }
-    if (profile.status === 'banned' || profile.status === 'suspended') {
-      let duration: string;
-      if (profile.status_expires_at) {
-        const expDate = new Date(profile.status_expires_at);
-        const diffMs = expDate.getTime() - Date.now();
-        if (diffMs <= 0) {
-          duration = 'temporarily';
-        } else {
-          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-          const expDateStr = expDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-          duration = diffDays === 1 ? `for 1 day (until ${expDateStr})` : `for ${diffDays} days (until ${expDateStr})`;
-        }
-      } else {
-        duration = 'permanently';
-      }
-      throw new HttpException(
-        {
-          code: profile.status === 'banned' ? 'BANNED' : 'SUSPENDED',
-          message: `Your account has been ${profile.status} ${duration}.`,
-          reason: profile.status_reason ?? null,
-          duration,
-        },
-        HttpStatus.FORBIDDEN,
-      );
-    }
+    this.checkBeneficiaryStatus(profile);
 
     const secret = process.env['JWT_SECRET'];
     if (!secret) throw new InternalServerErrorException('JWT_SECRET not configured');

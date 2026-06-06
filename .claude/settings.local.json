@@ -107,9 +107,10 @@
       "Bash(npx nest *)",
       "Bash(cat nest-cli.json)",
       "Bash(ls *.json)",
-      "PowerShell(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('C:/Users/arjel/Downloads/TriniThrive_Hopecard/Backend/trini-thrive-be/package.json','utf8'\\)\\); console.log\\('JSON valid'\\)\")"
-      "Bash(ls *.json)"
-      "Bash(npx nest *)"
+      "PowerShell(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('C:/Users/arjel/Downloads/TriniThrive_Hopecard/Backend/trini-thrive-be/package.json','utf8'\\)\\); console.log\\('JSON valid'\\)\")",
+      "Bash(ls *.json)",
+      "Bash(npx nest *)",
+      "Bash(python -c \"import json; json.load\\(open\\('.claude/settings.local.json'\\)\\); print\\('JSON valid'\\)\")"
     ]
   }
 }

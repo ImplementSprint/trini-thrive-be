@@ -155,14 +155,14 @@ export class CampaignManagerApprovalsService {
 
       try {
         const email = managerData?.email ?? data?.[0]?.email;
-        if (!email) {
-          console.warn('No email found for campaign manager after approval, skipping email notification');
-        } else {
+        if (email) {
           const managerName = `${managerData?.first_name ?? ''} ${managerData?.last_name ?? ''}`.trim();
           await sendApprovalEmail(email, {
             name: managerName || 'Campaign Manager',
             role: 'campaign manager',
           });
+        } else {
+          console.warn('No email found for campaign manager after approval, skipping email notification');
         }
       } catch (emailError) {
         console.warn('Failed to send approval email to campaign manager:', emailError);
@@ -231,9 +231,7 @@ export class CampaignManagerApprovalsService {
 
       try {
         const email = managerData?.email ?? data?.[0]?.email;
-        if (!email) {
-          console.warn('No email found for campaign manager after rejection, skipping email notification');
-        } else {
+        if (email) {
           const managerName = `${managerData?.first_name ?? ''} ${managerData?.last_name ?? ''}`.trim();
           const emailPayload: { name: string; role: string; reason?: string } = {
             name: managerName || 'Campaign Manager',
@@ -243,6 +241,8 @@ export class CampaignManagerApprovalsService {
             emailPayload.reason = reason;
           }
           await sendRejectionEmail(email, emailPayload);
+        } else {
+          console.warn('No email found for campaign manager after rejection, skipping email notification');
         }
       } catch (emailError) {
         console.warn('Failed to send rejection email to campaign manager:', emailError);
