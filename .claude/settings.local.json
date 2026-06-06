@@ -107,6 +107,7 @@
       "Bash(npx nest *)",
       "Bash(cat nest-cli.json)",
       "Bash(ls *.json)"
+      "Bash(npx nest *)"
     ]
   }
 }
