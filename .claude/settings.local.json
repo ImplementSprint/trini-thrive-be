@@ -106,7 +106,8 @@
       "Bash(curl -s -X POST http://localhost:3103/api/v1/hopecard/cm/auth/register -F email=__TRACKED_VAR__ -F password=TestPass123! -F firstName=Verify -F lastName=Test -F 'organization=Test Org' -F contactNumber=09123456789 -w '\\\\nHTTP_STATUS:%{http_code}')",
       "Bash(npx nest *)",
       "Bash(cat nest-cli.json)",
-      "Bash(ls *.json)"
+      "Bash(ls *.json)",
+      "PowerShell(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('C:/Users/arjel/Downloads/TriniThrive_Hopecard/Backend/trini-thrive-be/package.json','utf8'\\)\\); console.log\\('JSON valid'\\)\")"
     ]
   }
 }
