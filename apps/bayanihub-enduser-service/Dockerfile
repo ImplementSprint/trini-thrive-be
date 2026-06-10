@@ -2,9 +2,9 @@
 FROM node:22-alpine AS builder
 
 WORKDIR /app
-COPY package*.json .npmrc ./
-RUN --mount=type=secret,id=GITHUB_TOKEN \
-    GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" npm ci --ignore-scripts
+
+COPY package*.json ./
+RUN npm ci --ignore-scripts
 
 COPY tsconfig*.json nest-cli.json ./
 COPY apps ./apps
@@ -18,11 +18,21 @@ ENV NODE_ENV=production
 ENV BAYANIHUB_ENDUSER_PORT=3001
 
 WORKDIR /app
-COPY package*.json .npmrc ./
-RUN --mount=type=secret,id=GITHUB_TOKEN \
-    GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" \
-    npm ci --omit=dev --ignore-scripts \
-  && rm -f .npmrc package-lock.json
-COPY --from=builder /app/dist ./dist
-EXPOSE 3302
+
+COPY package*.json ./
+RUN apk upgrade --no-cache zlib \
+  && npm ci --omit=dev --ignore-scripts \
+  && rm package-lock.json \
+  && addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nestjs
+
+COPY --chown=nestjs:nodejs --from=builder /app/dist ./dist
+
+USER nestjs
+
+EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+  CMD node -e "require('net').createConnection(${BAYANIHUB_ENDUSER_PORT:-3001}, '127.0.0.1').on('connect', s => { s.end(); process.exit(0); }).on('error', () => process.exit(1));"
+
 CMD ["node", "dist/apps/bayanihub-enduser-service/main"]
