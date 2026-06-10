@@ -14,8 +14,8 @@ export class CampaignsService implements OnModuleInit {
   private supabase!: SupabaseClient;
 
   constructor(
-    private configService: ConfigService,
-    private httpService: HttpService,
+    private readonly configService: ConfigService,
+    private readonly httpService: HttpService,
     private readonly events: ProcedureEventService,
   ) {}
 
@@ -106,18 +106,19 @@ export class CampaignsService implements OnModuleInit {
 
       const notificationServiceUrl =
         this.configService.get<string>('NOTIFICATION_SERVICE_URL') ||
-        'http://localhost:3003';
+        'http://localhost:3105';
 
       for (const b of beneficiaries || []) {
         if (!b.email) continue;
         try {
           await firstValueFrom(
             this.httpService.post(
-              `${notificationServiceUrl}/notifications/send-email`,
+              `${notificationServiceUrl}/api/v1/hopecard/notification/notifications/send-email`,
               {
                 to: b.email,
                 subject: 'You have been invited to a new HopeCard Campaign!',
                 html: `
+
                 <div style="font-family: sans-serif; text-align: center; color: #333;">
                   <h2 style="color: #b55247;">Hello ${b.first_name || 'Beneficiary'},</h2>
                   <p>You have been selected as a beneficiary for a newly created campaign on HopeCard.</p>
@@ -125,6 +126,7 @@ export class CampaignsService implements OnModuleInit {
                 </div>
               `,
               },
+              { headers: { 'x-internal-key': this.configService.get<string>('INTERNAL_API_KEY') ?? '' } },
             ),
           );
         } catch (mailError) {

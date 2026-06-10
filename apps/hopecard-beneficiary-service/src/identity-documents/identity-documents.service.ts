@@ -64,7 +64,7 @@ export class IdentityDocumentsService {
     const filename = `${profile.id}/${Date.now()}-${label ?? 'document'}.${ext}`;
 
     const { data, error } = (await this.admin.storage
-      .from('beneficiary-documents')
+      .from('beneficiary-ids')
       .upload(filename, file.buffer, {
         contentType: file.mimetype,
         upsert: false,
@@ -79,7 +79,7 @@ export class IdentityDocumentsService {
 
     const {
       data: { publicUrl },
-    } = this.admin.storage.from('beneficiary-documents').getPublicUrl(filename);
+    } = this.admin.storage.from('beneficiary-ids').getPublicUrl(filename);
 
     const docLabel = label ?? 'Identity Document';
     const { data: inserted } = (await this.admin
@@ -146,14 +146,9 @@ export class IdentityDocumentsService {
       throw new ForbiddenException('Only pending documents can be deleted');
 
     if (doc.document_key) {
-      void (await this.admin.storage
-        .from('beneficiary-documents')
-        .remove([doc.document_key]));
+      await this.admin.storage.from('beneficiary-ids').remove([doc.document_key]);
     }
-    void (await this.admin
-      .from('beneficiary_identity_documents')
-      .delete()
-      .eq('id', documentId));
+    await this.admin.from('beneficiary_identity_documents').delete().eq('id', documentId);
     this.events.emit(
       'hopecard.document.deleted',
       { authUserId, beneficiaryProfileId: profile.id, documentId },
@@ -168,7 +163,7 @@ export class IdentityDocumentsService {
   async getSignedUrl(authUserId: string, documentKey: string) {
     await this.getProfile(authUserId);
     const { data, error } = (await this.admin.storage
-      .from('beneficiary-documents')
+      .from('beneficiary-ids')
       .createSignedUrl(documentKey, 60 * 60)) as {
       data: { signedUrl: string } | null;
       error: SbError;

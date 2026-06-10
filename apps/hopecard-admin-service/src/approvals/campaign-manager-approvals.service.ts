@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
 import { ProcedureEventService } from '@app/api-center';
+import { sendApprovalEmail, sendRejectionEmail } from '@app/common/email';
 
 export interface CampaignManagerApproval {
   id: string;
@@ -31,15 +32,27 @@ export class CampaignManagerApprovalsService {
     try {
       const offset = (page - 1) * limit;
 
-      // Get total count
+      // Only show managers who have confirmed their email
+      const { data: { users: authUsers } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+      const confirmedIds = (authUsers || [])
+        .filter(u => u.email_confirmed_at)
+        .map(u => u.id);
+
+      if (confirmedIds.length === 0) {
+        return { data: [], total: 0, page, limit };
+      }
+
+      // Get total count of confirmed managers
       const { count } = await supabase
         .from('campaign_manager_profiles')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact', head: true })
+        .in('auth_user_id', confirmedIds);
 
-      // Get paginated campaign managers
+      // Get paginated confirmed campaign managers
       const { data, error } = await supabase
         .from('campaign_manager_profiles')
         .select('*')
+        .in('auth_user_id', confirmedIds)
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -48,8 +61,6 @@ export class CampaignManagerApprovalsService {
         return { data: [], total: 0, page, limit };
       }
 
-      console.log('✅ Pending campaign manager approvals:', count);
-      
       // Fetch user emails from auth.users for managers that don't have email
       const managersWithEmail = await Promise.all(
         (data || []).map(async (manager) => {
@@ -58,7 +69,7 @@ export class CampaignManagerApprovalsService {
               ...manager,
               organization: manager.organization_name,
               verification_status: manager.status,
-              documents_verified: !!manager.organization_document_key
+              documents_verified: !!(manager.sec_registration || manager.organizational_certificate)
             };
           }
           
@@ -75,7 +86,7 @@ export class CampaignManagerApprovalsService {
                 email: authUser.email,
                 organization: manager.organization_name,
                 verification_status: manager.status,
-                documents_verified: !!manager.organization_document_key
+                documents_verified: !!(manager.sec_registration || manager.organizational_certificate)
               };
             }
           }
@@ -83,7 +94,7 @@ export class CampaignManagerApprovalsService {
             ...manager,
             organization: manager.organization_name,
             verification_status: manager.status,
-            documents_verified: !!manager.organization_document_key
+            documents_verified: !!(manager.sec_registration || manager.organizational_certificate)
           };
         })
       );
@@ -103,6 +114,12 @@ export class CampaignManagerApprovalsService {
     adminId: string,
   ): Promise<{ success: boolean; message: string; data?: any }> {
     try {
+      const { data: managerData } = await supabase
+        .from('campaign_manager_profiles')
+        .select('first_name, last_name, email')
+        .eq('id', campaignManagerId)
+        .single();
+
       const { data, error } = await supabase
         .from('campaign_manager_profiles')
         .update({
@@ -117,11 +134,39 @@ export class CampaignManagerApprovalsService {
         return { success: false, message: 'Failed to approve campaign manager' };
       }
 
+      try {
+        await this.activityService.logActivity({
+          admin_id: adminId,
+          admin_email: 'admin@hopecard.com',
+          action: 'APPROVED',
+          description: `Approved campaign manager application: ${managerData?.first_name ?? ''} ${managerData?.last_name ?? ''}`.trim(),
+          resource_type: 'campaign_manager',
+          resource_id: campaignManagerId,
+        });
+      } catch (activityError) {
+        console.warn('Failed to log activity, but approval succeeded:', activityError);
+      }
+
       this.events.emit(
         'hopecard.campaign_manager.approved',
         { campaignManagerId, adminId },
         { partitionKey: campaignManagerId, sourceServiceId: 'hopecard-admin-service' },
       );
+
+      try {
+        const email = managerData?.email ?? data?.[0]?.email;
+        if (email) {
+          const managerName = `${managerData?.first_name ?? ''} ${managerData?.last_name ?? ''}`.trim();
+          await sendApprovalEmail(email, {
+            name: managerName || 'Campaign Manager',
+            role: 'campaign manager',
+          });
+        } else {
+          console.warn('No email found for campaign manager after approval, skipping email notification');
+        }
+      } catch (emailError) {
+        console.warn('Failed to send approval email to campaign manager:', emailError);
+      }
 
       console.log('✅ Campaign manager approved:', campaignManagerId);
       return {
@@ -144,6 +189,12 @@ export class CampaignManagerApprovalsService {
     reason?: string,
   ): Promise<{ success: boolean; message: string; data?: any }> {
     try {
+      const { data: managerData } = await supabase
+        .from('campaign_manager_profiles')
+        .select('first_name, last_name, email')
+        .eq('id', campaignManagerId)
+        .single();
+
       const { data, error } = await supabase
         .from('campaign_manager_profiles')
         .update({
@@ -159,11 +210,43 @@ export class CampaignManagerApprovalsService {
         return { success: false, message: 'Failed to reject campaign manager' };
       }
 
+      try {
+        await this.activityService.logActivity({
+          admin_id: adminId,
+          admin_email: 'admin@hopecard.com',
+          action: 'REJECTED',
+          description: `Rejected campaign manager application: ${managerData?.first_name ?? ''} ${managerData?.last_name ?? ''}`.trim() + (reason ? ` - Reason: ${reason}` : ''),
+          resource_type: 'campaign_manager',
+          resource_id: campaignManagerId,
+        });
+      } catch (activityError) {
+        console.warn('Failed to log activity, but rejection succeeded:', activityError);
+      }
+
       this.events.emit(
         'hopecard.campaign_manager.rejected',
         { campaignManagerId, adminId, reason: reason ?? null },
         { partitionKey: campaignManagerId, sourceServiceId: 'hopecard-admin-service' },
       );
+
+      try {
+        const email = managerData?.email ?? data?.[0]?.email;
+        if (email) {
+          const managerName = `${managerData?.first_name ?? ''} ${managerData?.last_name ?? ''}`.trim();
+          const emailPayload: { name: string; role: string; reason?: string } = {
+            name: managerName || 'Campaign Manager',
+            role: 'campaign manager',
+          };
+          if (reason) {
+            emailPayload.reason = reason;
+          }
+          await sendRejectionEmail(email, emailPayload);
+        } else {
+          console.warn('No email found for campaign manager after rejection, skipping email notification');
+        }
+      } catch (emailError) {
+        console.warn('Failed to send rejection email to campaign manager:', emailError);
+      }
 
       console.log('✅ Campaign manager rejected:', campaignManagerId);
       return {

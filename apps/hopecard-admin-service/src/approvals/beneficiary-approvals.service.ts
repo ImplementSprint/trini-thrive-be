@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { supabase } from '@app/common/supabase-client';
 import { ActivityLogger } from '@app/common/activity-logger';
 import { ProcedureEventService } from '@app/api-center';
+import { sendApprovalEmail, sendRejectionEmail } from '@app/common/email';
 
 export interface BeneficiaryApproval {
   id: string;
@@ -32,10 +33,10 @@ export class BeneficiaryApprovalsService {
     try {
       const offset = (page - 1) * limit;
 
-      // Get total count (all statuses)
+      // Get total count of all beneficiary profiles
       const { count } = await supabase
         .from('beneficiary_profiles')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact', head: true });
 
       // Get paginated beneficiaries
       const { data, error } = await supabase
@@ -136,6 +137,20 @@ export class BeneficiaryApprovalsService {
         { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
       );
 
+      try {
+        const email = data?.[0]?.email;
+        if (email) {
+          await sendApprovalEmail(email, {
+            name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
+            role: 'beneficiary',
+          });
+        } else {
+          console.warn('No email found for beneficiary after approval, skipping email notification');
+        }
+      } catch (emailError) {
+        console.warn('Failed to send approval email to beneficiary:', emailError);
+      }
+
       console.log('✅ Beneficiary approved:', beneficiaryId);
       return {
         success: true,
@@ -186,7 +201,7 @@ export class BeneficiaryApprovalsService {
           admin_id: adminId,
           admin_email: adminEmail || 'admin@hopecard.com',
           action: 'REJECTED',
-          description: `Rejected beneficiary application: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}${reason ? ` - Reason: ${reason}` : ''}`,
+          description: `Rejected beneficiary application: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}` + (reason ? ` - Reason: ${reason}` : ''),
           resource_type: 'beneficiary',
           resource_id: beneficiaryId,
         });
@@ -199,6 +214,24 @@ export class BeneficiaryApprovalsService {
         { beneficiaryId, adminId, name: `${beneficiaryData?.first_name} ${beneficiaryData?.last_name}`, reason: reason ?? null },
         { partitionKey: beneficiaryId, sourceServiceId: 'hopecard-admin-service' },
       );
+
+      try {
+        const email = data?.[0]?.email;
+        if (email) {
+          const emailPayload: { name: string; role: string; reason?: string } = {
+            name: `${beneficiaryData?.first_name ?? ''} ${beneficiaryData?.last_name ?? ''}`.trim(),
+            role: 'beneficiary',
+          };
+          if (reason) {
+            emailPayload.reason = reason;
+          }
+          await sendRejectionEmail(email, emailPayload);
+        } else {
+          console.warn('No email found for beneficiary after rejection, skipping email notification');
+        }
+      } catch (emailError) {
+        console.warn('Failed to send rejection email to beneficiary:', emailError);
+      }
 
       console.log('✅ Beneficiary rejected:', beneficiaryId);
       return {
@@ -412,7 +445,7 @@ export class BeneficiaryApprovalsService {
         admin_id: adminId,
         admin_email: adminEmail || 'admin@hopecard.com',
         action: 'REJECTED_DOCUMENTS',
-        description: `Rejected documents for beneficiary: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}${reason ? ` - Reason: ${reason}` : ''}`,
+        description: `Rejected documents for beneficiary: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}` + (reason ? ` - Reason: ${reason}` : ''),
         resource_type: 'beneficiary_document',
         resource_id: beneficiaryId,
       });
@@ -527,7 +560,7 @@ export class BeneficiaryApprovalsService {
         admin_id: adminId,
         admin_email: adminEmail || 'admin@hopecard.com',
         action: 'REJECTED_BANK',
-        description: `Rejected bank details for beneficiary: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}${reason ? ` - Reason: ${reason}` : ''}`,
+        description: `Rejected bank details for beneficiary: ${beneficiaryData?.first_name} ${beneficiaryData?.last_name}` + (reason ? ` - Reason: ${reason}` : ''),
         resource_type: 'beneficiary_bank',
         resource_id: beneficiaryId,
       });
@@ -586,7 +619,7 @@ export class BeneficiaryApprovalsService {
       }
 
       const formattedData = (data || []).map(doc => {
-        const profile = doc.beneficiary_profiles as any;
+        const profile = doc.beneficiary_profiles;
         return {
           ...doc,
           beneficiary_name: profile
@@ -640,7 +673,7 @@ export class BeneficiaryApprovalsService {
       }
 
       const formattedData = (data || []).map(bank => {
-        const profile = bank.beneficiary_profiles as any;
+        const profile = bank.beneficiary_profiles;
         return {
           ...bank,
           beneficiary_name: profile

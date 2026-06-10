@@ -1,6 +1,8 @@
 version: '3.9'
 
 services:
+  # ── BayaniHub ──────────────────────────────────────────────────────────────
+
   bayanihub-admin-service:
     build:
       context: .
@@ -87,101 +89,237 @@ services:
       retries: 3
       start_period: 20s
 
+  # ── HopeCard ───────────────────────────────────────────────────────────────
+
   hopecard-admin-service:
     build:
       context: .
       dockerfile: apps/hopecard-admin-service/Dockerfile
+    image: hopecard-admin-service:latest
+    container_name: hopecard-admin-service
+    restart: unless-stopped
     ports:
-      - "3101:3101"
-    env_file: .env
+      - '${HOPECARD_ADMIN_PORT:-3101}:3101'
     environment:
-      HOPECARD_ADMIN_PORT: "3101"
-      PORT: "3101"
+      NODE_ENV: ${NODE_ENV:-production}
+      HOPECARD_ADMIN_PORT: 3101
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3101/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   hopecard-beneficiary-service:
     build:
       context: .
       dockerfile: apps/hopecard-beneficiary-service/Dockerfile
+    image: hopecard-beneficiary-service:latest
+    container_name: hopecard-beneficiary-service
+    restart: unless-stopped
     ports:
-      - "3102:3102"
-    env_file: .env
+      - '${HOPECARD_BENE_PORT:-3102}:3102'
     environment:
-      HOPECARD_BENE_PORT: "3102"
-      PORT: "3102"
+      NODE_ENV: ${NODE_ENV:-production}
+      HOPECARD_BENE_PORT: 3102
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3102/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   hopecard-campaign-manager-service:
     build:
       context: .
       dockerfile: apps/hopecard-campaign-manager-service/Dockerfile
+    image: hopecard-campaign-manager-service:latest
+    container_name: hopecard-campaign-manager-service
+    restart: unless-stopped
     ports:
-      - "3103:3103"
-    env_file: .env
+      - '${HOPECARD_CM_PORT:-3103}:3103'
     environment:
-      HOPECARD_CM_PORT: "3103"
-      PORT: "3103"
+      NODE_ENV: ${NODE_ENV:-production}
+      HOPECARD_CM_PORT: 3103
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL:-http://hopecard-notification-service:3105}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3103/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   hopecard-donor-service:
     build:
       context: .
       dockerfile: apps/hopecard-donor-service/Dockerfile
+    image: hopecard-donor-service:latest
+    container_name: hopecard-donor-service
+    restart: unless-stopped
     ports:
-      - "3104:3104"
-    env_file: .env
+      - '${HOPECARD_DONOR_PORT:-3104}:3104'
     environment:
-      HOPECARD_DONOR_PORT: "3104"
-      PORT: "3104"
+      NODE_ENV: ${NODE_ENV:-production}
+      HOPECARD_DONOR_PORT: 3104
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3104/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   hopecard-notification-service:
     build:
       context: .
       dockerfile: apps/hopecard-notification-service/Dockerfile
+    image: hopecard-notification-service:latest
+    container_name: hopecard-notification-service
+    restart: unless-stopped
     ports:
-      - "3105:3105"
-    env_file: .env
+      - '${HOPECARD_NOTIFICATION_PORT:-3105}:3105'
     environment:
-      HOPECARD_NOTIFICATION_PORT: "3105"
-      PORT: "3105"
+      NODE_ENV: ${NODE_ENV:-production}
+      HOPECARD_NOTIFICATION_PORT: 3105
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3105/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Damayan ────────────────────────────────────────────────────────────────
 
   damayan-admin-service:
     build:
       context: .
       dockerfile: apps/damayan-admin-service/Dockerfile
+    image: damayan-admin-service:latest
+    container_name: damayan-admin-service
+    restart: unless-stopped
     ports:
-      - "3201:3201"
-    env_file: .env
+      - '${DAMAYAN_ADMIN_PORT:-3201}:3201'
     environment:
-      DAMAYAN_ADMIN_PORT: "3201"
-      PORT: "3201"
+      NODE_ENV: ${NODE_ENV:-production}
+      DAMAYAN_ADMIN_PORT: 3201
+      DAMAYAN_ADMIN_SUPABASE_URL: ${DAMAYAN_ADMIN_SUPABASE_URL}
+      DAMAYAN_ADMIN_SUPABASE_SERVICE_ROLE_KEY: ${DAMAYAN_ADMIN_SUPABASE_SERVICE_ROLE_KEY}
+      DAMAYAN_ADMIN_JWT_SECRET: ${DAMAYAN_ADMIN_JWT_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3201/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   damayan-site-manager-service:
     build:
       context: .
       dockerfile: apps/damayan-site-manager-service/Dockerfile
+    image: damayan-site-manager-service:latest
+    container_name: damayan-site-manager-service
+    restart: unless-stopped
     ports:
-      - "3202:3202"
-    env_file: .env
+      - '${DAMAYAN_SM_PORT:-3202}:3202'
     environment:
-      DAMAYAN_SM_PORT: "3202"
-      PORT: "3202"
+      NODE_ENV: ${NODE_ENV:-production}
+      DAMAYAN_SM_PORT: 3202
+      DAMAYAN_SM_SUPABASE_URL: ${DAMAYAN_SM_SUPABASE_URL}
+      DAMAYAN_SM_SUPABASE_SERVICE_ROLE_KEY: ${DAMAYAN_SM_SUPABASE_SERVICE_ROLE_KEY}
+      DAMAYAN_SM_JWT_SECRET: ${DAMAYAN_SM_JWT_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3202/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   damayan-dispatcher-service:
     build:
       context: .
       dockerfile: apps/damayan-dispatcher-service/Dockerfile
+    image: damayan-dispatcher-service:latest
+    container_name: damayan-dispatcher-service
+    restart: unless-stopped
     ports:
-      - "3203:3203"
-    env_file: .env
+      - '${DAMAYAN_DISPATCHER_PORT:-3203}:3203'
     environment:
-      DAMAYAN_DISPATCHER_PORT: "3203"
-      PORT: "3203"
+      NODE_ENV: ${NODE_ENV:-production}
+      DAMAYAN_DISPATCHER_PORT: 3203
+      DAMAYAN_DISPATCHER_SUPABASE_URL: ${DAMAYAN_DISPATCHER_SUPABASE_URL}
+      DAMAYAN_DISPATCHER_SUPABASE_SERVICE_ROLE_KEY: ${DAMAYAN_DISPATCHER_SUPABASE_SERVICE_ROLE_KEY}
+      DAMAYAN_DISPATCHER_JWT_SECRET: ${DAMAYAN_DISPATCHER_JWT_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3203/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   damayan-citizen-service:
     build:
       context: .
       dockerfile: apps/damayan-citizen-service/Dockerfile
+    image: damayan-citizen-service:latest
+    container_name: damayan-citizen-service
+    restart: unless-stopped
     ports:
-      - "3204:3204"
-    env_file: .env
+      - '${DAMAYAN_CITIZEN_PORT:-3204}:3204'
     environment:
-      DAMAYAN_CITIZEN_PORT: "3204"
-      PORT: "3204"
+      NODE_ENV: ${NODE_ENV:-production}
+      DAMAYAN_CITIZEN_PORT: 3204
+      DAMAYAN_CITIZEN_SUPABASE_URL: ${DAMAYAN_CITIZEN_SUPABASE_URL}
+      DAMAYAN_CITIZEN_SUPABASE_SERVICE_ROLE_KEY: ${DAMAYAN_CITIZEN_SUPABASE_SERVICE_ROLE_KEY}
+      DAMAYAN_CITIZEN_JWT_SECRET: ${DAMAYAN_CITIZEN_JWT_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3204/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

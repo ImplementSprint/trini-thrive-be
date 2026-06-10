@@ -6,7 +6,7 @@ import * as nodemailer from 'nodemailer';
 export class NotificationsService {
   private transporter: nodemailer.Transporter;
 
-  constructor(private configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('SMTP_HOST'),
       port: parseInt(this.configService.get<string>('SMTP_PORT') || '465'),

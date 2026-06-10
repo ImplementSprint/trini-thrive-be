@@ -10,14 +10,13 @@ import {
   Request,
 } from '@nestjs/common';
 import { ActivityService } from './activity.service';
-import type { Activity } from './activity.service';
+import type { Activity, UnifiedActivity } from './activity.service';
 import { RequirePersona } from '@app/common';
-import { supabase } from '@app/common/supabase-client';
 
-@RequirePersona('admin')
-@Controller('hopecard/admin/activity')
+@RequirePersona('admin', 'hopecard')
+@Controller('api/v1/hopecard/admin/activity')
 export class ActivityController {
-  constructor(private activityService: ActivityService) {}
+  constructor(private readonly activityService: ActivityService) {}
 
   @Post('log')
 
@@ -53,8 +52,8 @@ export class ActivityController {
     @Query('date_to') dateTo?: string,
   ) {
     try {
-      const pageNum = Math.max(1, parseInt(page, 10) || 1);
-      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+      const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 20));
 
       const filters: {
         admin_id?: string;
@@ -77,8 +76,8 @@ export class ActivityController {
       return {
         data: [],
         total: 0,
-        page: parseInt(page, 10) || 1,
-        limit: parseInt(limit, 10) || 20,
+        page: Number.parseInt(page, 10) || 1,
+        limit: Number.parseInt(limit, 10) || 20,
       };
     }
   }
@@ -87,7 +86,7 @@ export class ActivityController {
 
   async getRecentActivity(@Query('hours') hours: string = '24') {
     try {
-      const hoursNum = Math.min(8760, Math.max(1, parseInt(hours, 10) || 24)); // Max 1 year
+      const hoursNum = Math.min(8760, Math.max(1, Number.parseInt(hours, 10) || 24)); // Max 1 year
       return await this.activityService.getRecentActivity(hoursNum);
     } catch (error) {
       console.error('❌ Error in getRecentActivity:', error);
@@ -101,6 +100,19 @@ export class ActivityController {
     }
   }
 
+  @Get('unified')
+  async getUnifiedActivity(
+    @Query('limit') limit: string = '50',
+  ): Promise<UnifiedActivity[]> {
+    try {
+      const limitNum = Math.min(200, Math.max(1, Number.parseInt(limit, 10) || 50));
+      return await this.activityService.getUnifiedActivity(limitNum);
+    } catch (error) {
+      console.error('❌ Error in getUnifiedActivity:', error);
+      return [];
+    }
+  }
+
   @Get('by-admin/:adminId')
 
   async getActivityByAdmin(
@@ -109,16 +121,16 @@ export class ActivityController {
     @Query('limit') limit: string = '20',
   ) {
     try {
-      const pageNum = Math.max(1, parseInt(page, 10) || 1);
-      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+      const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 20));
       return await this.activityService.getActivityByAdmin(adminId, pageNum, limitNum);
     } catch (error) {
       console.error('❌ Error in getActivityByAdmin:', error);
       return {
         data: [],
         total: 0,
-        page: parseInt(page, 10) || 1,
-        limit: parseInt(limit, 10) || 20,
+        page: Number.parseInt(page, 10) || 1,
+        limit: Number.parseInt(limit, 10) || 20,
       };
     }
   }
@@ -131,8 +143,8 @@ export class ActivityController {
     @Query('limit') limit: string = '20',
   ) {
     try {
-      const pageNum = Math.max(1, parseInt(page, 10) || 1);
-      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+      const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 20));
       return await this.activityService.getActivityByResourceType(
         resourceType,
         pageNum,
@@ -143,8 +155,8 @@ export class ActivityController {
       return {
         data: [],
         total: 0,
-        page: parseInt(page, 10) || 1,
-        limit: parseInt(limit, 10) || 20,
+        page: Number.parseInt(page, 10) || 1,
+        limit: Number.parseInt(limit, 10) || 20,
       };
     }
   }
@@ -157,16 +169,16 @@ export class ActivityController {
     @Query('limit') limit: string = '20',
   ) {
     try {
-      const pageNum = Math.max(1, parseInt(page, 10) || 1);
-      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+      const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 20));
       return await this.activityService.getActivityByAction(action, pageNum, limitNum);
     } catch (error) {
       console.error('❌ Error in getActivityByAction:', error);
       return {
         data: [],
         total: 0,
-        page: parseInt(page, 10) || 1,
-        limit: parseInt(limit, 10) || 20,
+        page: Number.parseInt(page, 10) || 1,
+        limit: Number.parseInt(limit, 10) || 20,
       };
     }
   }
@@ -175,7 +187,7 @@ export class ActivityController {
 
   @HttpCode(HttpStatus.OK)
   async deleteOldActivities(@Query('days') days: string = '90') {
-    const daysNum = Math.min(3650, Math.max(1, parseInt(days, 10) || 90)); // Max 10 years
+    const daysNum = Math.min(3650, Math.max(1, Number.parseInt(days, 10) || 90)); // Max 10 years
     return this.activityService.deleteOldActivities(daysNum);
   }
 }

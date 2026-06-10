@@ -54,7 +54,9 @@ export class TribeRegistrationService implements OnApplicationBootstrap {
   constructor(private readonly configService: ConfigService) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    const apiCenterUrl = this.configService.get<string>('API_CENTER_BASE_URL');
+    const apiCenterUrl =
+      this.configService.get<string>('API_CENTER_BASE_URL') ||
+      this.configService.get<string>('APICENTER_URL');
 
     if (!apiCenterUrl) {
       this.logger.debug(
@@ -71,6 +73,7 @@ export class TribeRegistrationService implements OnApplicationBootstrap {
     const serviceId =
       this.configService.get<string>('TRIBE_SERVICE_ID') ??
       this.configService.get<string>('API_CENTER_TRIBE_ID') ??
+      this.configService.get<string>('APICENTER_TRIBE_ID') ??
       manifest.serviceId;
 
     const name = this.configService.get<string>('TRIBE_NAME') ?? manifest.name;

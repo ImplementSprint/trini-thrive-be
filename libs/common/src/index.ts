@@ -4,6 +4,7 @@ export * from './config/security.config';
 export * from './decorators/require-persona.decorator';
 export * from './filters/all-exceptions.filter';
 export * from './gateway/gateway.module';
+export * from './guards/internal-key.guard';
 export * from './guards/jwt.guard';
 export * from './guards/persona.guard';
 export * from './health/health.module';

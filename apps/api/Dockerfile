@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY package*.json .npmrc ./
 RUN --mount=type=secret,id=GITHUB_TOKEN \
-  GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" npm ci
+    GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" npm ci
 
 COPY tsconfig*.json nest-cli.json ./
 COPY apps ./apps
@@ -20,9 +20,10 @@ WORKDIR /app
 
 COPY package*.json .npmrc ./
 RUN --mount=type=secret,id=GITHUB_TOKEN \
-  apk upgrade --no-cache zlib \
-  && GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" npm ci --omit=dev \
-  && rm .npmrc package-lock.json \
+    GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" \
+    apk upgrade --no-cache zlib \
+  && npm ci --omit=dev \
+  && rm -f .npmrc package-lock.json \
   && addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nestjs
 

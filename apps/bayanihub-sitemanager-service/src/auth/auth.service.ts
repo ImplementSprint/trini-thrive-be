@@ -62,6 +62,13 @@ export class AuthService {
       .eq('auth_user_id', data.user.id)
       .single();
 
+    const siteManagerRoles = ['site_manager', 'site manager', 'siteman', 'site-manager'];
+    const userRole = String(profile?.role ?? '').toLowerCase().trim();
+    if (!siteManagerRoles.includes(userRole)) {
+      this.logger.warn(`Login denied for ${dto.email}: role '${userRole}' is not a site manager role`);
+      throw new UnauthorizedException('Access denied. Site manager role required.');
+    }
+
     const secret = process.env['JWT_SECRET'] ?? '';
     const token = await new SignJWT({
       sub: data.user.id,

@@ -1,12 +1,13 @@
-import { Controller, Post, Body, Get, Request, HttpException, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Body, Get, Request, Res, HttpException, HttpStatus } from "@nestjs/common";
+import type { Response } from 'express';
 import { AuthService } from "./auth.service";
 import { sendOTPEmail } from "@app/common/email";
 import { Protected } from "@app/common/decorators/protected.decorator";
 import { supabase } from "@app/common/supabase-client";
 
-@Controller('hopecard/admin/auth')
+@Controller('api/v1/hopecard/admin/auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post("login")
   async login(@Body() body: { email: string; password: string }) {
@@ -183,11 +184,11 @@ export class AuthController {
    */
   @Post("logout")
   @Protected()
-  async logout(@Request() req: any) {
+  async logout(@Request() req: any, @Res({ passthrough: true }) res: Response) {
     try {
       const user = req.user;
       console.log(`🚪 User ${user.email} logged out`);
-      
+      res.cookie('persona', '', { maxAge: 0, path: '/', httpOnly: false, sameSite: 'lax' });
       return {
         success: true,
         message: "Logged out successfully",

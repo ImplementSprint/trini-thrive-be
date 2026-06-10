@@ -29,13 +29,15 @@ export class ProfileService {
   async getProfile(authUserId: string, email?: string) {
     if (!authUserId || !UUID_RE.test(authUserId)) throw new HttpException('Invalid authUserId', 400);
 
+    const profileSelect = 'id,first_name,last_name,phone,address,barangay,municipality,province,profile_photo_key,status,status_reason,status_expires_at,created_at,total_donations_amount,total_donations_count';
+
     let rows = await supabaseRequest<DbProfile[]>(
-      `digital_donor_profiles?auth_user_id=eq.${authUserId}&select=id,first_name,last_name,phone,address,barangay,municipality,province,profile_photo_key,status,created_at,total_donations_amount,total_donations_count&limit=1`
+      `digital_donor_profiles?auth_user_id=eq.${authUserId}&select=${profileSelect}&limit=1`
     );
 
     if (rows.length === 0 && email) {
       rows = await supabaseRequest<DbProfile[]>(
-        `digital_donor_profiles?email=eq.${encodeURIComponent(email)}&select=id,first_name,last_name,phone,address,barangay,municipality,province,profile_photo_key,status,created_at,total_donations_amount,total_donations_count&limit=1`
+        `digital_donor_profiles?email=eq.${encodeURIComponent(email)}&select=${profileSelect}&limit=1`
       );
     }
 
@@ -50,7 +52,10 @@ export class ProfileService {
         barangay: row.barangay || '', municipality: row.municipality || '', province: row.province || '',
         profile_photo_url: getStorageUrl('profile-photos', row.profile_photo_key),
         profile_photo_key: row.profile_photo_key || '',
-        status: row.status, created_at: row.created_at,
+        status: row.status,
+        status_reason: (row as any).status_reason ?? null,
+        status_expires_at: (row as any).status_expires_at ?? null,
+        created_at: row.created_at,
         total_donations_amount: row.total_donations_amount || 0,
         total_donations_count: row.total_donations_count || 0,
       },
