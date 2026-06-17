@@ -45,9 +45,9 @@ export class AuthService {
       .sign(this.getJwtSecret());
   }
 
-  private withTimeout<T>(promise: Promise<T>, message: string, ms = 8000): Promise<T> {
+  private withTimeout<T = any>(promise: PromiseLike<T>, message: string, ms = 8000): Promise<T> {
     return Promise.race([
-      promise,
+      Promise.resolve(promise),
       new Promise<T>((_, reject) => setTimeout(() => reject(new GatewayTimeoutException(message)), ms)),
     ]);
   }

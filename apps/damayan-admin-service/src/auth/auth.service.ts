@@ -255,17 +255,17 @@ export class AuthService {
 
   private maskContact(contact: string, method: RecoveryMethod): string {
     if (method === RecoveryMethod.EMAIL) {
-      const [username, domain] = contact.split('@');
+      const [username = '', domain = ''] = contact.split('@');
       return `${username.slice(0, 2)}***${username.slice(-1)}@${domain}`;
     }
     return `${contact.slice(0, 6)}***${contact.slice(-2)}`;
   }
 
-  private async withTimeout<T>(promise: Promise<T>, message: string, ms = 15_000): Promise<T> {
+  private async withTimeout<T = any>(promise: PromiseLike<T>, message: string, ms = 15_000): Promise<T> {
     let handle: ReturnType<typeof setTimeout> | undefined;
     try {
       return await Promise.race([
-        promise,
+        Promise.resolve(promise),
         new Promise<T>((_, reject) => {
           handle = setTimeout(() => reject(new GatewayTimeoutException(message)), ms);
         }),

@@ -17,7 +17,7 @@ import { OperationsService } from './operations.service';
 import { UpsertAfterActionAssessmentDto } from './dto/after-action.dto';
 import { CreateCheckInDto, ScanQrDto } from './dto/check-in.dto';
 
-@Controller('api/v1/damayan/site-manager')
+@Controller('damayan/site-manager')
 @UseGuards(new JwtGuard(), new PersonaGuard('site_manager', 'damayan'))
 export class OperationsController {
   constructor(private readonly operationsService: OperationsService) {}

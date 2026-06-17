@@ -16,7 +16,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
-@Controller('api/v1/damayan/site-manager/auth')
+@Controller('damayan/site-manager/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

@@ -74,6 +74,20 @@ export class OperationsService {
     return { message: 'User rejected', user: data };
   }
 
+  async triggerVerification(id: string) {
+    // Fetch profile to get profile_photo_key for OCR re-submission
+    const { data: profile, error } = await this.db()
+      .from('user_profiles')
+      .select('id, auth_user_id, profile_photo_key, first_name, last_name')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw new BadRequestException(error.message);
+    if (!profile) throw new NotFoundException(`User ${id} not found`);
+    // Mark profile as under_review
+    await this.db().from('user_profiles').update({ status: 'under_review' }).eq('id', id);
+    return { message: 'Verification triggered', userId: id, profilePhotoKey: profile.profile_photo_key };
+  }
+
   // ─── Inventory ───────────────────────────────────────────────────────────
 
   async findInventory(search?: string) {
@@ -138,6 +152,42 @@ export class OperationsService {
     };
   }
 
+  async createEvacuationCenter(body: {
+    name: string;
+    address?: string;
+    barangay?: string;
+    municipality?: string;
+    capacity?: number;
+    facilities?: string[];
+    contactPerson?: string;
+    contactPhone?: string;
+    lat?: number;
+    lng?: number;
+    description?: string;
+    maxManagers?: number;
+  }) {
+    const { data, error } = await this.db()
+      .from('evacuation_centers')
+      .insert({
+        name: body.name,
+        address: body.address ?? null,
+        barangay: body.barangay ?? null,
+        municipality: body.municipality ?? null,
+        capacity: body.capacity ?? null,
+        facilities: body.facilities ?? [],
+        contact_person: body.contactPerson ?? null,
+        contact_phone: body.contactPhone ?? null,
+        lat: body.lat ?? null,
+        lng: body.lng ?? null,
+        description: body.description ?? null,
+        max_managers: body.maxManagers ?? null,
+      })
+      .select()
+      .single();
+    if (error) throw new BadRequestException(error.message);
+    return data;
+  }
+
   // ─── Organizations ───────────────────────────────────────────────────────
 
   async findOrganizations(search?: string) {
@@ -174,9 +224,10 @@ export class OperationsService {
 
   // ─── Disaster Events ─────────────────────────────────────────────────────
 
-  async findDisasterEvents(search?: string) {
+  async findDisasterEvents(search?: string, status?: string) {
     let query = this.db().from('disaster_events').select('*').order('created_at', { ascending: false });
     if (search) query = query.ilike('title', `%${search}%`);
+    if (status) query = query.eq('status', status);
     const { data, error } = await query;
     if (error) throw new BadRequestException(error.message);
     return data ?? [];

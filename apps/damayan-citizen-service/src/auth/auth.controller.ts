@@ -12,7 +12,7 @@ import { JwtGuard, PersonaGuard } from '@app/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 
-@Controller('api/v1/damayan/citizen/auth')
+@Controller('damayan/citizen/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

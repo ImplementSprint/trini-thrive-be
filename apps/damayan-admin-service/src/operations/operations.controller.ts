@@ -28,7 +28,7 @@ import {
   CreateWarningBroadcastDto,
 } from './dto/uploads.dto';
 
-@Controller('api/v1/damayan/admin')
+@Controller('damayan/admin')
 @UseGuards(new JwtGuard(), new PersonaGuard('admin', 'damayan'))
 export class OperationsController {
   constructor(private readonly operationsService: OperationsService) {}
@@ -62,6 +62,12 @@ export class OperationsController {
   @HttpCode(HttpStatus.OK)
   rejectPendingUser(@Param('id') id: string, @Body('reason') reason: string) {
     return this.operationsService.rejectPendingUser(id, reason);
+  }
+
+  @Post('approvals/:id/verify')
+  @HttpCode(HttpStatus.OK)
+  triggerVerification(@Param('id') id: string) {
+    return this.operationsService.triggerVerification(id);
   }
 
   // ─── Inventory ───────────────────────────────────────────────────────────
@@ -102,6 +108,24 @@ export class OperationsController {
   @Get('capacity/stats')
   getCapacityStats() {
     return this.operationsService.getCapacityStats();
+  }
+
+  @Post('capacity/centers')
+  createEvacuationCenter(@Body() body: {
+    name: string;
+    address?: string;
+    barangay?: string;
+    municipality?: string;
+    capacity?: number;
+    facilities?: string[];
+    contactPerson?: string;
+    contactPhone?: string;
+    lat?: number;
+    lng?: number;
+    description?: string;
+    maxManagers?: number;
+  }) {
+    return this.operationsService.createEvacuationCenter(body);
   }
 
   // ─── Organizations ────────────────────────────────────────────────────────
